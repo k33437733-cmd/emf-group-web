@@ -1,0 +1,63 @@
+{
+  "name": "EMF Group | منصة إدارة وتوزيع المحتوى الرقمي",
+  "short_name": "EMF Group",
+  "description": "البوابة الرسمية لشركة EMF Group لتصفح وتحميل أحدث الفيديوهات والتطبيقات والملفات المسجلة",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0a0f1d",
+  "theme_color": "#0a0f1d",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/src/assets/react.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "المكتبة الرقمية",
+      "short_name": "المكتبة",
+      "description": "تصفح وتحميل المحتوى",
+      "url": "/content",
+      "icons": [{ "src": "/icons.svg", "sizes": "any" }]
+    },
+    {
+      "name": "لوحة التحكم",
+      "short_name": "التحكم",
+      "description": "إدارة النظام والمحتوى",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons.svg", "sizes": "any" }]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false,
+  "protocol_handlers": [],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "file_handlers": [],
+  "share_target": {
+    "action": "/share",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "handle_links": "preferred"
+}

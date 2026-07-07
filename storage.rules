@@ -1,0 +1,36 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Check if user is logged in
+    function isAuth() {
+      return request.auth != null;
+    }
+
+    // Check if user has admin/super_admin role in Firestore
+    function isAdmin() {
+      return isAuth() && (
+        request.auth.token.email == 'amir@emf.com' ||
+        request.auth.token.email == 'khaled@emf.com' ||
+        request.auth.token.email == 'youssef@emf.com' ||
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role in ['admin', 'super_admin']
+      );
+    }
+
+    match /contents/{category}/{fileName} {
+      allow read: if isAuth();
+      
+      // Enforce file size checks at the server level
+      allow write: if isAdmin()
+        && (
+          (category == 'video' && request.resource.size <= 50 * 1024 * 1024) ||
+          (category == 'app' && request.resource.size <= 100 * 1024 * 1024) ||
+          (category == 'other' && request.resource.size <= 50 * 1024 * 1024) ||
+          (category == 'chat' && request.resource.size <= 25 * 1024 * 1024)
+        );
+      
+      allow delete: if isAdmin();
+    }
+  }
+}
