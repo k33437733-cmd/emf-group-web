@@ -149,12 +149,16 @@ export async function createMessage(
       id:             msgRef.id,
       deliveryStatus: 'sent',
       readBy:         {},
-      deletedAt:      undefined,
-      editedAt:       undefined,
       createdAt:      nowISO(),
     };
-    await setDoc(msgRef, msg);
-    return msg;
+    
+    // Remove undefined properties to avoid Firestore errors
+    const cleanMsg = Object.fromEntries(
+      Object.entries(msg).filter(([_, v]) => v !== undefined)
+    ) as unknown as ChatMessage;
+
+    await setDoc(msgRef, cleanMsg);
+    return cleanMsg;
   } catch (err) {
     wrapFirestoreError(err, 'createMessage');
   }
