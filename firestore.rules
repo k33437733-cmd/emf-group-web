@@ -1,0 +1,84 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Check if user is logged in
+    function isAuth() {
+      return request.auth != null;
+    }
+    
+    // Check if user is super admin
+    function isSuperAdmin() {
+      return isAuth() && (
+        request.auth.token.email == 'amir@emf.com' ||
+        request.auth.token.email == 'khaled@emf.com' ||
+        request.auth.token.email == 'youssef@emf.com' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'super_admin')
+      );
+    }
+
+    // Check if user is admin or super admin
+    function isAdmin() {
+      return isAuth() && (
+        isSuperAdmin() ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin')
+      );
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && request.auth.uid == userId && (
+        request.resource.data.role == 'user' || 
+        ((request.resource.data.role == 'super_admin' || request.resource.data.role == 'admin') && isSuperAdmin())
+      );
+      allow update: if isAuth() && (
+        isSuperAdmin() || 
+        (request.auth.uid == userId && request.resource.data.role == resource.data.role && request.resource.data.status == resource.data.status)
+      );
+      allow delete: if isSuperAdmin();
+    }
+
+    // Contents collection
+    match /contents/{contentId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
+    // Projects collection (Admins only)
+    match /projects/{projectId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Conversations collection
+    match /conversations/{conversationId} {
+      allow read: if isAuth() && (resource == null || request.auth.uid in resource.data.members || isAdmin());
+      allow write: if isAuth() && (request.resource.data.members.size() > 0);
+    }
+
+    // Messages collection
+    match /messages/{messageId} {
+      allow read: if isAuth();
+      allow create: if isAuth() && (request.resource.data.senderId == request.auth.uid || isAdmin());
+      allow update, delete: if isAuth() && (resource.data.senderId == request.auth.uid || isSuperAdmin());
+    }
+
+    // Notifications collection
+    match /notifications/{notifId} {
+      allow read: if isAuth() && resource.data.recipientId == request.auth.uid;
+      allow create: if isAuth();
+      allow update: if isAuth() && resource.data.recipientId == request.auth.uid && request.resource.data.read == true;
+      allow delete: if isAuth() && resource.data.recipientId == request.auth.uid;
+    }
+
+    // Audit logs
+    match /audit_logs/{logId} {
+      allow read: if isSuperAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}
