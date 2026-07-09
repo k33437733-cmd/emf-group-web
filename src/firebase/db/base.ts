@@ -6,6 +6,26 @@
 import { FirestoreError } from 'firebase/firestore';
 import type { DocumentSnapshot } from 'firebase/firestore';
 
+// ─── Data helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Strip all `undefined` values from an object (deeply).
+ * Firestore v9+ SDK throws "Unsupported field value: undefined" on setDoc/updateDoc.
+ */
+export function cleanUndefined<T extends Record<string, unknown>>(obj: T): T {
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined) continue;
+    if (v !== null && typeof v === 'object' && !Array.isArray(v) && !(v instanceof Date)) {
+      const nested = cleanUndefined(v as Record<string, unknown>);
+      out[k] = nested;
+    } else {
+      out[k] = v;
+    }
+  }
+  return out as T;
+}
+
 // ─── Error handling ───────────────────────────────────────────────────────────
 
 export class RepositoryError extends Error {

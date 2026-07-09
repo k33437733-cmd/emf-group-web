@@ -60,7 +60,9 @@ export default function ChatPage() {
     if (!user || !isAdmin) return;
     listAgents().then(list => {
       setAgents(list.filter(c => c.uid !== user.uid));
-      getOrCreateAdminGroup(list).catch(() => {});
+      getOrCreateAdminGroup(list).catch((err) => {
+        console.error('Failed to initialize admin group:', err);
+      });
     });
     listRegularUsers().then(list => setMembers(list.filter(c => c.uid !== user.uid)));
     purgeOldMessages().catch(() => {});
@@ -160,11 +162,16 @@ export default function ChatPage() {
 
   const handleSelectGroup = async () => {
     if (!user) return;
-    const groupConv = adminConvs.find(c => c.isGroup);
-    if (groupConv) { handleSelectConv(groupConv); return; }
-    const allList = await listAgents();
-    const id = await getOrCreateAdminGroup(allList);
-    setActiveConvId(id);
+    try {
+      const groupConv = adminConvs.find(c => c.isGroup);
+      if (groupConv) { handleSelectConv(groupConv); return; }
+      const allList = await listAgents();
+      const id = await getOrCreateAdminGroup(allList);
+      setActiveConvId(id);
+    } catch (err: any) {
+      console.error('Failed to open group chat:', err);
+      showToast(err?.message || 'فشل فتح مجموعة الإدارة', 'error');
+    }
   };
 
   const handleSelectMember = async (member: UserProfile) => {
@@ -182,9 +189,10 @@ export default function ChatPage() {
       content: text,
       type: imageUrls ? 'image' : 'text',
       imageUrls
-    }).catch((err) => {
+    }).catch((err: any) => {
+      const msg = err?.message || err?.code || 'فشل إرسال الرسالة';
       console.error('Failed to send chat message:', err);
-      showToast('فشل إرسال الرسالة', 'error');
+      showToast(msg, 'error');
     });
   };
 

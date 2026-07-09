@@ -29,7 +29,7 @@ import { db } from '../config';
 import { COLLECTIONS } from '../../constants/collections';
 import { MESSAGES_PAGE_SIZE, MESSAGE_RETENTION_DAYS } from '../../constants/config';
 import type { ChatMessage, MessagePage } from '../../types/chat';
-import { fromSnapshot, nowISO, wrapFirestoreError } from './base';
+import { fromSnapshot, nowISO, wrapFirestoreError, cleanUndefined } from './base';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -144,16 +144,14 @@ export async function createMessage(
 ): Promise<ChatMessage> {
   try {
     const msgRef = doc(col());
-    const msg: ChatMessage = {
+    const msg: Record<string, unknown> = {
       ...payload,
       id:             msgRef.id,
       deliveryStatus: 'sent',
       readBy:         {},
-      deletedAt:      undefined,
-      editedAt:       undefined,
       createdAt:      nowISO(),
     };
-    await setDoc(msgRef, msg);
+    await setDoc(msgRef, cleanUndefined(msg));
     return msg;
   } catch (err) {
     wrapFirestoreError(err, 'createMessage');
