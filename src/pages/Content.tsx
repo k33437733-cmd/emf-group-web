@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../hooks/useAuth';
-import { subscribeToContents, incrementContentViews, incrementContentDownloads } from '../firebase/db';
+import { subscribeToContents, incrementContentViews, incrementContentDownloads, updateContentItem, deleteContentItem } from '../firebase/db';
+import { uploadFile, deleteFileFromStorage } from '../firebase/storage';
 import type { ContentItem } from '../types';
-import { Search, Video, Download, Play, Monitor, FileText, Share2, Eye, X, Filter, Inbox } from 'lucide-react';
+import { Search, Video, Download, Play, Monitor, FileText, Share2, Eye, X, Filter, Inbox, Edit3, EyeOff, Shield, Trash2 } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
 import LazyVideo from '../components/ui/LazyVideo';
 import { SkeletonGrid } from '../components/ui/Skeleton';
@@ -20,9 +21,21 @@ export default function Content() {
 
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
   const [activeVideoTitle, setActiveVideoTitle] = useState<string>('');
+  const [editContentItem, setEditContentItem] = useState<ContentItem | null>(null);
+  const [editContentForm, setEditContentForm] = useState({
+    title: '',
+    description: '',
+    type: 'video' as ContentItem['type'],
+    accessLevel: 'all' as ContentItem['accessLevel'],
+    downloadProtected: false,
+    file: null as File | null,
+  });
+  const [editUploading, setEditUploading] = useState(false);
+  const [editUploadProgress, setEditUploadProgress] = useState(0);
 
   const canViewRestricted = !!user && ['agent', 'admin', 'super_admin'].includes(user.role);
   const canUseAdminDownload = !!user && ['admin', 'super_admin'].includes(user.role);
+  const isAdmin = !!user && (user.role === 'admin' || user.role === 'super_admin');
 
   useEffect(() => {
     const unsub = subscribeToContents((list) => {
@@ -70,6 +83,86 @@ export default function Content() {
       setActiveVideoUrl(item.url);
       setActiveVideoTitle(item.title);
     } catch (e) { /* ignore */ }
+  };
+
+  const openEditContentModal = (item: ContentItem) => {
+    setEditContentItem(item);
+    setEditContentForm({
+      title: item.title,
+      description: item.description,
+      type: item.type,
+      accessLevel: item.accessLevel,
+      downloadProtected: item.downloadProtected || false,
+      file: null,
+    });
+  };
+
+  const handleEditContentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editContentItem || !user) return;
+
+    setEditUploading(true);
+    setEditUploadProgress(0);
+
+    try {
+      const updates: Partial<ContentItem> = {
+        title: editContentForm.title.trim(),
+        description: editContentForm.description.trim(),
+        type: editContentForm.type,
+        accessLevel: editContentForm.accessLevel,
+        downloadProtected: editContentForm.downloadProtected,
+      };
+
+      if (editContentForm.file) {
+        const downloadUrl = await uploadFile(editContentForm.file, editContentForm.type, (progress) => setEditUploadProgress(progress));
+        updates.url = downloadUrl;
+        updates.fileName = editContentForm.file.name;
+        updates.fileSize = editContentForm.file.size;
+        updates.fileType = editContentForm.file.name.split('.').pop() || '';
+      }
+
+      await updateContentItem(editContentItem.id, updates, user.uid, user.name);
+      showToast('تم حفظ التغييرات بنجاح', 'success');
+      setEditContentItem(null);
+    } catch (err) {
+      console.error(err);
+      showToast('حدث خطأ أثناء حفظ المحتوى', 'error');
+    } finally {
+      setEditUploading(false);
+      setEditUploadProgress(0);
+    }
+  };
+
+  const handleToggleHideContent = async (item: ContentItem) => {
+    if (!user) return;
+    try {
+      await updateContentItem(item.id, { accessLevel: item.accessLevel === 'all' ? 'admin' : 'all' }, user.uid, user.name);
+      showToast(item.accessLevel === 'all' ? 'تم إخفاء المحتوى عن المستخدمين العاديين' : 'تم إظهار المحتوى مرة أخرى', 'success');
+    } catch (err) {
+      showToast('فشل تحديث حالة الرؤية', 'error');
+    }
+  };
+
+  const handleToggleDownloadProtection = async (item: ContentItem) => {
+    if (!user) return;
+    try {
+      await updateContentItem(item.id, { downloadProtected: !item.downloadProtected }, user.uid, user.name);
+      showToast(item.downloadProtected ? 'تم إزالة حماية التنزيل' : 'تم تفعيل حماية التنزيل', 'success');
+    } catch (err) {
+      showToast('فشل تحديث حماية التنزيل', 'error');
+    }
+  };
+
+  const handleDeleteContent = async (item: ContentItem) => {
+    if (!user || !window.confirm('هل أنت متأكد من حذف هذا المحتوى؟')) return;
+    try {
+      await deleteFileFromStorage(item.url);
+      await deleteContentItem(item.id, item.title, user.uid, user.name);
+      showToast('تم حذف المحتوى بنجاح', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('فشل حذف المحتوى', 'error');
+    }
   };
 
   const handleShare = (item: ContentItem, platform: 'whatsapp' | 'facebook') => {
@@ -229,13 +322,13 @@ export default function Content() {
                       <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}><Download size={12} />{item.downloads || 0}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)', flexWrap: 'wrap' }}>
                     {isVideo ? (
-                      <button onClick={() => handlePlayVideo(item)} className="btn btn-primary" style={{ flex: 1, height: '36px', fontSize: 'var(--text-sm)' }}>
+                      <button onClick={() => handlePlayVideo(item)} className="btn btn-primary" style={{ flex: 1, minWidth: '140px', height: '36px', fontSize: 'var(--text-sm)' }}>
                         <Play size={14} style={{ fill: '#fff' }} /> عرض الفيديو
                       </button>
                     ) : (
-                      <button onClick={() => handleDownload(item)} className="btn btn-primary" disabled={item.downloadProtected && !canUseAdminDownload} style={{ flex: 1, height: '36px', fontSize: 'var(--text-sm)', opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1, cursor: item.downloadProtected && !canUseAdminDownload ? 'not-allowed' : 'pointer' }}>
+                      <button onClick={() => handleDownload(item)} className="btn btn-primary" disabled={item.downloadProtected && !canUseAdminDownload} style={{ flex: 1, minWidth: '140px', height: '36px', fontSize: 'var(--text-sm)', opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1, cursor: item.downloadProtected && !canUseAdminDownload ? 'not-allowed' : 'pointer' }}>
                         <Download size={14} /> تنزيل
                       </button>
                     )}
@@ -246,6 +339,22 @@ export default function Content() {
                       <Share2 size={14} />
                     </button>
                   </div>
+                  {isAdmin && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
+                      <button onClick={() => openEditContentModal(item)} style={{ background: 'var(--accent-indigo)', color: 'white', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                        <Edit3 size={14} /> تعديل
+                      </button>
+                      <button onClick={() => handleToggleHideContent(item)} style={{ background: item.accessLevel === 'all' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: item.accessLevel === 'all' ? 'var(--accent-amber)' : 'var(--accent-red)', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                        {item.accessLevel === 'all' ? <EyeOff size={14} /> : <Eye size={14} />} {item.accessLevel === 'all' ? 'إخفاء' : 'إظهار'}
+                      </button>
+                      <button onClick={() => handleToggleDownloadProtection(item)} style={{ background: item.downloadProtected ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)', color: item.downloadProtected ? 'var(--accent-red)' : 'var(--accent-emerald)', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                        <Shield size={14} /> {item.downloadProtected ? 'إلغاء حماية' : 'حماية تنزيل'}
+                      </button>
+                      <button onClick={() => handleDeleteContent(item)} style={{ background: 'rgba(244,63,94,0.12)', color: 'var(--accent-red)', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                        <Trash2 size={14} /> حذف
+                      </button>
+                    </div>
+                  )}
                   {item.downloadProtected && (
                     <div style={{ marginTop: '8px', fontSize: '0.78rem', color: 'var(--accent-red)' }}>{'هذا المحتوى محمي من التنزيل'}</div>
                   )}
@@ -285,6 +394,147 @@ export default function Content() {
       )}
 
 
+        {editContentItem && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-content-title"
+            style={{
+              position: 'fixed', inset: 0, zIndex: 9999,
+              background: 'rgba(9, 13, 22, 0.75)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px'
+            }}
+            onClick={() => setEditContentItem(null)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: '100%', maxWidth: '640px', background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', padding: '24px', boxShadow: '0 24px 80px rgba(0,0,0,0.18)'
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
+                <div>
+                  <h2 id="edit-content-title" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>تعديل المحتوى</h2>
+                  <p style={{ margin: '8px 0 0', color: 'var(--text-secondary)', fontSize: '0.92rem' }}>قم بتحديث بيانات المحتوى أو استبدال الملف.</p>
+                </div>
+                <button
+                  onClick={() => setEditContentItem(null)}
+                  style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                  aria-label="Close modal"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleEditContentSubmit} style={{ display: 'grid', gap: '18px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label htmlFor="edit-title" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>العنوان</label>
+                    <input
+                      id="edit-title"
+                      type="text"
+                      value={editContentForm.title}
+                      onChange={(e) => setEditContentForm(prev => ({ ...prev, title: e.target.value }))}
+                      required
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none' }}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="edit-type" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>النوع</label>
+                    <select
+                      id="edit-type"
+                      value={editContentForm.type}
+                      onChange={(e) => setEditContentForm(prev => ({ ...prev, type: e.target.value as ContentItem['type'] }))}
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none' }}
+                    >
+                      <option value="video">فيديو</option>
+                      <option value="app">تطبيق</option>
+                      <option value="other">ملف</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="edit-description" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>الوصف</label>
+                  <textarea
+                    id="edit-description"
+                    rows={4}
+                    value={editContentForm.description}
+                    onChange={(e) => setEditContentForm(prev => ({ ...prev, description: e.target.value }))}
+                    style={{ width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none', resize: 'vertical' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div>
+                    <label htmlFor="edit-access-level" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>رؤية المحتوى</label>
+                    <select
+                      id="edit-access-level"
+                      value={editContentForm.accessLevel}
+                      onChange={(e) => setEditContentForm(prev => ({ ...prev, accessLevel: e.target.value as ContentItem['accessLevel'] }))}
+                      style={{ width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none' }}
+                    >
+                      <option value="all">مرئي للجميع</option>
+                      <option value="agent">الوكلاء والمدراء</option>
+                      <option value="admin">المدراء فقط</option>
+                    </select>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <label htmlFor="edit-download-protection" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>حماية التنزيل</label>
+                    <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--input-border)', background: 'var(--input-bg)', cursor: 'pointer' }}>
+                      <input
+                        id="edit-download-protection"
+                        type="checkbox"
+                        checked={editContentForm.downloadProtected}
+                        onChange={(e) => setEditContentForm(prev => ({ ...prev, downloadProtected: e.target.checked }))}
+                      />
+                      <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>منع التنزيل</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="edit-file" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>استبدال الملف</label>
+                  <input
+                    id="edit-file"
+                    type="file"
+                    onChange={(e) => setEditContentForm(prev => ({ ...prev, file: e.target.files?.[0] || null }))}
+                    style={{ width: '100%', padding: '10px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)' }}
+                  />
+                </div>
+
+                {editUploading && (
+                  <div style={{ marginTop: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                      <span>جاري رفع الملف...</span>
+                      <span>{editUploadProgress}%</span>
+                    </div>
+                    <div style={{ width: '100%', height: '6px', background: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
+                      <div style={{ width: `${editUploadProgress}%`, height: '100%', background: 'var(--accent-indigo)', transition: 'width 200ms ease' }} />
+                    </div>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setEditContentItem(null)}
+                    style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '10px 18px', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={editUploading}
+                    style={{ background: 'var(--gradient-primary)', border: 'none', color: 'white', padding: '10px 18px', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
+                  >
+                    {editUploading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
     </div>
   );
 }
