@@ -294,9 +294,9 @@ export function useAnalytics(): AnalyticsState {
   const mostViewed = useMemo(() => {
     const sorted = [...contents].sort((a, b) => (b.views || 0) - (a.views || 0));
     return sorted.slice(0, 10).map(c => ({
-      name: c.title,
+      name: c.title || '',
       views: c.views || 0,
-      type: c.type,
+      type: c.type || 'other',
     }));
   }, [contents]);
 
@@ -346,7 +346,7 @@ export function useAnalytics(): AnalyticsState {
     const events: ActivityEvent[] = [];
     for (const log of auditLogs) {
       if (!log.createdAt) continue;
-      const desc = log.description;
+      const desc = log.description || '';
       let type: ActivityEvent['type'] = 'chat';
       let icon = 'MessageSquare';
       let color = 'var(--accent-blue)';
@@ -364,13 +364,13 @@ export function useAnalytics(): AnalyticsState {
         type = 'ticket'; icon = 'Ticket'; color = 'var(--accent-gold)';
       }
       events.push({
-        id: log.id, type, user: log.userName, description: desc, timestamp: log.createdAt, icon, color,
+        id: log.id, type, user: log.userName || '', description: desc, timestamp: log.createdAt, icon, color,
       });
     }
     for (const u of users) {
       if (!u.createdAt) continue;
       events.push({
-        id: `reg_${u.uid}`, type: 'register', user: u.name, description: `تسجيل عضو جديد: ${u.name}`,
+        id: `reg_${u.uid}`, type: 'register', user: u.name || '', description: `تسجيل عضو جديد: ${u.name || ''}`,
         timestamp: u.createdAt, icon: 'UserPlus', color: 'var(--accent-emerald)',
       });
     }

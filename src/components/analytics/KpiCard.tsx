@@ -25,7 +25,7 @@ function KpiCardInner({ label, value, trend, icon, color, sparklineData }: KpiCa
         <Sparkline data={sparklineData} color={color} />
       </div>
       <div style={{ marginTop: 'var(--space-4)' }}>
-        <div className="stat-number">{value.toLocaleString('ar-SA')}</div>
+        <div className="stat-number">{(value ?? 0).toLocaleString('ar-SA')}</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'var(--space-1)' }}>
           <span className="small-label">{label}</span>
           <span style={{
