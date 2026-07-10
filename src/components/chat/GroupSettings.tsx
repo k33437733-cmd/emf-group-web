@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { X, Camera, Trash2, UserMinus, Save } from 'lucide-react';
+import { X, Camera, UserMinus, Save } from 'lucide-react';
 import type { Conversation, UserProfile } from '../../types';
 import { uploadImageWithCompression } from '../../lib/cloudinary';
 
@@ -24,8 +24,6 @@ export default function GroupSettings({
   const [showAdd, setShowAdd] = useState(false);
   const [addSearch, setAddSearch] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
-
-  const isCreator = conv.createdBy === currentUid;
 
   const members = (conv.members ?? []).map(uid => ({
     uid,

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { X, Users, Image, Check, Search } from 'lucide-react';
+import { X, Image, Check, Search } from 'lucide-react';
 import type { UserProfile } from '../../types/auth';
 import { uploadImageWithCompression } from '../../lib/cloudinary';
 
