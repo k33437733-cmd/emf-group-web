@@ -389,6 +389,23 @@
   color: var(--text-primary);
 }
 
+.themeControl {
+  min-width: 92px;
+  padding: 0 var(--space-2);
+  gap: var(--space-2);
+}
+
+.themeControlLabel {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.themeControl:hover .themeControlLabel {
+  color: var(--text-primary);
+}
+
 .notifBadge {
   position: absolute;
   top: 2px;
@@ -538,8 +555,104 @@
 }
 
 .themeAccentSwatch.active {
-  transform: scale(1.03);
+  transform: scale(1.05);
   border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
+}
+
+.themeAccentSwatch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.themeDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 320px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.96));
+  border: 1px solid rgba(59, 130, 246, 0.16);
+  border-radius: var(--radius-2xl);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
+  z-index: 1050;
+  padding: var(--space-4);
+  animation: dropdownIn 0.18s ease;
+}
+
+.themeSection {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.themeSection:last-child {
+  margin-bottom: 0;
+}
+
+.themeSectionTitle {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.themeModeOptions,
+.themeAccentOptions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.themeModeButton,
+.themeAccentButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.themeModeButton:hover,
+.themeAccentButton:hover {
+  background: var(--sidebar-hover);
+}
+
+.themeModeButton.active,
+.themeAccentButton.active {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.themeAccentSwatches {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.themeAccentSwatch {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.themeAccentSwatch.active {
+  transform: scale(1.05);
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.16);
 }
 
 .notifHeader {

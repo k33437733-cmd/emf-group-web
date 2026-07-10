@@ -291,11 +291,12 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
           <div ref={themeRef} style={{ position: 'relative' }}>
             {/* Theme toggle */}
             <button
-              className={styles.navIconBtn}
+              className={`${styles.navIconBtn} ${styles.themeControl}`}
               onClick={() => setThemeOpen(open => !open)}
-              aria-label="تبديل الألوان"
+              aria-label="فتح لوحة ألوان الثيم"
             >
-              <Palette size={19} />
+              <Palette size={18} />
+              <span className={styles.themeControlLabel}>ألوان</span>
             </button>
 
             {themeOpen && (
