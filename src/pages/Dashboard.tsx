@@ -33,6 +33,32 @@ import {
   Legend,
 } from 'recharts';
 
+interface TooltipPayloadItem {
+  color: string;
+  name: string;
+  value?: number;
+}
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: TooltipPayloadItem[];
+  label?: string;
+}
+function ChartTooltip({ active, payload, label }: CustomTooltipProps) {
+  if (!active || !payload?.length) return null;
+  return (
+    <div style={{
+      background: 'var(--bg-elevated)', border: '1px solid var(--border-color)',
+      borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)',
+      boxShadow: 'var(--shadow-lg)', fontSize: 'var(--text-xs)',
+    }}>
+      <div style={{ color: 'var(--text-tertiary)', marginBottom: 'var(--space-1)' }}>{label}</div>
+      {payload.map((p, i) => (
+        <div key={i} style={{ color: p.color, fontWeight: 600 }}>{p.name}: {p.value?.toLocaleString('ar-SA')}</div>
+      ))}
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -171,32 +197,6 @@ export default function Dashboard() {
     return true;
   });
 
-  interface TooltipPayloadItem {
-    color: string;
-    name: string;
-    value?: number;
-  }
-  interface CustomTooltipProps {
-    active?: boolean;
-    payload?: TooltipPayloadItem[];
-    label?: string;
-  }
-  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
-    if (!active || !payload?.length) return null;
-    return (
-      <div style={{
-        background: 'var(--bg-elevated)', border: '1px solid var(--border-color)',
-        borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)',
-        boxShadow: 'var(--shadow-lg)', fontSize: 'var(--text-xs)',
-      }}>
-        <div style={{ color: 'var(--text-tertiary)', marginBottom: 'var(--space-1)' }}>{label}</div>
-        {payload.map((p, i) => (
-          <div key={i} style={{ color: p.color, fontWeight: 600 }}>{p.name}: {p.value?.toLocaleString('ar-SA')}</div>
-        ))}
-      </div>
-    );
-  };
-
   if (authLoading || analytics.loading) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-secondary)' }}>
@@ -229,11 +229,15 @@ export default function Dashboard() {
       <div className="row g-4">
         <div className="col-lg-3 col-xl-2">
           <div className="card-base dashboard-tab-nav" style={{ padding: 'var(--space-2)' }}>
-            <nav className="nav flex-column gap-1" role="tablist">
+            <nav className="nav flex-column gap-1" role="tablist" aria-label="أقسام لوحة التحكم">
               {visibleTabs.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
+                  role="tab"
+                  aria-selected={activeTab === tab.id}
+                  aria-controls={`tabpanel-${tab.id}`}
+                  id={`tab-${tab.id}`}
                   className={`nav-link d-flex align-items-center gap-3 text-start border-0 w-100 ${activeTab === tab.id ? 'active' : ''}`}
                   style={{
                     borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)',
@@ -260,7 +264,7 @@ export default function Dashboard() {
 
         <div className="col-lg-9 col-xl-10" style={{ minWidth: 0 }}>
           {activeTab === 'stats' && (
-            <div className="d-flex flex-column gap-4 animate-scale">
+            <div id="tabpanel-stats" role="tabpanel" aria-labelledby="tab-stats" className="d-flex flex-column gap-4 animate-scale">
               {isAdmin ? (
                 <>
                   {/* ═══ KPI CARDS ═══ */}
@@ -280,7 +284,7 @@ export default function Dashboard() {
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                           <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickFormatter={v => v.slice(5)} />
                           <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <Tooltip content={<CustomTooltip />} />
+                          <Tooltip content={<ChartTooltip />} />
                           <Line type="monotone" dataKey="value" stroke="var(--accent-blue)" strokeWidth={2} dot={false} name="تسجيلات" />
                         </LineChart>
                       </ResponsiveContainer>
@@ -293,7 +297,7 @@ export default function Dashboard() {
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                           <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickFormatter={v => v.slice(5)} />
                           <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <Tooltip content={<CustomTooltip />} />
+                          <Tooltip content={<ChartTooltip />} />
                           <Legend wrapperStyle={{ fontSize: 'var(--text-xs)' }} />
                           <Bar dataKey="videos" stackId="a" fill="var(--accent-purple)" name="فيديو" />
                           <Bar dataKey="apps" stackId="a" fill="var(--accent-cyan)" name="تطبيقات" />
@@ -309,7 +313,7 @@ export default function Dashboard() {
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                           <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickFormatter={v => v.slice(5)} />
                           <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <Tooltip content={<CustomTooltip />} />
+                          <Tooltip content={<ChartTooltip />} />
                           <Area type="monotone" dataKey="value" stroke="var(--accent-amber)" fill="var(--accent-amber)" fillOpacity={0.15} strokeWidth={2} name="مشاهدات" />
                         </AreaChart>
                       </ResponsiveContainer>
@@ -322,7 +326,7 @@ export default function Dashboard() {
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                           <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickFormatter={v => v.slice(5)} />
                           <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <Tooltip content={<CustomTooltip />} />
+                          <Tooltip content={<ChartTooltip />} />
                           <Line type="monotone" dataKey="value" stroke="var(--accent-emerald)" strokeWidth={2} dot={false} name="تنزيلات" />
                         </LineChart>
                       </ResponsiveContainer>
@@ -335,7 +339,7 @@ export default function Dashboard() {
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                           <XAxis dataKey="hour" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
                           <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <Tooltip content={<CustomTooltip />} />
+                          <Tooltip content={<ChartTooltip />} />
                           <Bar dataKey="count" fill="var(--accent-blue)" name="نشاط" radius={[2, 2, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -348,7 +352,7 @@ export default function Dashboard() {
                           <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
                           <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
                           <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} width={120} tickFormatter={v => v.length > 12 ? v.slice(0, 12) + '…' : v} />
-                          <Tooltip content={<CustomTooltip />} />
+                          <Tooltip content={<ChartTooltip />} />
                           <Bar dataKey="views" fill="var(--accent-purple)" name="مشاهدات" radius={[0, 4, 4, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
@@ -364,7 +368,7 @@ export default function Dashboard() {
                                 <Cell key={i} fill={entry.color} />
                               ))}
                             </Pie>
-                            <Tooltip content={<CustomTooltip />} />
+                            <Tooltip content={<ChartTooltip />} />
                             <Legend wrapperStyle={{ fontSize: 'var(--text-xs)' }} />
                           </PieChart>
                         </ResponsiveContainer>
@@ -381,7 +385,7 @@ export default function Dashboard() {
                                 <Cell key={i} fill={entry.color} />
                               ))}
                             </Pie>
-                            <Tooltip content={<CustomTooltip />} />
+                            <Tooltip content={<ChartTooltip />} />
                             <Legend wrapperStyle={{ fontSize: 'var(--text-xs)' }} />
                           </PieChart>
                         </ResponsiveContainer>
@@ -456,7 +460,7 @@ export default function Dashboard() {
           )}
 
           {activeTab === 'upload' && isAdmin && (
-            <div className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
+            <div id="tabpanel-upload" role="tabpanel" aria-labelledby="tab-upload" className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
               <h4 className="section-title mb-4 pb-3" style={{ borderBottom: '1px solid var(--border-color)' }}>
                 رفع محتوى وملف جديد للمكتبة
               </h4>
@@ -473,10 +477,10 @@ export default function Dashboard() {
                   <div className="col-md-4">
                     <div className="form-group">
                       <label className="form-label">قسم المحتوى</label>
-                      <select className="form-input" value={uploadType} onChange={e => setUploadType(e.target.value as 'video' | 'app' | 'other')} disabled={uploading} style={{ appearance: 'auto' }}>
-                        <option value="video">فيديو 🎬</option>
-                        <option value="app">تطبيق تسجيل 📱</option>
-                        <option value="other">ملفات أخرى 📎</option>
+                      <select className="form-input" value={uploadType} onChange={e => setUploadType(e.target.value as 'video' | 'app' | 'other')} disabled={uploading}>
+                        <option value="video">فيديو</option>
+                        <option value="app">تطبيق تسجيل</option>
+                        <option value="other">ملفات أخرى</option>
                       </select>
                     </div>
                   </div>
@@ -512,7 +516,7 @@ export default function Dashboard() {
           )}
 
           {activeTab === 'content' && isAdmin && (
-            <div className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
+            <div id="tabpanel-content" role="tabpanel" aria-labelledby="tab-content" className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
               <h4 className="section-title mb-4">إدارة محتويات المكتبة</h4>
               {contents.length === 0 ? (
                 <EmptyState icon={<Inbox size={48} />} title="لا توجد ملفات" message="لم يتم رفع أي ملفات إلى المكتبة بعد." />
@@ -535,8 +539,8 @@ export default function Dashboard() {
                         {contents.map(item => (
                           <tr key={item.id}>
                             <td className="fw-semibold">{item.title}</td>
-                            <td><span className="badge" style={{ background: 'var(--badge-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '5px 10px', borderRadius: 'var(--radius-sm)' }}>
-                              {item.type === 'video' ? '🎬 فيديو' : item.type === 'app' ? '📱 تطبيق' : '📎 ملف'}
+                            <td>                            <span className="badge" style={{ background: 'var(--badge-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '5px 10px', borderRadius: 'var(--radius-sm)' }}>
+                              {item.type === 'video' ? 'فيديو' : item.type === 'app' ? 'تطبيق' : 'ملف'}
                             </span></td>
                             <td className="text-secondary">{(item.fileSize / (1024 * 1024)).toFixed(1)} MB</td>
                             <td className="text-secondary">{item.uploadedByName}</td>
@@ -558,7 +562,7 @@ export default function Dashboard() {
           )}
 
           {activeTab === 'users' && isSuperAdmin && (
-            <div className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
+            <div id="tabpanel-users" role="tabpanel" aria-labelledby="tab-users" className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
               <h4 className="section-title mb-4">إدارة صلاحيات وحالة الأعضاء</h4>
               <div className="table-container">
                 <div className="table-responsive">
@@ -595,7 +599,7 @@ export default function Dashboard() {
                               color: targetUser.status === 'blocked' ? 'var(--accent-red)' : 'var(--accent-emerald)',
                               padding: '5px 10px', borderRadius: 'var(--radius-sm)'
                             }}>
-                              {targetUser.status === 'blocked' ? '🚫 محظور' : '✓ نشط'}
+                              {targetUser.status === 'blocked' ? 'محظور' : 'نشط'}
                             </span>
                           </td>
                           <td>
@@ -623,7 +627,7 @@ export default function Dashboard() {
           )}
 
           {activeTab === 'logs' && isSuperAdmin && (
-            <div className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
+            <div id="tabpanel-logs" role="tabpanel" aria-labelledby="tab-logs" className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
               <h4 className="section-title mb-4">سجل نشاط مديري النظام</h4>
               <div className="d-flex flex-column gap-2" style={{ maxHeight: '480px', overflowY: 'auto', paddingLeft: 'var(--space-2)' }}>
                 {auditLogs.length === 0 ? (

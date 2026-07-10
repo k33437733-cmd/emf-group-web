@@ -22,7 +22,7 @@ import {
 } from '../firebase/db/messages';
 import { sendMessage, markRead } from '../services/ChatService';
 import type { Conversation, UserProfile } from '../types';
-import { MessageSquare, ArrowRight, CheckCheck, Users, MessageCirclePlus, Settings, Bot } from 'lucide-react';
+import { MessageSquare, ArrowRight, CheckCheck, Users, MessageCirclePlus, Settings, Bot, Lock, Megaphone } from 'lucide-react';
 import ChatInput from '../components/chat/ChatInput';
 import ConversationList from '../components/chat/ConversationList';
 import CreateGroupModal from '../components/chat/CreateGroupModal';
@@ -378,7 +378,7 @@ export default function ChatPage() {
                   <Users size={18} />
                 </div>
                 <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.84rem', color: 'var(--text-primary)' }}>مجموعة الإدارة العامة 📢</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.84rem', color: 'var(--text-primary)' }}>مجموعة الإدارة العامة</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
                     تواصل جماعي مع كافة المدراء
                   </div>
@@ -407,7 +407,7 @@ export default function ChatPage() {
                   <MessageCirclePlus size={18} />
                 </div>
                 <div style={{ flex: 1, textAlign: 'right' }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.84rem', color: '#fff' }}>إنشاء مجموعة جديدة</div>
+                    <div style={{ fontWeight: 700, fontSize: '0.84rem', color: 'var(--text-primary)' }}>إنشاء مجموعة جديدة</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '2px' }}>مجموعة محادثة مع المشرفين</div>
                 </div>
               </div>
@@ -486,13 +486,13 @@ export default function ChatPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem',
                   }}>
-                    🔒
+                    <Lock size={14} style={{ opacity: 0.4 }} />
                   </div>
                   <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
-                    <div style={{ fontWeight: 500, fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontWeight: 500, fontSize: '0.82rem', color: 'var(--text-tertiary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {group.groupName || 'مجموعة'}
                     </div>
-                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: 'var(--space-1)' }}>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)', marginTop: 'var(--space-1)' }}>
                       غير مضاف
                     </div>
                   </div>
@@ -650,23 +650,23 @@ export default function ChatPage() {
                   background: 'var(--bg-secondary)' 
                 }}
               >
-                <button onClick={() => setActiveConvId(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }} className="mobile-back-chat">
+                <button onClick={() => setActiveConvId(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer' }} className="mobile-back-chat">
                   <ArrowRight size={20} />
                 </button>
                 <div style={{
                   width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px dashed rgba(255,255,255,0.1)',
+                  background: 'var(--badge-bg)',
+                  border: '1px dashed var(--border-color)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  color: 'rgba(255,255,255,0.3)',
+                  color: 'var(--text-tertiary)',
                 }}>
-                  🔒
+                  <Lock size={14} />
                 </div>
                 <div style={{ flex: 1, textAlign: 'right' }}>
-                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
                     {activeConv.groupName || 'مجموعة'}
                   </div>
-                  <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-tertiary)', marginTop: '2px' }}>
                     غير مضاف إلى المجموعة
                   </div>
                 </div>
@@ -678,11 +678,11 @@ export default function ChatPage() {
                     width: '80px', height: '80px', borderRadius: '20px',
                     background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.12)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 20px', fontSize: '2rem',
+                    margin: '0 auto 20px',
                   }}>
-                    🔒
+                    <Lock size={32} style={{ color: 'var(--accent-amber)' }} />
                   </div>
-                  <h4 style={{ fontWeight: 700, fontSize: '1rem', color: 'rgba(255,255,255,0.7)', marginBottom: '10px' }}>
+                  <h4 style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)', marginBottom: '10px' }}>
                     {activeConv.groupName || 'مجموعة خاصة'}
                   </h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.7 }}>
@@ -739,13 +739,13 @@ export default function ChatPage() {
                     <div style={{
                       width: '38px', height: '38px', borderRadius: isGroup ? '10px' : '50%', flexShrink: 0,
                       background: activeConv.type === 'agent_member' ? 'rgba(16,185,129,0.1)' : isGroup ? 'var(--gradient-cyber)' : 'rgba(59,130,246,0.1)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '0.8rem',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.8rem',
                       border: activeConv.type === 'agent_member' ? '1px solid rgba(16,185,129,0.2)' : 'none'
                     }}>
-                      {isGroup ? '📢' : otherName?.substring(0, 2) || '??'}
+                      {isGroup ? <Megaphone size={18} /> : otherName?.substring(0, 2) || '??'}
                     </div>
                     <div style={{ flex: 1, textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'white' }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>
                         {isGroup ? activeConv.groupName || 'المجموعة' : otherName}
                       </div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
@@ -756,7 +756,7 @@ export default function ChatPage() {
                       <button 
                         onClick={() => setShowGroupSettings(true)} 
                         style={{
-                          background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', cursor: 'pointer',
+                          background: 'var(--sidebar-hover)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', cursor: 'pointer',
                           padding: '8px', borderRadius: '10px', display: 'flex', transition: 'all 0.2s'
                         }} 
                         className="chat-toggle-sidebar-button"
@@ -771,6 +771,9 @@ export default function ChatPage() {
 
             {/* Messaging Feed Scroll area */}
             <div 
+              role="log"
+              aria-live="polite"
+              aria-label="الرسائل"
               style={{ 
                 flex: 1, 
                 overflowY: 'auto', 
@@ -778,7 +781,7 @@ export default function ChatPage() {
                 display: 'flex', 
                 flexDirection: 'column', 
                 gap: '14px', 
-                background: 'rgba(5, 8, 16, 0.2)' 
+                background: 'var(--bg-primary)' 
               }}
               className="chat-messages-scroll"
             >
@@ -795,7 +798,7 @@ export default function ChatPage() {
                   return (
                     <div key={msg.id} style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
                       <div style={{
-                        background: 'rgba(255,255,255,0.03)', 
+                        background: 'var(--badge-bg)', 
                         border: '1px solid var(--border-color)',
                         borderRadius: '10px',
                         padding: '6px 16px', 
@@ -936,11 +939,14 @@ export default function ChatPage() {
 
       <style>{`
         .chat-list-hover-row:hover {
-          background: rgba(255, 255, 255, 0.02) !important;
+          background: var(--sidebar-hover) !important;
         }
         .chat-contacts-scroll::-webkit-scrollbar,
         .chat-messages-scroll::-webkit-scrollbar {
           width: 4px;
+        }
+        .chat-hover:hover {
+          background: var(--sidebar-hover) !important;
         }
         @media (max-width: 768px) {
           .chat-sidebar.hide-mobile { display: none !important; }

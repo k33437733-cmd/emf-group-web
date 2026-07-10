@@ -82,7 +82,7 @@ export default function ConversationList({
             <Users size={20} />
           </div>
           <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
-            <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'white' }}>مجموعة الإدارة العامة 📢</div>
+            <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'var(--text-primary)' }}>مجموعة الإدارة العامة</div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>تواصل جماعي مع كافة المدراء</div>
           </div>
         </div>
@@ -91,7 +91,7 @@ export default function ConversationList({
       {/* Conversations */}
       <div>
         {filtered.length === 0 ? (
-          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{emptyLabel}</div>
+              <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>{emptyLabel}</div>
         ) : filtered.map(conv => {
           const isActive = conv.id === activeId;
           const unread = conv.unreadCount?.[currentUid] || 0;
@@ -121,7 +121,7 @@ export default function ConversationList({
                 )}
               </div>
               <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
-                <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'white' }}>{otherName}</div>
+                <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'var(--text-primary)' }}>{otherName}</div>
                 <div style={{
                   fontSize: '0.75rem', color: 'var(--text-secondary)',
                   whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'

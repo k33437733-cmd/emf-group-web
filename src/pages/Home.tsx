@@ -297,7 +297,7 @@ export default function Home() {
             }}>
               <Globe size={24} />
             </div>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontWeight: 700, color: 'white' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
               تطوير مواقع وأنظمة الويب
             </h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.7 }}>
@@ -326,7 +326,7 @@ export default function Home() {
             }}>
               <Smartphone size={24} />
             </div>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontWeight: 700, color: 'white' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
               تطوير تطبيقات الهاتف
             </h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.7 }}>
@@ -355,7 +355,7 @@ export default function Home() {
             }}>
               <Cloud size={24} />
             </div>
-            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontWeight: 700, color: 'white' }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
               الحلول السحابية وإدارة الملفات
             </h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.7 }}>
@@ -378,7 +378,7 @@ export default function Home() {
             className="reveal-left active"
           >
             <div>
-              <h2 style={{ fontSize: '1.55rem', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
+              <h2 style={{ fontSize: '1.55rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>
                 أحدث الإضافات للمكتبة
               </h2>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
@@ -493,13 +493,13 @@ export default function Home() {
                           color: item.type === 'app' ? 'var(--accent-gold)' : 'white'
                         }}
                       >
-                        {item.type === 'video' ? 'فيديو 🎬' : item.type === 'app' ? 'تطبيق 📱' : 'ملف 📎'}
+                        {item.type === 'video' ? 'فيديو' : item.type === 'app' ? 'تطبيق' : 'ملف'}
                       </span>
                     </div>
 
                     {/* Content Body */}
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '8px' }}>
-                      <h4 style={{ fontSize: '0.96rem', fontWeight: 700, color: '#fff', marginBottom: '2px' }}>
+                      <h4 style={{ fontSize: '0.96rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>
                         {item.title}
                       </h4>
                       <p style={{

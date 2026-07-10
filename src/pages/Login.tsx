@@ -98,7 +98,7 @@ export default function Login() {
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginBottom: '14px', direction: 'ltr' }}>
-            <span style={{ color: '#fff', fontWeight: 900, fontSize: '1.5rem', letterSpacing: '0.5px' }}>EMF</span>
+            <span style={{ color: 'var(--text-primary)', fontWeight: 900, fontSize: '1.5rem', letterSpacing: '0.5px' }}>EMF</span>
             <span style={{
               background: 'var(--gradient-gold)',
               WebkitBackgroundClip: 'text',
@@ -107,7 +107,7 @@ export default function Login() {
             }}>GROUP</span>
           </div>
           
-          <h2 style={{ fontSize: '1.45rem', fontWeight: 800, marginBottom: '8px', color: '#fff' }}>
+          <h2 style={{ fontSize: '1.45rem', fontWeight: 800, marginBottom: '8px', color: 'var(--text-primary)' }}>
             {!showForgot ? (isLogin ? 'تسجيل الدخول' : 'إنشاء حساب جديد') : 'استعادة كلمة المرور'}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', lineHeight: 1.5 }}>

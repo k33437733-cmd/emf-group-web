@@ -95,7 +95,7 @@ export default function Content() {
       </div>
 
       {/* Search & Filters */}
-      <div className="card-base" style={{ padding: 'var(--space-4) var(--space-5)', marginBottom: 'var(--space-8)' }}>
+      <div className="card-base" role="search" aria-label="بحث في المحتوى" style={{ padding: 'var(--space-4) var(--space-5)', marginBottom: 'var(--space-8)' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ position: 'relative', width: '100%', maxWidth: '360px' }}>
             <input
@@ -105,6 +105,7 @@ export default function Content() {
               placeholder="بحث باسم الملف..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              aria-label="بحث باسم الملف"
             />
             <Search size={16} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
             {search && (
@@ -117,10 +118,11 @@ export default function Content() {
           </div>
           <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
             {filterButtons.map(btn => (
-              <button
-                key={btn.id}
-                onClick={() => setSelectedType(btn.id)}
-                style={{
+                <button
+                  key={btn.id}
+                  onClick={() => setSelectedType(btn.id)}
+                  aria-pressed={selectedType === btn.id}
+                  style={{
                   display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
                   padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--text-xs)', fontWeight: 600,
                   height: '36px', borderRadius: 'var(--radius-md)',
@@ -190,7 +192,7 @@ export default function Content() {
                     borderRadius: 'var(--radius-sm)', fontSize: '10px', fontWeight: 700,
                     border: '1px solid rgba(255,255,255,0.06)', color: c.icon, zIndex: 2,
                   }}>
-                    {item.type === 'video' ? '🎬 فيديو' : item.type === 'app' ? '📱 تطبيق' : '📎 ملف'}
+                    {item.type === 'video' ? 'فيديو' : item.type === 'app' ? 'تطبيق' : 'ملف'}
                   </span>
                 </div>
 
@@ -241,12 +243,12 @@ export default function Content() {
 
       {/* Video Lightbox */}
       {activeVideoUrl && createPortal(
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(5,8,16,0.95)',
+        <div role="dialog" aria-modal="true" aria-label="مشغل الفيديو" style={{
+          position: 'fixed', inset: 0, background: 'var(--bg-overlay)',
           backdropFilter: 'blur(8px)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           padding: 'var(--space-6)',
-        }} onClick={() => setActiveVideoUrl(null)}>
+        }} onClick={() => setActiveVideoUrl(null)} onKeyDown={(e) => { if (e.key === 'Escape') setActiveVideoUrl(null); }}>
           <div style={{ width: '100%', maxWidth: '850px', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}
             onClick={(e) => e.stopPropagation()} className="animate-scale">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

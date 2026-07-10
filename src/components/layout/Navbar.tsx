@@ -1,309 +1,386 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
-import { Bell, LogOut, Sun, Moon, Menu, Search, Settings, ChevronDown } from 'lucide-react';
-import { subscribeToNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../../firebase/db';
-import type { SystemNotification } from '../../types';
+import { UserAvatar } from '../ui/UIComponents';
+import { subscribeUnreadCount } from '../../firebase/db';
+import NotificationCenter from '../notifications/NotificationCenter';
+import {
+  Menu, Search, Bell, Sun, Moon, Settings, Plus,
+  PanelLeftClose, ChevronDown, LogOut, User, Shield,
+  Palette, X, FileText, FolderKanban, MessageSquare,
+} from 'lucide-react';
+import styles from './Navbar.module.css';
 
 interface NavbarProps {
-  onToggleSidebar?: () => void;
+  onToggleSidebar: () => void;
 }
+
+interface BreadcrumbItem {
+  label: string;
+  path?: string;
+}
+
+interface PageConfig {
+  title: string;
+  breadcrumbs: BreadcrumbItem[];
+}
+
+const pageConfigs: Record<string, PageConfig> = {
+  '/dashboard': { title: 'لوحة التحكم', breadcrumbs: [{ label: 'الرئيسية' }, { label: 'لوحة التحكم' }] },
+  '/content': { title: 'المكتبة الرقمية', breadcrumbs: [{ label: 'الرئيسية', path: '/dashboard' }, { label: 'المكتبة الرقمية' }] },
+  '/chat': { title: 'الشات الداخلي', breadcrumbs: [{ label: 'الرئيسية', path: '/dashboard' }, { label: 'التواصل' }, { label: 'الشات الداخلي' }] },
+  '/support': { title: 'الدعم الفني', breadcrumbs: [{ label: 'الرئيسية', path: '/dashboard' }, { label: 'التواصل' }, { label: 'الدعم الفني' }] },
+  '/projects': { title: 'المشاريع', breadcrumbs: [{ label: 'الرئيسية', path: '/dashboard' }, { label: 'المشاريع' }] },
+  '/admin/release-notes': { title: 'سجل الإصدارات', breadcrumbs: [{ label: 'الرئيسية', path: '/dashboard' }, { label: 'الإصدارات' }, { label: 'سجل الإصدارات' }] },
+};
+
+const roleLabels: Record<string, string> = {
+  super_admin: 'مدير عام',
+  admin: 'مدير',
+  agent: 'وكيل',
+  user: 'عضو',
+};
+
+const roleClasses: Record<string, string> = {
+  super_admin: styles.roleSuperAdmin,
+  admin: styles.roleAdmin,
+  agent: styles.roleAgent,
+  user: styles.roleUser,
+};
+
+const dotClasses: Record<string, string> = {
+  online: styles.onlineDot,
+  away: styles.awayDot,
+  offline: styles.offlineDot,
+};
 
 export default function Navbar({ onToggleSidebar }: NavbarProps) {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
+  const { appliedTheme, toggleTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
 
-  const [notifOpen, setNotifOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [notifications, setNotifications] = useState<SystemNotification[]>([]);
-  const notifRef = useRef<HTMLDivElement>(null);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [quickOpen, setQuickOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [bellShake, setBellShake] = useState(false);
+
   const profileRef = useRef<HTMLDivElement>(null);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const quickRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const prevUnreadRef = useRef(unreadCount);
 
   useEffect(() => {
     if (!user) return;
-    const unsub = subscribeToNotifications(user.uid, setNotifications);
+    const unsub = subscribeUnreadCount(user.uid, setUnreadCount);
     return () => unsub();
   }, [user]);
 
   useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
-      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
+    if (unreadCount > prevUnreadRef.current && prevUnreadRef.current !== 0) {
+      setBellShake(true);
+      const t = setTimeout(() => setBellShake(false), 600);
+      prevUnreadRef.current = unreadCount;
+      return () => clearTimeout(t);
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    prevUnreadRef.current = unreadCount;
+  }, [unreadCount]);
+
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+      if (quickRef.current && !quickRef.current.contains(e.target as Node)) setQuickOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
   }, []);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+        e.preventDefault();
+        if (window.innerWidth < 768) {
+          setMobileSearchOpen(true);
+        } else {
+          searchInputRef.current?.focus();
+        }
+      }
+      if (e.key === 'Escape') {
+        setProfileOpen(false);
+        setNotifOpen(false);
+        setQuickOpen(false);
+        setMobileSearchOpen(false);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
-  const handleMarkAllRead = async () => {
-    if (!user) return;
-    await markAllNotificationsAsRead(user.uid);
-  };
+  const config = pageConfigs[location.pathname] || pageConfigs['/dashboard'];
 
-  const handleNotifClick = async (notif: SystemNotification) => {
-    await markNotificationAsRead(notif.id);
-    setNotifOpen(false);
-    if (notif.link) navigate(notif.link);
-  };
+  const handleLogout = useCallback(async () => {
+    setProfileOpen(false);
+    await logout();
+  }, [logout]);
 
-  const pageTitle = (() => {
-    switch (location.pathname) {
-      case '/dashboard': return 'لوحة التحكم';
-      case '/content': return 'المكتبة الرقمية';
-      case '/chat': return 'الشات الداخلي';
-      case '/support': return 'الدعم الفني';
-      case '/projects': return 'المشاريع';
-      default: return 'لوحة التحكم';
-    }
-  })();
+  const handleNavigate = useCallback((path: string) => {
+    setProfileOpen(false);
+    navigate(path);
+  }, [navigate]);
 
-  const sharedMenuStyle = {
-    background: 'var(--bg-elevated)',
-    border: '1px solid var(--border-color)',
-    borderRadius: 'var(--radius-lg)',
-    boxShadow: 'var(--shadow-elevated)',
-    padding: 'var(--space-2)',
-    zIndex: 1050,
-  };
+  const roleLabel = roleLabels[user?.role || ''] || 'عضو';
+  const roleClass = roleClasses[user?.role || ''] || styles.roleUser;
+  const dotClass = user ? dotClasses[user.onlineStatus] || styles.offlineDot : '';
 
   return (
-    <header style={{
-      height: 'var(--navbar-height)',
-      background: 'var(--navbar-bg)',
-      backdropFilter: 'blur(16px)',
-      WebkitBackdropFilter: 'blur(16px)',
-      borderBottom: '1px solid var(--border-color)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      padding: '0 var(--space-4)',
-      paddingRight: 'var(--space-6)',
-      direction: 'rtl',
-      position: 'sticky',
-      top: 0,
-      zIndex: 1020,
-      transition: 'background var(--transition-base)',
-    }}>
-      {/* Right side: menu + page title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 2vw, 16px)' }}>
-        <button
-          onClick={onToggleSidebar}
-          style={{
-            background: 'transparent', border: 'none',
-            color: 'var(--text-secondary)', cursor: 'pointer',
-            padding: 'var(--space-2)', display: 'flex', borderRadius: 'var(--radius-md)',
-            transition: 'var(--transition-base)',
-          }}
-          className="navbar-icon-btn"
-          aria-label="فتح القائمة"
-        >
-          <Menu size={20} />
-        </button>
-        <h1 style={{
-          fontSize: 'clamp(0.875rem, 2vw, 1.125rem)',
-          fontWeight: 700,
-          color: 'var(--text-primary)',
-          margin: 0,
-          whiteSpace: 'nowrap',
-        }}>{pageTitle}</h1>
-      </div>
-
-      {/* Left side: actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(2px, 0.75vw, 8px)' }}>
-        {/* Search */}
-        <button
-          onClick={() => setSearchOpen(!searchOpen)}
-          style={{
-            background: 'transparent', border: 'none',
-            color: 'var(--text-secondary)', cursor: 'pointer',
-            padding: 'var(--space-2)', display: 'flex', borderRadius: 'var(--radius-md)',
-            transition: 'var(--transition-base)',
-          }}
-          className="navbar-icon-btn"
-          aria-label="بحث"
-        >
-          <Search size={19} />
-        </button>
-
-        {/* Theme toggle — hidden on smallest screens inside navbar, still in sidebar */}
-        <button
-          onClick={toggleTheme}
-          style={{
-            background: 'transparent', border: 'none',
-            color: 'var(--text-secondary)', cursor: 'pointer',
-            padding: 'var(--space-2)', display: 'flex', borderRadius: 'var(--radius-md)',
-            transition: 'var(--transition-base)',
-          }}
-          className="navbar-icon-btn d-md-none"
-          aria-label={theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
-        >
-          {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
-        </button>
-
-        {/* Notifications */}
-        <div ref={notifRef} style={{ position: 'relative' }}>
+    <header className={styles.navbar}>
+      <div className={styles.inner}>
+        {/* ── Left section ── */}
+        <div className={styles.sectionLeft}>
           <button
-            onClick={() => setNotifOpen(!notifOpen)}
-            style={{
-              background: 'transparent', border: 'none',
-              color: 'var(--text-secondary)', cursor: 'pointer',
-              padding: 'var(--space-2)', display: 'flex', borderRadius: 'var(--radius-md)',
-              position: 'relative', transition: 'var(--transition-base)',
-            }}
-            className="navbar-icon-btn"
-            aria-label={`الإشعارات${unreadCount > 0 ? ` (${unreadCount} غير مقروء)` : ''}`}
+            className={styles.sidebarToggle}
+            onClick={onToggleSidebar}
+            aria-label="فتح القائمة الجانبية"
+            aria-controls="sidebar-nav"
           >
-            <Bell size={19} />
-            {unreadCount > 0 && (
-              <span style={{
-                position: 'absolute', top: '2px', left: '2px',
-                background: 'var(--accent-red)', color: 'white',
-                borderRadius: '50%', width: '16px', height: '16px',
-                fontSize: '10px', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontWeight: 'bold',
-                boxShadow: '0 0 0 2px var(--navbar-bg)',
-              }}>{unreadCount > 9 ? '9+' : unreadCount}</span>
-            )}
+            <Menu size={20} />
           </button>
 
-          {notifOpen && (
-            <div style={{
-              ...sharedMenuStyle,
-              position: 'absolute', top: '48px', left: '0',
-              width: 'min(360px, 90vw)', maxHeight: '460px', overflowY: 'auto',
-              animation: 'scaleIn 0.18s ease',
-            }}>
-              <div style={{
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                padding: 'var(--space-2) var(--space-3) var(--space-3)',
-                borderBottom: '1px solid var(--border-color)',
-              }}>
-                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 700, color: 'var(--text-primary)' }}>
-                  الإشعارات
-                  {unreadCount > 0 && (
-                    <span style={{ color: 'var(--text-tertiary)', fontWeight: 500, marginRight: 'var(--space-1)' }}>
-                      ({unreadCount})
-                    </span>
-                  )}
-                </span>
-                {unreadCount > 0 && (
-                  <button onClick={handleMarkAllRead} style={{
-                    background: 'none', border: 'none',
-                    color: 'var(--accent-blue)', fontSize: 'var(--text-xs)',
-                    cursor: 'pointer', fontWeight: 600,
-                  }}>قراءة الكل</button>
-                )}
+          {user && (
+            <div
+              ref={profileRef}
+              className={styles.userSection}
+              onClick={() => setProfileOpen(p => !p)}
+              role="button"
+              tabIndex={0}
+              aria-label="قائمة الملف الشخصي"
+              aria-expanded={profileOpen}
+            >
+              <div className={styles.avatarWrap}>
+                <UserAvatar name={user.name} size={38} />
+                <span className={`${styles.onlineDot} ${dotClass}`} />
               </div>
-              {notifications.length === 0 ? (
-                <div style={{ padding: 'var(--space-8)', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)' }}>
-                  لا توجد إشعارات
-                </div>
-              ) : (
-                notifications.map(n => (
-                  <div key={n.id} onClick={() => handleNotifClick(n)} style={{
-                    padding: 'var(--space-3) var(--space-4)', cursor: 'pointer',
-                    background: n.read ? 'transparent' : 'var(--sidebar-active)',
-                    borderBottom: '1px solid var(--border-light)',
-                    textAlign: 'right', transition: 'var(--transition-fast)',
-                  }} className="notif-item">
-                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: n.read ? 600 : 700, color: 'var(--text-primary)' }}>
-                      {n.title}
-                    </div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginTop: '2px' }}>{n.body}</div>
-                    <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', marginTop: 'var(--space-1)' }}>
-                      {new Date(n.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
+              <div className={styles.userInfo}>
+                <span className={styles.userName}>{user.name}</span>
+                <span className={`${styles.roleBadge} ${roleClass}`}>{roleLabel}</span>
+              </div>
+              <span className={`${styles.dropdownArrow} ${profileOpen ? styles.dropdownArrowOpen : ''}`}>
+                <ChevronDown size={14} />
+              </span>
+
+              {profileOpen && (
+                <div className={styles.profileDropdown}>
+                  <div className={styles.dropdownHeader}>
+                    <div className={styles.dropdownHeaderName}>{user.name}</div>
+                    <div className={styles.dropdownHeaderEmail}>{user.email}</div>
                   </div>
-                ))
+                  <div style={{ padding: 'var(--space-1)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <button className={styles.dropdownItem} onClick={() => handleNavigate('/dashboard')}>
+                      <User size={15} />
+                      الملف الشخصي
+                    </button>
+                    <button className={styles.dropdownItem} onClick={() => handleNavigate('/settings')}>
+                      <Settings size={15} />
+                      إعدادات الحساب
+                    </button>
+                    <button className={styles.dropdownItem} onClick={() => handleNavigate('/settings?tab=appearance')}>
+                      <Palette size={15} />
+                      المظهر
+                    </button>
+                    <button className={styles.dropdownItem} onClick={() => handleNavigate('/settings?tab=security')}>
+                      <Shield size={15} />
+                      الأمان
+                    </button>
+                  </div>
+                  <div className={styles.dropdownDivider} />
+                  <div style={{ padding: 'var(--space-1)' }}>
+                    <button
+                      className={`${styles.dropdownItem} ${styles.dropdownItemDanger}`}
+                      onClick={handleLogout}
+                    >
+                      <LogOut size={15} />
+                      تسجيل الخروج
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           )}
         </div>
 
-        {/* Profile dropdown */}
-        {user && (
-          <div ref={profileRef} style={{ position: 'relative' }}>
-            <button
-              onClick={() => setProfileOpen(!profileOpen)}
-              style={{
-                background: 'transparent', border: 'none', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-                padding: 'var(--space-1)', borderRadius: 'var(--radius-md)',
-                transition: 'var(--transition-base)',
-              }}
-              className="navbar-profile-btn"
-              aria-label="قائمة الملف الشخصي"
-            >
-              <div style={{
-                width: '34px', height: '34px', borderRadius: '50%',
-                background: 'var(--gradient-cyber)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: 'white', fontWeight: 'bold', fontSize: 'var(--text-xs)',
-                flexShrink: 0,
-              }}>
-                {user.name?.charAt(0) || '?'}
-              </div>
-              <div className="profile-name-desktop" style={{ display: 'flex', flexDirection: 'column', textAlign: 'right', lineHeight: 1.2 }}>
-                <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>{user.name}</span>
-                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
-                  {user.role === 'super_admin' ? 'مدير عام' : user.role === 'admin' ? 'مدير' : 'عضو'}
+        {/* ── Center section ── */}
+        <div className={styles.sectionCenter}>
+          <div className={styles.titleArea}>
+            <div className={styles.breadcrumbs}>
+              {config.breadcrumbs.map((item, i) => (
+                <span key={i} className={styles.breadcrumbItem}>
+                  {i > 0 && <span className={styles.breadcrumbSeparator}>/</span>}
+                  {item.path ? (
+                    <span className={styles.breadcrumbLink} onClick={() => navigate(item.path!)}>
+                      {item.label}
+                    </span>
+                  ) : (
+                    <span className={styles.breadcrumbCurrent}>{item.label}</span>
+                  )}
                 </span>
-              </div>
-              <ChevronDown className="profile-chevron-desktop" size={14} color="var(--text-tertiary)" style={{ transition: 'var(--transition-base)', transform: profileOpen ? 'rotate(180deg)' : 'none' }} />
+              ))}
+            </div>
+            <h2 className={styles.pageTitle}>{config.title}</h2>
+          </div>
+
+          <div
+            className={styles.searchBar}
+            onClick={() => searchInputRef.current?.focus()}
+            role="search"
+            aria-label="بحث سريع"
+          >
+            <span className={styles.searchIcon}>
+              <Search size={15} />
+            </span>
+            <input
+              ref={searchInputRef}
+              className={styles.searchInput}
+              type="text"
+              placeholder="بحث سريع..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              aria-label="بحث سريع"
+            />
+            <kbd className={styles.searchKbd}>
+              <span>⌘</span>K
+            </kbd>
+          </div>
+        </div>
+
+        {/* ── Right section ── */}
+        <div className={styles.sectionRight}>
+          {/* Notification bell */}
+          <div ref={notifRef} className={styles.notifWrapper}>
+            <button
+              className={`${styles.navIconBtn} ${bellShake ? styles.bellShake : ''}`}
+              onClick={() => setNotifOpen(o => !o)}
+              aria-label={`الإشعارات${unreadCount > 0 ? ` (${unreadCount} غير مقروء)` : ''}`}
+            >
+              <Bell size={19} />
+              {unreadCount > 0 && (
+                <span className={`${styles.notifBadge} ${styles.notifBadgePulse}`}>
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
             </button>
 
-            {profileOpen && (
-              <div style={{
-                ...sharedMenuStyle,
-                position: 'absolute', top: '48px', left: '0', width: '220px',
-                animation: 'scaleIn 0.18s ease',
-              }}>
-                <div style={{ padding: 'var(--space-3)', textAlign: 'center', borderBottom: '1px solid var(--border-color)' }}>
-                  <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>{user.name}</div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginTop: '2px' }}>{user.email}</div>
-                </div>
-                <div style={{ padding: 'var(--space-1)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                  <button onClick={() => { setProfileOpen(false); navigate('/dashboard'); }} style={{
-                    display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-                    padding: 'var(--space-2) var(--space-3)', border: 'none',
-                    background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer',
-                    borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)',
-                    transition: 'var(--transition-fast)', textAlign: 'right',
-                  }} className="dropdown-item-custom">
-                    <Settings size={15} />
-                    الإعدادات
-                  </button>
-                  <button onClick={() => { setProfileOpen(false); logout(); }} style={{
-                    display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
-                    padding: 'var(--space-2) var(--space-3)', border: 'none',
-                    background: 'transparent', color: 'var(--accent-red)', cursor: 'pointer',
-                    borderRadius: 'var(--radius-sm)', fontSize: 'var(--text-sm)',
-                    transition: 'var(--transition-fast)', textAlign: 'right',
-                  }} className="dropdown-item-custom">
-                    <LogOut size={15} />
-                    تسجيل الخروج
-                  </button>
-                </div>
+            <NotificationCenter
+              isOpen={notifOpen}
+              onClose={() => setNotifOpen(false)}
+            />
+          </div>
+
+          {/* Theme toggle */}
+          <button
+            className={styles.navIconBtn}
+            onClick={toggleTheme}
+            aria-label={appliedTheme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
+          >
+            {appliedTheme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+          </button>
+
+          {/* Settings */}
+          <button
+            className={styles.navIconBtn}
+            onClick={() => navigate('/settings')}
+            aria-label="الإعدادات"
+          >
+            <Settings size={19} />
+          </button>
+
+          {/* Quick actions */}
+          <div ref={quickRef} className={styles.quickWrapper}>
+            <button
+              className={styles.navIconBtn}
+              onClick={() => setQuickOpen(o => !o)}
+              aria-label="إجراءات سريعة"
+            >
+              <Plus size={19} />
+            </button>
+
+            {quickOpen && (
+              <div className={styles.quickActionsDropdown}>
+                <button
+                  className={styles.dropdownItem}
+                  onClick={() => { setQuickOpen(false); navigate('/content'); }}
+                >
+                  <FileText size={15} />
+                  إضافة محتوى
+                </button>
+                <button
+                  className={styles.dropdownItem}
+                  onClick={() => { setQuickOpen(false); navigate('/projects'); }}
+                >
+                  <FolderKanban size={15} />
+                  مشروع جديد
+                </button>
+                <button
+                  className={styles.dropdownItem}
+                  onClick={() => { setQuickOpen(false); navigate('/chat'); }}
+                >
+                  <MessageSquare size={15} />
+                  رسالة جديدة
+                </button>
               </div>
             )}
           </div>
-        )}
+
+          {/* Sidebar collapse (desktop) */}
+          <button
+            className={`${styles.navIconBtn} ${styles.sidebarCollapseDesk}`}
+            onClick={onToggleSidebar}
+            aria-label="طي القائمة"
+          >
+            <PanelLeftClose size={19} />
+          </button>
+
+          {/* Mobile search trigger */}
+          <button
+            className={`${styles.navIconBtn} ${styles.searchMobileTrigger}`}
+            onClick={() => setMobileSearchOpen(true)}
+            aria-label="بحث"
+          >
+            <Search size={19} />
+          </button>
+        </div>
       </div>
 
-      <style>{`
-        @media (max-width: 767px) {
-          .profile-name-desktop { display: none !important; }
-          .profile-chevron-desktop { display: none !important; }
-        }
-        @media (min-width: 768px) {
-          .d-md-none { display: none !important; }
-        }
-      `}</style>
+      {/* ── Mobile search overlay ── */}
+      {mobileSearchOpen && (
+        <div className={styles.mobileSearchOverlay}>
+          <div className={styles.mobileSearchHeader}>
+            <input
+              className={styles.mobileSearchInput}
+              type="text"
+              placeholder="ابحث عن صفحة..."
+              autoFocus
+              onChange={e => setSearchQuery(e.target.value)}
+              aria-label="بحث"
+            />
+            <button
+              className={styles.navIconBtn}
+              onClick={() => setMobileSearchOpen(false)}
+              aria-label="إغلاق البحث"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className={styles.mobileSearchHint}>
+            ابدأ الكتابة للبحث...
+          </div>
+        </div>
+      )}
     </header>
   );
 }

@@ -181,6 +181,9 @@ export async function markNotificationAsRead(id: string) {
   await updateDoc(docRef, { read: true });
 }
 
+export { subscribeUnreadCount, createNotification, createNotificationsForMany, subscribeNotificationsFiltered, listNotifications } from './db/notifications';
+export { subscribeToReleases, createRelease, deleteRelease } from './db/release_notes';
+
 export async function markAllNotificationsAsRead(recipientId: string) {
   const q = query(
     collection(db, 'notifications'), 

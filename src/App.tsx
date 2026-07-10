@@ -15,6 +15,8 @@ const Content = lazy(() => import('./pages/Content'));
 const ChatPage = lazy(() => import('./pages/ChatPage'));
 const SupportChatPage = lazy(() => import('./pages/SupportChatPage'));
 const Projects = lazy(() => import('./pages/Projects'));
+const SettingsPage = lazy(() => import('./pages/Settings'));
+const ReleaseNotes = lazy(() => import('./pages/ReleaseNotes'));
 
 function PageLoader() {
   return (
@@ -34,9 +36,6 @@ export default function App() {
             <UpdateSystem 
               config={{
                 checkInterval: 5,
-                showDelayedBanner: true,
-                autoReloadOnCritical: true,
-                notifyUserOnMinor: true,
                 enableServiceWorker: true
               }}
             />
@@ -52,6 +51,8 @@ export default function App() {
                     <Route path="/chat" element={<ChatPage />} />
                     <Route path="/support" element={<SupportChatPage />} />
                     <Route path="/projects" element={<Projects />} />
+                    <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/admin/release-notes" element={<ReleaseNotes />} />
                   </Route>
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

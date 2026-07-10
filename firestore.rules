@@ -74,6 +74,12 @@ service cloud.firestore {
       allow delete: if isAuth() && resource.data.recipientId == request.auth.uid;
     }
 
+    // Release notes
+    match /release_notes/{noteId} {
+      allow read: if isAuth();
+      allow write: if isAdmin();
+    }
+
     // Audit logs
     match /audit_logs/{logId} {
       allow read: if isSuperAdmin();

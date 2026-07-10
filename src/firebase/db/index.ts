@@ -8,11 +8,33 @@ export * from './agent_status';
 export * from './conversations';
 export * from './messages';
 export * from './tickets';
-export * from './notifications';
 export * from './content';
 export * from './audit';
 export * from './canned_responses';
 export * from './projects';
+export * from './release_notes';
+
+// ─── Notifications (manual re-export for backward-compat aliases) ──────────
+export {
+  getNotificationById,
+  listNotifications,
+  subscribeToNotifications,
+  subscribeNotificationsFiltered,
+  subscribeNotificationsPaginated,
+  getUnreadCount,
+  subscribeUnreadCount,
+  createNotification,
+  createNotificationsForMany,
+  markAsRead,
+  markAllAsRead,
+  markAsRead as markNotificationAsRead,
+  markAllAsRead as markAllNotificationsAsRead,
+  deleteNotification,
+  archiveNotification,
+  unarchiveNotification,
+  purgeExpiredNotifications,
+  clearArchivedNotifications,
+} from './notifications';
 
 // ─── Backward-compatible aliases for legacy modules ─────────────────────────
 export {

@@ -90,9 +90,9 @@ export default function CreateGroupModal({ allAdmins, onClose, onCreate }: Creat
               {avatar ? (
                 <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
               ) : uploading ? (
-                <span style={{ fontSize: '0.7rem', color: 'white' }}>...</span>
+                <span style={{ fontSize: '0.7rem', color: '#fff' }}>...</span>
               ) : (
-                <Image size={24} color="white" />
+                <Image size={24} color="#fff" />
               )}
             </div>
           </label>

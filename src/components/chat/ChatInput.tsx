@@ -126,11 +126,11 @@ export default function ChatInput({ onSend, placeholder = 'اكتب رسالتك
 
         {/* Emoji */}
         <div ref={emojiRef} style={{ position: 'relative' }}>
-          <button type="button" onClick={() => setShowEmoji(s => !s)} style={{
-            width: '42px', height: '42px', borderRadius: '10px', border: '1px solid var(--border-color)',
-            background: showEmoji ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.04)',
-            color: showEmoji ? 'var(--accent-blue)' : 'var(--text-secondary)', cursor: 'pointer'
-          }}>
+            <button type="button" onClick={() => setShowEmoji(s => !s)} style={{
+              width: '42px', height: '42px', borderRadius: '10px', border: '1px solid var(--border-color)',
+              background: showEmoji ? 'var(--sidebar-active)' : 'transparent',
+              color: showEmoji ? 'var(--accent-blue)' : 'var(--text-secondary)', cursor: 'pointer'
+            }}>
             <Smile size={18} />
           </button>
           {showEmoji && (
@@ -155,7 +155,7 @@ export default function ChatInput({ onSend, placeholder = 'اكتب رسالتك
           <input type="file" accept="image/*" multiple ref={fileRef} onChange={handleFilePick} style={{ display: 'none' }} />
           <button type="button" onClick={() => fileRef.current?.click()} style={{
             width: '42px', height: '42px', borderRadius: '10px', border: '1px solid var(--border-color)',
-            background: 'rgba(255,255,255,0.04)', color: 'var(--text-secondary)', cursor: 'pointer'
+            background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer'
           }}>
             <Paperclip size={18} />
           </button>

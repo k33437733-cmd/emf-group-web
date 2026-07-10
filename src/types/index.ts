@@ -8,3 +8,4 @@ export * from './notification';
 export * from './content';
 export * from './audit';
 export * from './project';
+export * from './release';

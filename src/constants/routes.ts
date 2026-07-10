@@ -19,10 +19,14 @@ export const ROUTES = {
   ADMIN_CANNED:     '/admin/canned-responses',
   ADMIN_AUDIT:      '/admin/audit',
   ADMIN_REPORTS:    '/admin/reports',
+  ADMIN_RELEASE_NOTES: '/admin/release-notes',
 
   // Agent sub-pages
   AGENT_QUEUE:      '/agent/queue',
   AGENT_TICKET:     '/agent/ticket/:id',
+
+  // Settings
+  SETTINGS:         '/settings',
 } as const;
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES];

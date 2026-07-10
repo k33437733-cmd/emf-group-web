@@ -11,7 +11,7 @@ export function Loader({ size = 28, color = '#3b82f6' }: LoaderProps) {
         width: size,
         height: size,
         borderRadius: '50%',
-        border: `3px solid rgba(255, 255, 255, 0.05)`,
+        border: `3px solid var(--border-color)`,
         borderTopColor: color,
         display: 'inline-block'
       }}

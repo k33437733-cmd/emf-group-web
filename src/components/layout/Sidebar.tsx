@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
 import {
   LayoutDashboard, FileText, MessageSquare, HeadphonesIcon,
-  FolderKanban, ChevronLeft, LogOut, Sun, Moon,
+  FolderKanban, ChevronLeft, LogOut, Sun, Moon, Megaphone,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -15,7 +15,7 @@ interface SidebarProps {
 
 export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { appliedTheme, toggleTheme } = useTheme();
   const location = useLocation();
 
   const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
@@ -47,6 +47,13 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
         { path: '/projects', label: 'المشاريع', icon: FolderKanban, adminOnly: false },
       ],
     },
+    {
+      label: 'الإصدارات',
+      adminOnly: true,
+      items: [
+        { path: '/admin/release-notes', label: 'سجل الإصدارات', icon: Megaphone, adminOnly: true },
+      ],
+    },
   ];
 
   const visibleSections = navSections.filter(s => {
@@ -68,12 +75,14 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       {mobileOpen && (
         <div
           onClick={onMobileClose}
+          onKeyDown={(e) => { if (e.key === 'Escape') onMobileClose?.(); }}
+          role="presentation"
           style={{
             position: 'fixed', inset: 0, zIndex: 1031,
             background: 'var(--bg-overlay)',
             animation: 'fadeIn 0.2s ease',
           }}
-          aria-hidden="true"
+          tabIndex={-1}
         />
       )}
 
@@ -136,6 +145,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
           )}
           <button
             onClick={onToggle}
+            onKeyDown={(e) => { if (e.key === 'Escape') onMobileClose?.(); }}
             style={{
               background: 'transparent',
               border: 'none',
@@ -148,7 +158,6 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
               justifyContent: 'center',
               transition: 'var(--transition-base)',
               flexShrink: 0,
-              opacity: 0.6,
             }}
             className="sidebar-toggle-btn"
             aria-label={collapsed ? 'توسيع القائمة' : 'طي القائمة'}
@@ -249,10 +258,11 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
               width: collapsed ? '40px' : 'auto',
               justifyContent: 'center',
             }}
-            aria-label={theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
+            className="sidebar-theme-btn"
+            aria-label={appliedTheme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
           >
-            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            {!collapsed && <span style={{ fontSize: 'var(--text-xs)' }}>{theme === 'dark' ? 'فاتح' : 'داكن'}</span>}
+            {appliedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {!collapsed && <span style={{ fontSize: 'var(--text-xs)' }}>{appliedTheme === 'dark' ? 'فاتح' : 'داكن'}</span>}
           </button>
 
           {/* User */}
@@ -308,7 +318,12 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
 
       <style>{`
         .sidebar-toggle-btn:hover {
+          color: var(--sidebar-text-active) !important;
           opacity: 1 !important;
+        }
+        .sidebar-theme-btn:hover {
+          border-color: var(--border-hover) !important;
+          color: var(--sidebar-text-active) !important;
         }
         @media (max-width: 1023px) {
           aside[style*="position: fixed"] {

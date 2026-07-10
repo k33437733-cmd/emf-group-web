@@ -9,54 +9,64 @@ interface StatCardProps {
   value:       string | number;
   icon:        LucideIcon;
   colorClass?: 'blue' | 'green' | 'purple' | 'amber' | 'danger' | 'info' | 'gold' | 'orange';
-  trend?:      number;    // positive = up, negative = down
+  trend?:      number;
   subtitle?:   string;
   loading?:    boolean;
 }
 
+const accentMap: Record<string, string> = {
+  blue: '#3b82f6', green: '#10b981', purple: '#8b5cf6', amber: '#f59e0b',
+  danger: '#ef4444', info: '#3b82f6', gold: '#f1c40f', orange: '#f97316',
+};
+
 export function StatCard({ title, value, icon: Icon, colorClass = 'blue', trend, subtitle, loading }: StatCardProps) {
   if (loading) {
     return (
-      <div className="card-base p-5" style={{ gap: '12px', display: 'flex', flexDirection: 'column' }}>
-        <div className="flex-between">
-          <div className="skeleton skeleton-title" style={{ width: '50%' }} />
-          <div className="skeleton skeleton-circle" style={{ width: 44, height: 44 }} />
+      <div className="card-base" style={{ padding: 'var(--space-5)', gap: 'var(--space-3)', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div className="skeleton" style={{ width: '50%', height: 14, borderRadius: 'var(--radius-sm)' }} />
+          <div className="skeleton" style={{ width: 44, height: 44, borderRadius: '50%' }} />
         </div>
-        <div className="skeleton" style={{ height: 36, width: '60%', borderRadius: 8 }} />
-        <div className="skeleton skeleton-text-sm" style={{ width: '40%' }} />
+        <div className="skeleton" style={{ height: 36, width: '60%', borderRadius: 'var(--radius-sm)' }} />
+        <div className="skeleton" style={{ width: '40%', height: 12, borderRadius: 'var(--radius-sm)' }} />
       </div>
     );
   }
 
   const trendIsPositive = trend !== undefined && trend >= 0;
+  const accent = accentMap[colorClass] || accentMap.blue;
 
   return (
-    <div className={`card-base card-hover card-accent-${colorClass} anim-fade-up`} style={{ padding: '20px 22px' }}>
-      <div className="flex-between" style={{ marginBottom: 14 }}>
+    <div className="card-base" style={{ padding: 'var(--space-5) var(--space-6)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--space-4)' }}>
         <div>
-          <div className="text-sm text-2" style={{ marginBottom: 2 }}>{title}</div>
-          {subtitle && <div className="text-xs text-3">{subtitle}</div>}
+          <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: '2px' }}>{title}</div>
+          {subtitle && <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>{subtitle}</div>}
         </div>
-        <div className={`icon-box icon-box-${colorClass}`}>
+        <div style={{
+          width: 44, height: 44, borderRadius: 'var(--radius-lg)',
+          background: `${accent}14`, display: 'flex', alignItems: 'center',
+          justifyContent: 'center', color: accent, flexShrink: 0,
+        }}>
           <Icon size={20} />
         </div>
       </div>
-      <div style={{ fontSize: '1.75rem', fontWeight: 700, color: 'var(--text-1)', lineHeight: 1.2 }}>
+      <div style={{ fontSize: 'var(--text-4xl)', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
         {value}
       </div>
       {trend !== undefined && (
         <div style={{
-          marginTop: 10,
+          marginTop: 'var(--space-2)',
           display: 'flex',
           alignItems: 'center',
-          gap: 4,
-          fontSize: '0.75rem',
+          gap: 'var(--space-1)',
+          fontSize: 'var(--text-xs)',
           fontWeight: 600,
-          color: trendIsPositive ? 'var(--success)' : 'var(--danger)',
+          color: trendIsPositive ? 'var(--accent-emerald)' : 'var(--accent-red)',
         }}>
           <span>{trendIsPositive ? '↑' : '↓'}</span>
           <span>{Math.abs(trend)}%</span>
-          <span style={{ color: 'var(--text-3)', fontWeight: 400 }}>من الشهر الماضي</span>
+          <span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>من الشهر الماضي</span>
         </div>
       )}
     </div>
@@ -75,23 +85,27 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, breadcrumb, actions }: PageHeaderProps) {
   return (
-    <div className="page-header">
+    <div style={{ marginBottom: 'var(--space-8)' }}>
       {breadcrumb && breadcrumb.length > 0 && (
-        <div className="breadcrumb-trail">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', marginBottom: 'var(--space-2)' }}>
           {breadcrumb.map((item, i) => (
-            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-              {i > 0 && <span style={{ color: 'var(--text-4)' }}>/</span>}
-              {item.href ? <a href={item.href}>{item.label}</a> : <span>{item.label}</span>}
+            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+              {i > 0 && <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>/</span>}
+              {item.href ? (
+                <a href={item.href} style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)', textDecoration: 'none' }}>{item.label}</a>
+              ) : (
+                <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{item.label}</span>
+              )}
             </span>
           ))}
         </div>
       )}
-      <div className="flex-between" style={{ flexWrap: 'wrap', gap: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
         <div>
-          <h1 className="page-title">{title}</h1>
-          {subtitle && <p className="page-subtitle">{subtitle}</p>}
+          <h1 className="page-title" style={{ margin: 0 }}>{title}</h1>
+          {subtitle && <p className="body-text" style={{ marginTop: 'var(--space-1)' }}>{subtitle}</p>}
         </div>
-        {actions && <div style={{ display: 'flex', gap: 10, flexShrink: 0, flexWrap: 'wrap' }}>{actions}</div>}
+        {actions && <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0, flexWrap: 'wrap' }}>{actions}</div>}
       </div>
     </div>
   );
@@ -107,29 +121,51 @@ interface BadgeProps {
   size?:     'sm' | 'md';
 }
 
+const badgeVariants: Record<string, { bg: string; color: string; border: string }> = {
+  blue:   { bg: 'rgba(59,130,246,0.1)', color: 'var(--accent-blue)', border: 'rgba(59,130,246,0.2)' },
+  green:  { bg: 'rgba(16,185,129,0.1)', color: 'var(--accent-emerald)', border: 'rgba(16,185,129,0.2)' },
+  red:    { bg: 'rgba(239,68,68,0.1)', color: 'var(--accent-red)', border: 'rgba(239,68,68,0.2)' },
+  amber:  { bg: 'rgba(245,158,11,0.1)', color: 'var(--accent-amber)', border: 'rgba(245,158,11,0.2)' },
+  purple: { bg: 'rgba(139,92,246,0.1)', color: 'var(--accent-purple)', border: 'rgba(139,92,246,0.2)' },
+  info:   { bg: 'rgba(6,182,212,0.1)', color: 'var(--accent-cyan)', border: 'rgba(6,182,212,0.2)' },
+  gold:   { bg: 'rgba(241,196,15,0.1)', color: 'var(--accent-gold)', border: 'rgba(241,196,15,0.2)' },
+  ghost:  { bg: 'var(--badge-bg)', color: 'var(--text-secondary)', border: 'var(--border-color)' },
+};
+
 export function Badge({ children, variant = 'ghost', dot = false, size = 'md' }: BadgeProps) {
+  const v = badgeVariants[variant] || badgeVariants.ghost;
   return (
-    <span
-      className={`badge-base badge-${variant} ${dot ? 'badge-dot' : ''}`}
-      style={size === 'sm' ? { fontSize: '0.65rem', padding: '2px 7px' } : undefined}
-    >
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      gap: 'var(--space-1)',
+      padding: size === 'sm' ? '2px 7px' : '3px 10px',
+      borderRadius: 'var(--radius-full)',
+      background: v.bg,
+      border: `1px solid ${v.border}`,
+      color: v.color,
+      fontSize: size === 'sm' ? 'var(--text-xs)' : 'var(--text-sm)',
+      fontWeight: 600,
+      whiteSpace: 'nowrap',
+    }}>
+      {dot && <span style={{ width: 6, height: 6, borderRadius: '50%', background: v.color, display: 'inline-block' }} />}
       {children}
     </span>
   );
 }
 
 /* ============================================================
-   SkeletonCard — تحميل بطاقة إحصائيات
+   SkeletonStatCard — تحميل بطاقة إحصائيات
    ============================================================ */
 export function SkeletonStatCard() {
   return (
-    <div className="card-base" style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div className="flex-between">
-        <div className="skeleton skeleton-text" style={{ width: 100 }} />
-        <div className="skeleton skeleton-circle" style={{ width: 44, height: 44 }} />
+    <div className="card-base" style={{ padding: 'var(--space-5) var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="skeleton" style={{ width: 100, height: 14, borderRadius: 'var(--radius-sm)' }} />
+        <div className="skeleton" style={{ width: 44, height: 44, borderRadius: '50%' }} />
       </div>
-      <div className="skeleton" style={{ height: 32, width: '55%', borderRadius: 6 }} />
-      <div className="skeleton skeleton-text-sm" style={{ width: 80 }} />
+      <div className="skeleton" style={{ height: 32, width: '55%', borderRadius: 'var(--radius-sm)' }} />
+      <div className="skeleton" style={{ width: 80, height: 12, borderRadius: 'var(--radius-sm)' }} />
     </div>
   );
 }
@@ -141,8 +177,8 @@ export function SkeletonRow({ cols = 5 }: { cols?: number }) {
   return (
     <tr>
       {Array.from({ length: cols }).map((_, i) => (
-        <td key={i} style={{ padding: '12px 16px' }}>
-          <div className="skeleton skeleton-text" style={{ width: i === 0 ? '70%' : i % 2 === 0 ? '50%' : '60%' }} />
+        <td key={i} style={{ padding: 'var(--space-3) var(--space-4)' }}>
+          <div className="skeleton" style={{ width: i === 0 ? '70%' : i % 2 === 0 ? '50%' : '60%', height: 14, borderRadius: 'var(--radius-sm)' }} />
         </td>
       ))}
     </tr>
@@ -161,15 +197,26 @@ interface EmptyStateProps {
 
 export function EmptyState({ icon: Icon, title, desc, action }: EmptyStateProps) {
   return (
-    <div className="empty-state">
-      <div className="empty-state-icon">
+    <div className="card-base" style={{
+      padding: 'var(--space-16) var(--space-8)',
+      textAlign: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: 'var(--space-4)',
+    }}>
+      <div style={{
+        width: 80, height: 80, borderRadius: 'var(--radius-2xl)',
+        background: 'var(--badge-bg)', display: 'flex',
+        alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)',
+      }}>
         <Icon size={28} />
       </div>
       <div>
-        <div className="empty-state-title">{title}</div>
-        {desc && <p className="empty-state-desc">{desc}</p>}
+        <div style={{ fontSize: 'var(--text-xl)', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 'var(--space-2)' }}>{title}</div>
+        {desc && <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-tertiary)', maxWidth: 400, margin: '0 auto', lineHeight: 1.6 }}>{desc}</p>}
       </div>
-      {action && <div style={{ marginTop: 4 }}>{action}</div>}
+      {action && <div style={{ marginTop: 'var(--space-1)' }}>{action}</div>}
     </div>
   );
 }
@@ -186,15 +233,21 @@ interface SectionHeaderProps {
 
 export function SectionHeader({ title, subtitle, icon: Icon, actions }: SectionHeaderProps) {
   return (
-    <div className="section-header">
+    <div style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+      flexWrap: 'wrap', gap: 'var(--space-3)', marginBottom: 'var(--space-6)',
+    }}>
       <div>
-        <div className="section-title">
-          {Icon && <Icon size={16} style={{ color: 'var(--primary)' }} />}
+        <div style={{
+          fontSize: 'var(--text-2xl)', fontWeight: 'var(--fw-semibold)',
+          color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)',
+        }}>
+          {Icon && <Icon size={16} style={{ color: 'var(--accent-blue)' }} />}
           {title}
         </div>
-        {subtitle && <div className="section-subtitle">{subtitle}</div>}
+        {subtitle && <div style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginTop: 'var(--space-1)' }}>{subtitle}</div>}
       </div>
-      {actions && <div style={{ display: 'flex', gap: 8 }}>{actions}</div>}
+      {actions && <div style={{ display: 'flex', gap: 'var(--space-2)' }}>{actions}</div>}
     </div>
   );
 }
@@ -216,17 +269,17 @@ export function FieldGroup({ label, htmlFor, required, children, error, hint }: 
   if (htmlFor) labelProps.htmlFor = htmlFor;
 
   return (
-    <div style={{ marginBottom: 18 }}>
-      <label className="field-label" {...labelProps}>
+    <div className="form-group">
+      <label className="form-label" {...labelProps}>
         {label}
-        {required && <span style={{ color: 'var(--danger)', marginRight: 3 }}>*</span>}
+        {required && <span style={{ color: 'var(--accent-red)', marginRight: 'var(--space-1)' }}>*</span>}
       </label>
       {children}
       {error && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--danger)', marginTop: 5 }}>{error}</div>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--accent-red)', marginTop: 'var(--space-1)' }}>{error}</div>
       )}
       {hint && !error && (
-        <div style={{ fontSize: '0.75rem', color: 'var(--text-3)', marginTop: 5 }}>{hint}</div>
+        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', marginTop: 'var(--space-1)' }}>{hint}</div>
       )}
     </div>
   );
@@ -241,7 +294,7 @@ interface UserAvatarProps {
   color?: string;
 }
 
-export function UserAvatar({ name, size = 36, color = 'var(--primary)' }: UserAvatarProps) {
+export function UserAvatar({ name, size = 36, color = 'var(--accent-blue)' }: UserAvatarProps) {
   const initials = name
     .split(' ')
     .slice(0, 2)
@@ -273,12 +326,12 @@ export function UserAvatar({ name, size = 36, color = 'var(--primary)' }: UserAv
    Divider — خط فاصل
    ============================================================ */
 export function Divider({ label }: { label?: string }) {
-  if (!label) return <hr className="divider" />;
+  if (!label) return <hr style={{ border: 'none', borderTop: '1px solid var(--border-color)', margin: 0 }} />;
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: 'var(--sp-5) 0' }}>
-      <div className="divider" style={{ flex: 1, margin: 0 }} />
-      <span style={{ fontSize: '0.72rem', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{label}</span>
-      <div className="divider" style={{ flex: 1, margin: 0 }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', margin: 'var(--space-5) 0' }}>
+      <hr style={{ flex: 1, border: 'none', borderTop: '1px solid var(--border-color)', margin: 0 }} />
+      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', whiteSpace: 'nowrap' }}>{label}</span>
+      <hr style={{ flex: 1, border: 'none', borderTop: '1px solid var(--border-color)', margin: 0 }} />
     </div>
   );
 }
@@ -287,26 +340,37 @@ export function Divider({ label }: { label?: string }) {
    ProgressBar — شريط التقدم
    ============================================================ */
 interface ProgressBarProps {
-  value:   number;  // 0-100
+  value:   number;
   color?:  'primary' | 'success' | 'warning' | 'danger' | 'gold';
   height?: number;
   label?:  string;
 }
 
+const progressColors: Record<string, string> = {
+  primary: 'var(--accent-blue)',
+  success: 'var(--accent-emerald)',
+  warning: 'var(--accent-amber)',
+  danger: 'var(--accent-red)',
+  gold: 'var(--accent-gold)',
+};
+
 export function ProgressBar({ value, color = 'primary', height = 6, label }: ProgressBarProps) {
   return (
     <div>
       {label && (
-        <div className="flex-between" style={{ marginBottom: 6 }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-2)' }}>{label}</span>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-2)', fontWeight: 600 }}>{value}%</span>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-1)' }}>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)' }}>{label}</span>
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', fontWeight: 600 }}>{value}%</span>
         </div>
       )}
-      <div className="progress-bar-wrapper" style={{ height }}>
-        <div
-          className={`progress-bar-fill progress-${color}`}
-          style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-        />
+      <div style={{ height, background: 'var(--badge-bg)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+        <div style={{
+          width: `${Math.min(100, Math.max(0, value))}%`,
+          height: '100%',
+          background: progressColors[color] || progressColors.primary,
+          borderRadius: 'var(--radius-full)',
+          transition: 'width 0.5s ease',
+        }} />
       </div>
     </div>
   );

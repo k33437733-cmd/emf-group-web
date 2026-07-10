@@ -1,97 +1,133 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { subscribeToSupportConversations } from '../../firebase/db/conversations';
-import { subscribeToAgentTickets } from '../../firebase/db/tickets';
-import { Search, X, Bell, Filter, MessageSquare } from 'lucide-react';
-import NotificationCard from './NotificationCard';
-import type { Conversation } from '../../types/chat';
-import type { Ticket, TicketPriority, TicketStatus } from '../../types/support';
+import { subscribeNotificationsFiltered, subscribeUnreadCount, listNotifications } from '../../firebase/db';
+import {
+  Bell,
+  Search,
+  X,
+  CheckCheck,
+  Inbox,
+} from 'lucide-react';
+import type { SystemNotification, NotificationCategory } from '../../types/notification';
+import NotificationItem from './NotificationItem';
 
-// ─── Props ─────────────────────────────────────────────────────────────────────
+const CATEGORIES: { key: NotificationCategory | 'all'; label: string }[] = [
+  { key: 'all', label: 'الكل' },
+  { key: 'system', label: 'النظام' },
+  { key: 'updates', label: 'التحديثات' },
+  { key: 'security', label: 'الأمان' },
+  { key: 'users', label: 'المستخدمين' },
+  { key: 'content', label: 'المحتوى' },
+  { key: 'support', label: 'الدعم' },
+  { key: 'projects', label: 'المشاريع' },
+  { key: 'messages', label: 'الرسائل' },
+];
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'الآن';
+  if (mins < 60) return `منذ ${mins} دقيقة`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `منذ ${hours} ساعة`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return 'أمس';
+  if (days < 7) return `منذ ${days} أيام`;
+  if (days < 30) return 'الأسبوع الماضي';
+  return new Date(iso).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' });
+}
 
 interface NotificationCenterProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-// ─── Filter type ───────────────────────────────────────────────────────────────
-
-type FilterPreset = 'all' | 'unread' | TicketPriority;
-
-// ─── Joined item ───────────────────────────────────────────────────────────────
-
-interface NotificationItem {
-  conversationId: string;
-  ticketId: string;
-  customerId: string;
-  customerName: string;
-  lastMessage: string;
-  lastMessageTime: string;
-  lastMessageSenderId: string;
-  unreadCount: number;
-  priority: TicketPriority;
-  status: TicketStatus;
-}
-
-// ─── Helpers ───────────────────────────────────────────────────────────────────
-
-function findCustomerId(conv: Conversation, agentId: string): string | null {
-  // The customer is the member whose role !== agent/admin/super_admin
-  for (const uid of conv.members) {
-    const role = conv.memberRoles?.[uid];
-    if (role && !['admin', 'super_admin', 'agent'].includes(role)) return uid;
-  }
-  // Fallback: the member that isn't the current agent
-  return conv.members.find(m => m !== agentId) ?? null;
-}
-
-function findCustomerName(conv: Conversation, customerId: string | null): string {
-  if (customerId && conv.memberNames?.[customerId]) return conv.memberNames[customerId];
-  return conv.memberNames ? Object.values(conv.memberNames)[0] ?? 'عميل' : 'عميل';
-}
-
-// ─── Component ─────────────────────────────────────────────────────────────────
-
 export default function NotificationCenter({ isOpen, onClose }: NotificationCenterProps) {
   const { user } = useAuth();
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const navigate = useNavigate();
+  const containerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
 
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [allNotifications, setAllNotifications] = useState<SystemNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filter, setFilter] = useState<FilterPreset>('all');
+  const [category, setCategory] = useState<NotificationCategory | 'all'>('all');
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
 
   const agentId = user?.uid;
+  const pageSize = 20;
+  const lastDocRef = useRef<Record<string, unknown> | null>(null);
 
-  // ── Subscriptions ───────────────────────────────────────────────────────────
+  // Real-time subscription for latest notifications (first page)
+  useEffect(() => {
+    if (!agentId || !isOpen) return;
+    setLoading(true);
+    setAllNotifications([]);
+    setHasMore(true);
+    lastCreatedAtRef.current = null;
+
+    const cat = category === 'all' ? undefined : category;
+    const unsub = subscribeNotificationsFiltered(agentId, (list) => {
+      setAllNotifications(list);
+      setLoading(false);
+      if (list.length > 0) {
+        lastDocRef.current = list[list.length - 1] as unknown as Record<string, unknown>;
+      }
+      if (list.length < pageSize) {
+        setHasMore(false);
+      }
+    }, { category: cat as NotificationCategory | undefined, pageSize });
+
+    return () => unsub();
+  }, [agentId, isOpen, category]);
+
+  // Infinite scroll: load more when sentinel is visible
+  useEffect(() => {
+    if (!isOpen || !hasMore || loading || loadingMore || !agentId) return;
+
+    const sentinel = sentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loadingMore && lastDocRef.current) {
+          setLoadingMore(true);
+          const cat = category === 'all' ? undefined : category;
+          listNotifications(agentId, {
+            lastDoc: lastDocRef.current,
+            pageSize,
+            category: cat as NotificationCategory | undefined,
+          }).then((more) => {
+            if (more.length > 0) {
+              setAllNotifications(prev => [...prev, ...more]);
+              lastDocRef.current = more[more.length - 1] as unknown as Record<string, unknown>;
+            }
+            if (more.length < pageSize) {
+              setHasMore(false);
+            }
+            setLoadingMore(false);
+          }).catch(() => setLoadingMore(false));
+        }
+      },
+      { root: null, rootMargin: '100px' },
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [isOpen, hasMore, loading, loadingMore, agentId, category]);
 
   useEffect(() => {
     if (!agentId) return;
-    setLoading(true);
-
-    const unsubConvs = subscribeToSupportConversations(agentId, (list) => {
-      setConversations(list);
-      setLoading(false);
-    });
-
-    const unsubTickets = subscribeToAgentTickets(agentId, (list) => {
-      setTickets(list);
-    });
-
-    return () => {
-      unsubConvs();
-      unsubTickets();
-    };
+    const unsub = subscribeUnreadCount(agentId, setUnreadCount);
+    return () => unsub();
   }, [agentId]);
-
-  // ── Focus/ESC ───────────────────────────────────────────────────────────────
 
   useEffect(() => {
     if (!isOpen) return;
-    // Small delay to let the portal mount
     const t = setTimeout(() => searchRef.current?.focus(), 100);
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -103,87 +139,15 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
     };
   }, [isOpen, onClose]);
 
-  // ── Body scroll lock ────────────────────────────────────────────────────────
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [isOpen]);
-
-  // ── Join conversations ↔ tickets ──────────────────────────────────────────
-
-  const ticketMap = useMemo(() => {
-    const map = new Map<string, Ticket>();
-    for (const t of tickets) map.set(t.id, t);
-    return map;
-  }, [tickets]);
-
-  const items: NotificationItem[] = useMemo(() => {
-    if (!agentId) return [];
-    const result: NotificationItem[] = [];
-
-    for (const conv of conversations) {
-      if (conv.type !== 'support' || conv.status !== 'active') continue;
-      if (!conv.ticketId) continue;
-
-      const ticket = ticketMap.get(conv.ticketId);
-      if (!ticket) continue;
-
-      const customerId = findCustomerId(conv, agentId) ?? '';
-      const customerName = findCustomerName(conv, customerId);
-
-      result.push({
-        conversationId: conv.id,
-        ticketId: conv.ticketId,
-        customerId,
-        customerName,
-        lastMessage: conv.lastMessage,
-        lastMessageTime: conv.lastMessageTime,
-        lastMessageSenderId: conv.lastMessageSenderId,
-        unreadCount: conv.unreadCount?.[agentId] ?? 0,
-        priority: ticket.priority,
-        status: ticket.status,
-      });
-    }
-
-    // Sort: unread first, then by time
-    result.sort((a, b) => {
-      if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
-      if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
-      return new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime();
-    });
-
-    return result;
-  }, [conversations, ticketMap, agentId]);
-
-  // ── Search + Filter ─────────────────────────────────────────────────────────
-
-  const filteredItems = useMemo(() => {
-    let list = items;
-
-    // Filter preset
-    if (filter === 'unread') {
-      list = list.filter(i => i.unreadCount > 0);
-    } else if (filter !== 'all') {
-      list = list.filter(i => i.priority === filter);
-    }
-
-    // Search query
-    if (searchQuery.trim()) {
-      const q = searchQuery.trim().toLowerCase();
-      list = list.filter(
-        i =>
-          i.customerName.toLowerCase().includes(q) ||
-          i.lastMessage.toLowerCase().includes(q),
-      );
-    }
-
-    return list;
-  }, [items, filter, searchQuery]);
-
-  // ── Handlers ───────────────────────────────────────────────────────────────
+  const filtered = useMemo(() => {
+    if (!searchQuery.trim()) return allNotifications;
+    const q = searchQuery.trim().toLowerCase();
+    return allNotifications.filter(
+      n =>
+        n.title.toLowerCase().includes(q) ||
+        n.body.toLowerCase().includes(q),
+    );
+  }, [allNotifications, searchQuery]);
 
   const handleSearchChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value),
@@ -195,304 +159,357 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
     searchRef.current?.focus();
   }, []);
 
-  // ── Filter chip config ──────────────────────────────────────────────────────
+  const handleAction = useCallback(async (action: string, notif: SystemNotification) => {
+    const { markAsRead, deleteNotification, archiveNotification } = await import('../../firebase/db');
+    switch (action) {
+      case 'read':
+        await markAsRead(notif.id);
+        break;
+      case 'archive':
+        await archiveNotification(notif.id);
+        break;
+      case 'delete':
+        await deleteNotification(notif.id);
+        break;
+    }
+  }, []);
 
-  type ChipDef = { key: FilterPreset; label: string; color?: string };
-  const chips: ChipDef[] = [
-    { key: 'all',   label: 'الكل' },
-    { key: 'unread', label: 'غير مقروء' },
-    { key: 'urgent', label: 'عاجل',   color: '#ef4444' },
-    { key: 'high',   label: 'عالي',   color: '#f59e0b' },
-    { key: 'normal', label: 'عادي',   color: '#3b82f6' },
-    { key: 'low',    label: 'منخفض',  color: '#6b7280' },
-  ];
+  const handleMarkAllRead = useCallback(async () => {
+    if (!agentId) return;
+    const { markAllAsRead } = await import('../../firebase/db');
+    await markAllAsRead(agentId);
+  }, [agentId]);
 
-  const unreadTotal = useMemo(() => items.reduce((s, i) => s + i.unreadCount, 0), [items]);
-
-  // ── Loading state ───────────────────────────────────────────────────────────
-
-  const isLoading = loading && conversations.length === 0;
-
-  // ── Render ──────────────────────────────────────────────────────────────────
+  const handleNotifClick = useCallback(async (notif: SystemNotification) => {
+    if (!notif.read) {
+      const { markAsRead } = await import('../../firebase/db');
+      await markAsRead(notif.id);
+    }
+    onClose();
+    if (notif.link) {
+      navigate(notif.link);
+    }
+  }, [navigate, onClose]);
 
   if (!isOpen) return null;
 
-  return createPortal(
+  return (
     <div
-      role="dialog"
-      aria-modal="true"
-      aria-label="مركز الإشعارات"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      ref={containerRef}
       style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 99999,
+        position: 'absolute',
+        top: 'calc(100% + 4px)',
+        left: 0,
+        width: '380px',
+        maxHeight: '520px',
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border-color)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: 'var(--shadow-elevated), 0 0 30px rgba(0, 0, 0, 0.15)',
+        zIndex: 1050,
         display: 'flex',
-        justifyContent: 'flex-end',
-        background: 'rgba(0, 0, 0, 0.5)',
-        backdropFilter: 'blur(4px)',
-        WebkitBackdropFilter: 'blur(4px)',
+        flexDirection: 'column',
+        overflow: 'hidden',
+        animation: 'dropdownIn 0.15s ease',
+        direction: 'rtl',
       }}
+      onClick={(e) => e.stopPropagation()}
     >
-      {/* ── Drawer panel ─────────────────────────────── */}
+      {/* ── Header ── */}
       <div
-        className="animate-fade"
         style={{
-          width: '100%',
-          maxWidth: '440px',
-          height: '100%',
-          background: 'linear-gradient(180deg, rgba(10, 22, 40, 0.98), rgba(7, 18, 34, 0.96))',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          borderLeft: '1px solid rgba(56, 189, 248, 0.08)',
-          boxShadow: '-8px 0 40px rgba(0, 0, 0, 0.4), 0 0 30px rgba(56, 189, 248, 0.03)',
           display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          direction: 'rtl',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '12px 16px 10px',
+          borderBottom: '1px solid var(--border-color)',
+          flexShrink: 0,
         }}
       >
-        {/* ── Header ─────────────────────────────────── */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '20px 20px 16px',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-            flexShrink: 0,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <Bell size={20} color="#38bdf8" />
-            <span style={{ fontSize: '1.05rem', fontWeight: 700, color: '#fff' }}>
-              مركز الإشعارات
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Bell size={16} style={{ color: 'var(--accent-blue, #38bdf8)' }} />
+          <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+            الإشعارات
+          </span>
+          {unreadCount > 0 && (
+            <span
+              style={{
+                background: 'var(--accent-red, #ef4444)',
+                color: '#fff',
+                fontSize: '0.6rem',
+                fontWeight: 700,
+                minWidth: '18px',
+                height: '18px',
+                borderRadius: '9px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '0 5px',
+              }}
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
             </span>
-            {unreadTotal > 0 && (
-              <span
-                style={{
-                  background: 'var(--accent-red, #ef4444)',
-                  color: '#fff',
-                  fontSize: '0.65rem',
-                  fontWeight: 700,
-                  padding: '2px 8px',
-                  borderRadius: '8px',
-                  lineHeight: '18px',
-                }}
-              >
-                {unreadTotal}
-              </span>
-            )}
-          </div>
+          )}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          {unreadCount > 0 && (
+            <button
+              onClick={handleMarkAllRead}
+              title="تحديد الكل كمقروء"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '4px 8px',
+                borderRadius: '6px',
+                border: 'none',
+                background: 'rgba(59, 130, 246, 0.1)',
+                color: 'var(--accent-blue, #3b82f6)',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <CheckCheck size={12} />
+              قراءة الكل
+            </button>
+          )}
           <button
-            ref={closeRef}
             onClick={onClose}
             aria-label="إغلاق"
             style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '10px',
-              border: '1px solid rgba(255, 255, 255, 0.05)',
-              background: 'rgba(255, 255, 255, 0.03)',
-              color: 'var(--text-muted, #6b7280)',
+              width: '24px',
+              height: '24px',
+              borderRadius: '6px',
+              border: 'none',
+              background: 'transparent',
+              color: 'var(--text-tertiary)',
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              transition: 'all 0.2s ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
-              e.currentTarget.style.color = 'var(--text-muted, #6b7280)';
             }}
           >
-            <X size={16} />
+            <X size={14} />
           </button>
         </div>
+      </div>
 
-        {/* ── Search ──────────────────────────────────── */}
-        <div style={{ padding: '12px 20px', flexShrink: 0 }}>
-          <div
+      {/* ── Search ── */}
+      <div style={{ padding: '8px 12px', flexShrink: 0 }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            background: 'var(--input-bg)',
+            border: '1px solid var(--input-border)',
+            borderRadius: 'var(--radius-md)',
+            padding: '0 10px',
+            transition: 'border-color 0.2s ease',
+          }}
+        >
+          <Search size={13} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} />
+          <input
+            ref={searchRef}
+            type="text"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            placeholder="ابحث في الإشعارات..."
+            aria-label="بحث في الإشعارات"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              background: 'rgba(255, 255, 255, 0.04)',
-              border: '1px solid rgba(255, 255, 255, 0.06)',
-              borderRadius: '12px',
-              padding: '0 12px',
-              transition: 'border-color 0.2s ease',
+              flex: 1,
+              background: 'none',
+              border: 'none',
+              outline: 'none',
+              color: 'var(--text-primary)',
+              fontSize: '0.78rem',
+              padding: '7px 0',
+              fontFamily: 'inherit',
+              direction: 'rtl',
             }}
-          >
-            <Search size={16} color="var(--text-muted, #6b7280)" style={{ flexShrink: 0 }} />
-            <input
-              ref={searchRef}
-              type="text"
-              value={searchQuery}
-              onChange={handleSearchChange}
-              placeholder="ابحث باسم العميل أو الرسالة..."
-              aria-label="بحث في الإشعارات"
+            onFocus={(e) => {
+              (e.currentTarget.parentElement as HTMLElement).style.borderColor = 'var(--accent-blue)';
+            }}
+            onBlur={(e) => {
+              (e.currentTarget.parentElement as HTMLElement).style.borderColor = 'var(--input-border)';
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={clearSearch}
+              aria-label="مسح البحث"
               style={{
-                flex: 1,
                 background: 'none',
                 border: 'none',
-                outline: 'none',
-                color: '#fff',
-                fontSize: '0.85rem',
-                padding: '10px 0',
-                fontFamily: 'inherit',
-                direction: 'rtl',
+                color: 'var(--text-tertiary)',
+                cursor: 'pointer',
+                padding: '2px',
+                display: 'flex',
               }}
-              onFocus={(e) => {
-                (e.currentTarget.parentElement as HTMLElement).style.borderColor = 'rgba(56, 189, 248, 0.3)';
-              }}
-              onBlur={(e) => {
-                (e.currentTarget.parentElement as HTMLElement).style.borderColor = 'rgba(255, 255, 255, 0.06)';
-              }}
-            />
-            {searchQuery && (
-              <button
-                onClick={clearSearch}
-                aria-label="مسح البحث"
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--text-muted, #6b7280)',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  display: 'flex',
-                  flexShrink: 0,
-                }}
-              >
-                <X size={14} />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* ── Filter chips ───────────────────────────── */}
-        <div
-          style={{
-            padding: '0 20px 12px',
-            display: 'flex',
-            gap: '6px',
-            flexWrap: 'wrap',
-            flexShrink: 0,
-          }}
-        >
-          {chips.map((chip) => {
-            const active = filter === chip.key;
-            return (
-              <button
-                key={chip.key}
-                onClick={() => setFilter(chip.key)}
-                style={{
-                  padding: '5px 12px',
-                  borderRadius: '8px',
-                  border: active
-                    ? `1px solid ${chip.color ?? 'rgba(56, 189, 248, 0.4)'}`
-                    : '1px solid rgba(255, 255, 255, 0.06)',
-                  background: active
-                    ? `${chip.color ?? 'rgba(56, 189, 248, 0.15)'}22`
-                    : 'rgba(255, 255, 255, 0.03)',
-                  color: active ? (chip.color ?? '#38bdf8') : 'var(--text-secondary, #9ca3af)',
-                  fontSize: '0.72rem',
-                  fontWeight: active ? 700 : 500,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                  fontFamily: 'inherit',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                {chip.label}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* ── Notification list ──────────────────────── */}
-        <div
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '4px 12px 20px',
-          }}
-        >
-          {isLoading ? (
-            // Loading state
-            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <div
-                className="animate-spin-fast"
-                style={{
-                  width: '28px',
-                  height: '28px',
-                  border: '2px solid rgba(255, 255, 255, 0.06)',
-                  borderTopColor: '#38bdf8',
-                  borderRadius: '50%',
-                  margin: '0 auto 16px',
-                }}
-              />
-              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted, #6b7280)' }}>
-                جاري التحميل...
-              </div>
-            </div>
-          ) : filteredItems.length === 0 ? (
-            // Empty state
-            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '50%',
-                  background: 'rgba(56, 189, 248, 0.06)',
-                  border: '1px solid rgba(56, 189, 248, 0.1)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  margin: '0 auto 16px',
-                }}
-              >
-                {searchQuery || filter !== 'all' ? (
-                  <Filter size={24} color="#6b7280" />
-                ) : (
-                  <MessageSquare size={24} color="#6b7280" />
-                )}
-              </div>
-              <div style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary, #9ca3af)', marginBottom: '4px' }}>
-                {searchQuery || filter !== 'all'
-                  ? 'لا توجد نتائج مطابقة'
-                  : 'لا توجد محادثات'}
-              </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted, #6b7280)' }}>
-                {searchQuery || filter !== 'all'
-                  ? 'حاول تغيير معايير البحث أو التصفية'
-                  : 'عندما يرسل لك عميل رسالة، ستظهر هنا'}
-              </div>
-            </div>
-          ) : (
-            // List
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              {filteredItems.map((item) => (
-                <NotificationCard
-                  key={item.conversationId}
-                  conversationId={item.conversationId}
-                  customerName={item.customerName}
-                  lastMessage={item.lastMessage}
-                  lastMessageTime={item.lastMessageTime}
-                  unreadCount={item.unreadCount}
-                  priority={item.priority}
-                  status={item.status}
-                />
-              ))}
-            </div>
+            >
+              <X size={12} />
+            </button>
           )}
         </div>
       </div>
-    </div>,
-    document.body,
+
+      {/* ── Filter chips ── */}
+      <div
+        style={{
+          padding: '0 12px 8px',
+          display: 'flex',
+          gap: '4px',
+          flexWrap: 'wrap',
+          flexShrink: 0,
+        }}
+      >
+        {CATEGORIES.map((chip) => {
+          const active = category === chip.key;
+          return (
+            <button
+              key={chip.key}
+              onClick={() => setCategory(chip.key)}
+              style={{
+                padding: '3px 9px',
+                borderRadius: '6px',
+                border: active
+                  ? '1px solid var(--accent-blue)'
+                  : '1px solid var(--border-light)',
+                background: active
+                  ? 'rgba(59, 130, 246, 0.12)'
+                  : 'transparent',
+                color: active
+                  ? 'var(--accent-blue)'
+                  : 'var(--text-tertiary)',
+                fontSize: '0.68rem',
+                fontWeight: active ? 700 : 500,
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                fontFamily: 'inherit',
+                whiteSpace: 'nowrap',
+                lineHeight: '22px',
+              }}
+            >
+              {chip.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── List ── */}
+      <div
+        style={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+        }}
+      >
+        {loading ? (
+          <div style={{ padding: '16px 12px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} style={{ display: 'flex', gap: '10px', padding: '10px 12px' }}>
+                <div
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '10px',
+                    background: 'var(--badge-bg)',
+                    animation: 'skeleton-pulse 1.5s ease-in-out infinite',
+                    flexShrink: 0,
+                  }}
+                />
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div
+                    style={{
+                      height: '12px',
+                      width: '70%',
+                      borderRadius: '4px',
+                      background: 'var(--badge-bg)',
+                      animation: 'skeleton-pulse 1.5s ease-in-out infinite',
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: '10px',
+                      width: '90%',
+                      borderRadius: '4px',
+                      background: 'var(--badge-bg)',
+                      animation: 'skeleton-pulse 1.5s ease-in-out infinite',
+                    }}
+                  />
+                  <div
+                    style={{
+                      height: '8px',
+                      width: '40%',
+                      borderRadius: '4px',
+                      background: 'var(--badge-bg)',
+                      animation: 'skeleton-pulse 1.5s ease-in-out infinite',
+                    }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ padding: '40px 20px', textAlign: 'center' }}>
+            <div
+              style={{
+                width: '48px',
+                height: '48px',
+                borderRadius: '50%',
+                background: 'var(--badge-bg)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 12px',
+                color: 'var(--text-tertiary)',
+              }}
+            >
+              {searchQuery ? <Search size={20} /> : <Inbox size={20} />}
+            </div>
+            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '4px' }}>
+              {searchQuery ? 'لا توجد نتائج' : 'لا توجد إشعارات'}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              {searchQuery
+                ? 'حاول تغيير كلمات البحث'
+                : 'ستظهر الإشعارات الجديدة هنا'}
+            </div>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {filtered.map((notif) => (
+              <NotificationItem
+                key={notif.id}
+                notification={notif}
+                relativeTime={relativeTime(notif.createdAt)}
+                onClick={() => handleNotifClick(notif)}
+                onAction={(action) => handleAction(action, notif)}
+              />
+            ))}
+            {/* Sentinel for infinite scroll */}
+            <div ref={sentinelRef} style={{ height: '1px' }} />
+            {loadingMore && (
+              <div style={{ padding: '12px', textAlign: 'center' }}>
+                <div
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    border: '2px solid var(--border-color)',
+                    borderTopColor: 'var(--accent-blue)',
+                    borderRadius: '50%',
+                    margin: '0 auto',
+                    animation: 'spin 0.6s linear infinite',
+                  }}
+                />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
   );
 }

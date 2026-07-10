@@ -14,6 +14,7 @@ export const COLLECTIONS = {
   AUDIT_LOGS:       'audit_logs',
   BOT_SESSIONS:     'bot_sessions',
   TYPING:           'typing',            // ephemeral collection for typing indicators
+  RELEASE_NOTES:    'release_notes',
 } as const;
 
 export type CollectionName = (typeof COLLECTIONS)[keyof typeof COLLECTIONS];

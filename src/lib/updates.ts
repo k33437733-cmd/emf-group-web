@@ -1,5 +1,5 @@
 /**
- * نظام التحديثات المتقدم لـ EMF Group
+ * Silent update system for EMF Group
  */
 
 export type UpdateType = 'patch' | 'minor' | 'major' | 'content' | 'system';
@@ -13,46 +13,29 @@ export interface UpdateInfo {
   changelog: string;
   hash?: string;
   requiresReload: boolean;
-  estimatedSize?: number; // بالكيلوبايت
-}
-
-export interface UpdateNotification {
-  id: string;
-  title: string;
-  message: string;
-  type: UpdateType;
-  priority: UpdatePriority;
-  timestamp: number;
-  read: boolean;
-  actionUrl?: string;
-  actionLabel?: string;
+  estimatedSize?: number;
 }
 
 export interface UpdateConfig {
-  checkInterval: number; // دقيقة
-  showDelayedBanner: boolean;
-  autoReloadOnCritical: boolean;
-  notifyUserOnMinor: boolean;
+  checkInterval: number;
   enableServiceWorker: boolean;
 }
 
 const DEFAULT_CONFIG: UpdateConfig = {
-  checkInterval: 5, // كل 5 دقائق
-  showDelayedBanner: true,
-  autoReloadOnCritical: true,
-  notifyUserOnMinor: false,
+  checkInterval: 5,
   enableServiceWorker: true
 };
 
 // Service Worker Registration
+let swRegistration: ServiceWorkerRegistration | null = null;
+
 export async function registerServiceWorker(): Promise<boolean> {
   if (!('serviceWorker' in navigator)) return false;
   try {
-    const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-    console.log('[SW] Registered:', registration.scope);
+    swRegistration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
 
-    registration.addEventListener('updatefound', () => {
-      const installing = registration.installing;
+    swRegistration.addEventListener('updatefound', () => {
+      const installing = swRegistration!.installing;
       if (installing) {
         installing.addEventListener('statechange', () => {
           if (installing.state === 'activated') {
@@ -60,6 +43,10 @@ export async function registerServiceWorker(): Promise<boolean> {
           }
         });
       }
+    });
+
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      window.dispatchEvent(new CustomEvent('sw-activated'));
     });
 
     return true;
@@ -114,95 +101,54 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
   }
 }
 
-// Store update notifications in localStorage
-export function storeUpdateNotification(update: UpdateInfo): UpdateNotification {
-  const notification: UpdateNotification = {
-    id: `update_${Date.now()}`,
-    title: getUpdateTitle(update.type),
-    message: update.changelog,
-    type: update.type,
-    priority: update.priority,
-    timestamp: Date.now(),
-    read: false,
-    actionUrl: '/changelog',
-    actionLabel: 'عرض التفاصيل'
-  };
-  
-  const notifications = getStoredNotifications();
-  notifications.unshift(notification);
-  localStorage.setItem('app_updates', JSON.stringify(notifications.slice(0, 20))); // Keep last 20
-  
-  return notification;
-}
-
-// Get stored notifications
-export function getStoredNotifications(): UpdateNotification[] {
+export function getStoredNotifications(): UpdateInfo[] {
   try {
-    const stored = localStorage.getItem('app_updates');
-    return stored ? JSON.parse(stored) : [];
+    const stored = sessionStorage.getItem('emf_update_applied');
+    return stored ? [JSON.parse(stored)] : [];
   } catch {
     return [];
   }
 }
 
-// Mark notification as read
-export function markNotificationAsRead(id: string): void {
-  const notifications = getStoredNotifications();
-  const updated = notifications.map(n => 
-    n.id === id ? { ...n, read: true } : n
-  );
-  localStorage.setItem('app_updates', JSON.stringify(updated));
-}
+let initialized = false;
 
-// Clear all notifications
-export function clearAllNotifications(): void {
-  localStorage.removeItem('app_updates');
-}
-
-// Get update title based on type
-function getUpdateTitle(type: UpdateType): string {
-  const titles: Record<UpdateType, string> = {
-    patch: 'تحديث تحسينات 🛠️',
-    minor: 'إصدار جديد ✨',
-    major: 'تحديث رئيسي 🚀',
-    content: 'محتوى جديد 📦',
-    system: 'تحديث النظام 🔄'
-  };
-  return titles[type] || 'تحديث متاح';
-}
-
-// Initialize update system
 export function initUpdateSystem(config?: Partial<UpdateConfig>) {
-  const finalConfig = { ...DEFAULT_CONFIG, ...config };
-  
-  // Register service worker if enabled
-  if (finalConfig.enableServiceWorker) {
-    registerServiceWorker().catch(() => {
-      console.warn('Service worker disabled');
-    });
+  if (initialized) {
+    return window.__UPDATE_SYSTEM!;
   }
-  
-  // Schedule periodic checks
+  initialized = true;
+
+  const finalConfig = { ...DEFAULT_CONFIG, ...config };
+
+  if (finalConfig.enableServiceWorker) {
+    registerServiceWorker().catch(() => {});
+  }
+
   let checkInterval: ReturnType<typeof setInterval> | null = null;
-  
+
   function startPeriodicChecks() {
     if (checkInterval) clearInterval(checkInterval);
-    
+
     checkInterval = setInterval(async () => {
       const update = await checkForUpdates();
       if (update) {
-        storeUpdateNotification(update);
-        // Notify UI via custom event
-        window.dispatchEvent(new CustomEvent('app-update-available', {
+        sessionStorage.setItem('emf_update_applied', JSON.stringify(update));
+        if (swRegistration) {
+          try { swRegistration.update(); } catch {}
+        }
+        window.dispatchEvent(new CustomEvent('app:update-applied', {
+          detail: update
+        }));
+        window.dispatchEvent(new CustomEvent('app-update-applied', {
           detail: update
         }));
       }
     }, finalConfig.checkInterval * 60 * 1000);
   }
-  
+
   startPeriodicChecks();
-  
-  return {
+
+  const instance = {
     stop: () => {
       if (checkInterval) clearInterval(checkInterval);
       checkInterval = null;
@@ -210,9 +156,10 @@ export function initUpdateSystem(config?: Partial<UpdateConfig>) {
     checkNow: async () => await checkForUpdates(),
     getConfig: () => finalConfig,
     getNotifications: getStoredNotifications,
-    markAsRead: markNotificationAsRead,
-    clearNotifications: clearAllNotifications
   };
+
+  window.__UPDATE_SYSTEM = instance;
+  return instance;
 }
 
 // Extend Window interface

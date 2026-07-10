@@ -62,7 +62,7 @@ export function SkeletonTable({ rows = 5, columns = 4 }: { rows?: number; column
 
 export function SkeletonGrid({ count = 6 }: { count?: number }) {
   return (
-    <div className="grid-cards">
+    <div className="grid-cards" role="status" aria-label="جاري التحميل" aria-busy="true">
       {Array.from({ length: count }).map((_, i) => (
         <SkeletonCard key={i} lines={2} />
       ))}

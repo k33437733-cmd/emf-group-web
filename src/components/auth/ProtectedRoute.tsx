@@ -9,7 +9,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div style={{ textAlign: 'center', padding: '50px', color: 'white' }}>جاري التحقق من الحساب...</div>;
+    return <div style={{ textAlign: 'center', padding: 'var(--space-12)', color: 'var(--text-secondary)', fontSize: 'var(--text-base)' }}>جاري التحقق من الحساب...</div>;
   }
 
   if (!user) {

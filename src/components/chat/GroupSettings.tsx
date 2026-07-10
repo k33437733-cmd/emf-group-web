@@ -101,15 +101,15 @@ export default function GroupSettings({
               <input ref={fileRef} type="file" accept="image/*" onChange={handleAvatarChange} style={{ display: 'none' }} />
               <div style={{
                 width: '96px', height: '96px', borderRadius: '50%',
-                background: avatar ? 'transparent' : 'var(--gradient-cyber)',
-                overflow: 'hidden', border: '3px solid var(--border-color)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {avatar ? (
-                  <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <Camera size={32} color="white" />
-                )}
+                  background: avatar ? 'transparent' : 'var(--gradient-cyber)',
+                  overflow: 'hidden', border: '3px solid var(--border-color)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {avatar ? (
+                    <img src={avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <Camera size={32} color="#fff" />
+                  )}
               </div>
               <div style={{
                 position: 'absolute', bottom: 0, right: 0,
@@ -212,7 +212,7 @@ export default function GroupSettings({
                 </div>
                 {!m.isSelf && (
                   <button onClick={() => handleRemove(m.uid)} style={{
-                    background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '6px',
+                    background: 'none', border: 'none', color: 'var(--accent-red)', cursor: 'pointer', padding: '6px',
                   }} title="إزالة">
                     <UserMinus size={16} />
                   </button>

@@ -87,6 +87,20 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   THEME TRANSITION - smooth color animation on theme switch
+   ═══════════════════════════════════════════════════════════════ */
+
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition: background-color 200ms ease,
+              color 200ms ease,
+              border-color 200ms ease,
+              box-shadow 200ms ease !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    DARK THEME (default)
    ═══════════════════════════════════════════════════════════════ */
 
@@ -464,8 +478,10 @@ a {
 .d-block { display: block !important; }
 .d-flex { display: flex !important; }
 
-.d-sm-none { @media (max-width: 575px) { display: none !important; } }
-.d-sm-block { @media (max-width: 575px) { display: block !important; } }
+@media (max-width: 575px) {
+  .d-sm-none { display: none !important; }
+  .d-sm-block { display: block !important; }
+}
 
 @media (max-width: 767px) {
   .d-md-none { display: none !important; }
@@ -931,19 +947,6 @@ textarea:focus-visible {
   }
 }
 
-.grid-cards-3 {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
-  gap: var(--space-6);
-}
-
-@media (max-width: 768px) {
-  .grid-cards-3 {
-    gap: var(--space-4);
-    grid-template-columns: 1fr;
-  }
-}
-
 /* TYPOGRAPHY DEFAULTS FOR COMMON TAGS */
 
 h1, h2, h3, h4, h5, h6 {
@@ -992,6 +995,37 @@ p {
 .dropdown-item:hover {
   background: var(--sidebar-hover);
   color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SKELETON BASE (used by UIComponents inline skeleton divs)
+   ═══════════════════════════════════════════════════════════════ */
+
+.skeleton {
+  background: var(--badge-bg);
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PRINT STYLES
+   ═══════════════════════════════════════════════════════════════ */
+
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+  .sidebar,
+  nav,
+  .navbar,
+  .no-print {
+    display: none !important;
+  }
+  .card-base,
+  .glass-card {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+  }
 }
 
 /* ═══════════════════════════════════════════════════════════════

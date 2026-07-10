@@ -11,6 +11,16 @@ export type NotificationType =
   | 'system'
   | 'upload';
 
+export type NotificationCategory =
+  | 'system'
+  | 'updates'
+  | 'security'
+  | 'users'
+  | 'content'
+  | 'support'
+  | 'projects'
+  | 'messages';
+
 export type NotificationPriority = 'low' | 'normal' | 'high' | 'critical';
 
 export type NotificationChannel = 'in_app' | 'push' | 'email' | 'all';
@@ -21,10 +31,12 @@ export interface SystemNotification {
   id: string;
   recipientId: string;
   type: NotificationType;
+  category: NotificationCategory;
   priority: NotificationPriority;
   title: string;
   body: string;
   read: boolean;
+  archived: boolean;
   createdAt: string;
   expiresAt?: string;
   link?: string;

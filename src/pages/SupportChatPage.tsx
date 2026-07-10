@@ -162,7 +162,7 @@ export default function SupportChatPage() {
         <div style={{ 
           padding: '16px 24px', 
           borderBottom: '1px solid var(--border-color)', 
-          background: 'rgba(0,0,0,0.1)' 
+          background: 'var(--bg-tertiary)' 
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
@@ -196,7 +196,7 @@ export default function SupportChatPage() {
             padding: '36px 24px', 
             textAlign: 'center',
             borderBottom: '1px solid var(--border-color)',
-            background: 'rgba(5, 8, 16, 0.15)'
+            background: 'var(--bg-primary)'
           }}>
             <div style={{
               width: '64px',
@@ -272,14 +272,14 @@ export default function SupportChatPage() {
         )}
 
         {/* Message Feed grid */}
-        <div style={{ 
+        <div role="log" aria-live="polite" aria-label="رسائل الدعم" style={{ 
           flex: 1, 
           overflowY: 'auto', 
           padding: '20px 24px', 
           display: 'flex', 
           flexDirection: 'column', 
           gap: '14px',
-          background: 'rgba(5,8,16,0.1)' 
+          background: 'var(--bg-primary)' 
         }} className="support-chat-messages-scroll">
           {messages.map(msg => {
             const isSelf = msg.senderId === user.uid;
@@ -331,7 +331,7 @@ export default function SupportChatPage() {
                         : 'var(--accent-blue)'
                     }}>
                       {msg.senderName}
-                      {msg.senderRole === 'super_admin' && ' 👑'}
+                      {msg.senderRole === 'super_admin' && '⭐'}
                     </span>
                   </div>
                 )}
@@ -383,7 +383,7 @@ export default function SupportChatPage() {
                     : isBot
                     ? 'rgba(16, 185, 129, 0.15)'
                     : 'var(--border-color)',
-                  color: 'white',
+                  color: isSelf ? '#fff' : 'var(--text-primary)',
                   wordBreak: 'break-word',
                   display: 'flex',
                   flexDirection: 'column',

@@ -16,6 +16,7 @@ function getInitialCollapsed(): boolean {
 export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
     try {
@@ -25,6 +26,7 @@ export default function DashboardLayout() {
 
   useEffect(() => {
     const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
       if (window.innerWidth >= 768 && mobileOpen) {
         setMobileOpen(false);
       }
@@ -34,12 +36,12 @@ export default function DashboardLayout() {
   }, [mobileOpen]);
 
   const toggleSidebar = useCallback(() => {
-    if (window.innerWidth < 768) {
+    if (isMobile) {
       setMobileOpen(s => !s);
     } else {
       setCollapsed(s => !s);
     }
-  }, []);
+  }, [isMobile]);
 
   const closeMobile = useCallback(() => {
     setMobileOpen(false);
@@ -50,7 +52,7 @@ export default function DashboardLayout() {
       <Sidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed(s => !s)}
-        mobileOpen={mobileOpen}
+        mobileOpen={isMobile ? mobileOpen : undefined}
         onMobileClose={closeMobile}
       />
       <div style={{
@@ -63,7 +65,7 @@ export default function DashboardLayout() {
         minHeight: '100vh',
       }}>
         <Navbar onToggleSidebar={toggleSidebar} />
-        <main style={{
+        <main role="main" aria-label="المحتوى الرئيسي" style={{
           flex: 1,
           background: 'var(--bg-primary)',
           width: '100%',

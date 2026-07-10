@@ -1,15 +1,3 @@
-/**
- * NotificationRepository
- * All reads and writes to the `notifications` collection.
- *
- * Key design decisions:
- * - NO global fan-out writes (the old sendGlobalNotification wrote N docs
- *   for N users — extremely expensive). Instead, admin-scoped notifications
- *   are handled by a Cloud Function that batches by role.
- * - Each notification document is owned by one recipient (recipientId).
- * - Expired notifications are pruned by a scheduled Cloud Function.
- */
-
 import {
   collection,
   doc,
@@ -26,19 +14,16 @@ import {
   getDocs,
   writeBatch,
   type Unsubscribe,
+  type QueryConstraint,
 } from 'firebase/firestore';
 import { db } from '../config';
 import { COLLECTIONS } from '../../constants/collections';
 import { NOTIFICATIONS_PAGE_SIZE, NOTIFICATION_EXPIRY_DAYS } from '../../constants/config';
-import type { SystemNotification } from '../../types/notification';
+import type { SystemNotification, NotificationCategory } from '../../types/notification';
 import { nowISO, addDays, wrapFirestoreError } from './base';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const col = () => collection(db, COLLECTIONS.NOTIFICATIONS);
 const ref = (id: string) => doc(db, COLLECTIONS.NOTIFICATIONS, id);
-
-// ─── Read ─────────────────────────────────────────────────────────────────────
 
 export async function getNotificationById(id: string): Promise<SystemNotification | null> {
   try {
@@ -52,27 +37,28 @@ export async function getNotificationById(id: string): Promise<SystemNotificatio
 
 export async function listNotifications(
   recipientId: string,
-  afterCursor?: string,
-  pageSize = NOTIFICATIONS_PAGE_SIZE,
+  opts?: {
+    lastDoc?: Record<string, unknown> | null;
+    pageSize?: number;
+    category?: NotificationCategory;
+    archived?: boolean;
+  },
 ): Promise<SystemNotification[]> {
   try {
-    let q = query(
-      col(),
+    const constraints: QueryConstraint[] = [
       where('recipientId', '==', recipientId),
+      where('archived', '==', opts?.archived ?? false),
       orderBy('createdAt', 'desc'),
-      limit(pageSize),
-    );
-    if (afterCursor) {
-      q = query(
-        col(),
-        where('recipientId', '==', recipientId),
-        orderBy('createdAt', 'desc'),
-        startAfter(afterCursor),
-        limit(pageSize),
-      );
+      limit(opts?.pageSize ?? NOTIFICATIONS_PAGE_SIZE),
+    ];
+    if (opts?.category) {
+      constraints.unshift(where('category', '==', opts.category));
     }
-    const snap = await getDocs(q);
-    return snap.docs.map(d => d.data() as SystemNotification);
+    if (opts?.lastDoc) {
+      constraints.push(startAfter(opts.lastDoc.createdAt));
+    }
+    const snap = await getDocs(query(col(), ...constraints));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() } as SystemNotification));
   } catch (err) {
     wrapFirestoreError(err, 'listNotifications');
   }
@@ -86,23 +72,114 @@ export function subscribeToNotifications(
   const q = query(
     col(),
     where('recipientId', '==', recipientId),
+    where('archived', '==', false),
     orderBy('createdAt', 'desc'),
     limit(pageSize),
   );
   return onSnapshot(
     q,
-    snap => callback(snap.docs.map(d => d.data() as SystemNotification)),
+    snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as SystemNotification))),
     err => wrapFirestoreError(err, 'subscribeToNotifications'),
   );
 }
 
-// ─── Write ────────────────────────────────────────────────────────────────────
+export function subscribeNotificationsFiltered(
+  recipientId: string,
+  callback: (notifications: SystemNotification[]) => void,
+  opts?: {
+    category?: NotificationCategory | null;
+    pageSize?: number;
+  },
+): Unsubscribe {
+  try {
+    const constraints: QueryConstraint[] = [
+      where('recipientId', '==', recipientId),
+      where('archived', '==', false),
+      orderBy('createdAt', 'desc'),
+      limit(opts?.pageSize ?? NOTIFICATIONS_PAGE_SIZE),
+    ];
+    if (opts?.category) {
+      constraints.unshift(where('category', '==', opts.category));
+    }
+    const q = query(col(), ...constraints);
+    return onSnapshot(
+      q,
+      snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as SystemNotification))),
+      err => wrapFirestoreError(err, 'subscribeNotificationsFiltered'),
+    );
+  } catch (err) {
+    wrapFirestoreError(err, 'subscribeNotificationsFiltered');
+  }
+}
 
-/**
- * Create a single notification for one recipient.
- */
+export function subscribeNotificationsPaginated(
+  recipientId: string,
+  callback: (notifications: SystemNotification[]) => void,
+  opts?: {
+    category?: NotificationCategory | null;
+    archived?: boolean;
+    pageSize?: number;
+    afterCursor?: string;
+  },
+): Unsubscribe {
+  try {
+    const constraints: QueryConstraint[] = [
+      where('recipientId', '==', recipientId),
+      where('archived', '==', opts?.archived ?? false),
+      orderBy('createdAt', 'desc'),
+      limit(opts?.pageSize ?? NOTIFICATIONS_PAGE_SIZE),
+    ];
+    if (opts?.category) {
+      constraints.unshift(where('category', '==', opts.category));
+    }
+    if (opts?.afterCursor) {
+      constraints.push(startAfter(opts.afterCursor));
+    }
+    const q = query(col(), ...constraints);
+    return onSnapshot(
+      q,
+      snap => callback(snap.docs.map(d => ({ id: d.id, ...d.data() } as SystemNotification))),
+      err => wrapFirestoreError(err, 'subscribeNotificationsPaginated'),
+    );
+  } catch (err) {
+    wrapFirestoreError(err, 'subscribeNotificationsPaginated');
+  }
+}
+
+export async function getUnreadCount(recipientId: string): Promise<number> {
+  try {
+    const q = query(
+      col(),
+      where('recipientId', '==', recipientId),
+      where('read', '==', false),
+      where('archived', '==', false),
+    );
+    const snap = await getDocs(q);
+    return snap.size;
+  } catch (err) {
+    wrapFirestoreError(err, 'getUnreadCount');
+  }
+}
+
+export function subscribeUnreadCount(
+  recipientId: string,
+  callback: (count: number) => void,
+): Unsubscribe {
+  const q = query(
+    col(),
+    where('recipientId', '==', recipientId),
+    where('read', '==', false),
+    where('archived', '==', false),
+  );
+  return onSnapshot(
+    q,
+    snap => callback(snap.size),
+    err => wrapFirestoreError(err, 'subscribeUnreadCount'),
+  );
+}
+
 export async function createNotification(
-  n: Omit<SystemNotification, 'id' | 'read' | 'createdAt' | 'sentVia'>,
+  n: Omit<SystemNotification, 'id' | 'read' | 'archived' | 'createdAt' | 'sentVia'>,
 ): Promise<SystemNotification> {
   try {
     const notifRef = doc(col());
@@ -110,6 +187,7 @@ export async function createNotification(
       ...n,
       id:        notifRef.id,
       read:      false,
+      archived:  false,
       createdAt: nowISO(),
       expiresAt: addDays(NOTIFICATION_EXPIRY_DAYS),
       sentVia:   { push: false, email: false },
@@ -121,13 +199,9 @@ export async function createNotification(
   }
 }
 
-/**
- * Batch-create notifications for a list of recipients.
- * Capped at 400 per batch (Firestore limit is 500).
- */
 export async function createNotificationsForMany(
   recipientIds: string[],
-  base: Omit<SystemNotification, 'id' | 'read' | 'createdAt' | 'sentVia' | 'recipientId' | 'expiresAt'>,
+  base: Omit<SystemNotification, 'id' | 'read' | 'archived' | 'createdAt' | 'sentVia' | 'recipientId' | 'expiresAt'>,
 ): Promise<void> {
   if (recipientIds.length === 0) return;
 
@@ -146,6 +220,7 @@ export async function createNotificationsForMany(
           id:          notifRef.id,
           recipientId,
           read:        false,
+          archived:    false,
           createdAt:   ts,
           expiresAt:   exp,
           sentVia:     { push: false, email: false },
@@ -174,6 +249,7 @@ export async function markAllAsRead(recipientId: string): Promise<void> {
       col(),
       where('recipientId', '==', recipientId),
       where('read', '==', false),
+      where('archived', '==', false),
       limit(400),
     );
     const snap = await getDocs(q);
@@ -195,7 +271,21 @@ export async function deleteNotification(id: string): Promise<void> {
   }
 }
 
-// ─── Scheduled cleanup helper ─────────────────────────────────────────────────
+export async function archiveNotification(id: string): Promise<void> {
+  try {
+    await updateDoc(ref(id), { archived: true });
+  } catch (err) {
+    wrapFirestoreError(err, 'archiveNotification');
+  }
+}
+
+export async function unarchiveNotification(id: string): Promise<void> {
+  try {
+    await updateDoc(ref(id), { archived: false });
+  } catch (err) {
+    wrapFirestoreError(err, 'unarchiveNotification');
+  }
+}
 
 export async function purgeExpiredNotifications(): Promise<number> {
   try {
@@ -209,5 +299,24 @@ export async function purgeExpiredNotifications(): Promise<number> {
     return snap.docs.length;
   } catch (err) {
     wrapFirestoreError(err, 'purgeExpiredNotifications');
+  }
+}
+
+export async function clearArchivedNotifications(recipientId: string): Promise<void> {
+  try {
+    const q = query(
+      col(),
+      where('recipientId', '==', recipientId),
+      where('archived', '==', true),
+      limit(400),
+    );
+    const snap = await getDocs(q);
+    if (snap.empty) return;
+
+    const batch = writeBatch(db);
+    snap.docs.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  } catch (err) {
+    wrapFirestoreError(err, 'clearArchivedNotifications');
   }
 }

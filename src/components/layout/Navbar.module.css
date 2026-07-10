@@ -1,0 +1,677 @@
+/* ═══════════════════════════════════════════════════════════
+   ENTERPRISE NAVBAR
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Header shell ── */
+.navbar {
+  height: var(--navbar-height);
+  background: var(--navbar-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  z-index: 1020;
+  direction: rtl;
+  transition: background var(--transition-base), border-color var(--transition-base);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 100%;
+  padding: 0 var(--space-4) 0 var(--space-6);
+  gap: var(--space-4);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LEFT SECTION (start in RTL = visually on the right)
+   ═══════════════════════════════════════════════════════════ */
+.sectionLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.sidebarToggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.sidebarToggle:hover {
+  background: var(--sidebar-hover);
+  color: var(--text-primary);
+}
+
+/* ── User section ── */
+.userSection {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  position: relative;
+  cursor: pointer;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-lg);
+  transition: background var(--transition-fast);
+}
+.userSection:hover {
+  background: var(--sidebar-hover);
+}
+
+.avatarWrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.onlineDot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--navbar-bg);
+}
+.onlineDotActive {
+  background: var(--accent-emerald);
+  box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.3);
+}
+.onlineDotAway {
+  background: var(--accent-amber);
+  box-shadow: 0 0 0 1px rgba(245, 158, 11, 0.3);
+}
+.onlineDotOffline {
+  background: var(--text-tertiary);
+  box-shadow: 0 0 0 1px rgba(100, 116, 139, 0.3);
+}
+
+.userInfo {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  text-align: right;
+  min-width: 0;
+}
+
+.userName {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 110px;
+}
+
+.roleBadge {
+  font-size: 10px;
+  font-weight: var(--fw-bold);
+  padding: 1px 7px;
+  border-radius: var(--radius-full);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  width: fit-content;
+  line-height: 1.5;
+  letter-spacing: 0.2px;
+}
+
+.roleSuperAdmin {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--accent-amber);
+}
+.roleAdmin {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+}
+.roleAgent {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--accent-emerald);
+}
+.roleUser {
+  background: rgba(100, 116, 139, 0.15);
+  color: var(--text-tertiary);
+}
+
+.dropdownArrow {
+  display: flex;
+  color: var(--text-tertiary);
+  transition: transform var(--transition-fast);
+  flex-shrink: 0;
+}
+.dropdownArrowOpen {
+  transform: rotate(180deg);
+}
+
+/* ── Profile dropdown ── */
+.profileDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 230px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated), 0 0 30px rgba(0, 0, 0, 0.15);
+  padding: var(--space-1);
+  z-index: 1050;
+  animation: dropdownIn 0.15s ease;
+}
+
+@keyframes dropdownIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdownHeader {
+  padding: var(--space-3) var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--border-color);
+  text-align: center;
+}
+
+.dropdownHeaderName {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-semibold);
+  color: var(--text-primary);
+}
+
+.dropdownHeaderEmail {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: 1px;
+  direction: ltr;
+}
+
+.dropdownItemsGroup {
+  padding: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dropdownDivider {
+  height: 1px;
+  background: var(--border-color);
+  margin: var(--space-1) 0;
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  width: 100%;
+  text-align: right;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.dropdownItem:hover {
+  background: var(--sidebar-hover);
+  color: var(--text-primary);
+}
+.dropdownItemDanger {
+  color: var(--accent-red);
+}
+.dropdownItemDanger:hover {
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--accent-red);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CENTER SECTION
+   ═══════════════════════════════════════════════════════════ */
+.sectionCenter {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+}
+
+.titleArea {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.breadcrumbItem {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 11px;
+}
+
+.breadcrumbSeparator {
+  color: var(--text-muted);
+  font-size: 9px;
+}
+
+.breadcrumbLink {
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+.breadcrumbLink:hover {
+  color: var(--accent-blue);
+}
+
+.breadcrumbCurrent {
+  color: var(--text-secondary);
+  font-weight: var(--fw-medium);
+}
+
+.pageTitle {
+  font-size: var(--text-lg);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Global search bar ── */
+.searchBar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  padding: 0 var(--space-3);
+  height: 36px;
+  min-width: 200px;
+  max-width: 300px;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  flex-shrink: 0;
+}
+.searchBar:focus-within {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px var(--input-focus);
+}
+
+.searchIcon {
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+  display: flex;
+}
+
+.searchInput {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: var(--text-sm);
+  font-family: inherit;
+  direction: rtl;
+  min-width: 0;
+}
+.searchInput::placeholder {
+  color: var(--text-muted);
+}
+
+.searchKbd {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-tertiary);
+  font-size: 10px;
+  font-family: inherit;
+  flex-shrink: 0;
+  line-height: 1.5;
+  direction: ltr;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RIGHT SECTION (end in RTL = visually on the left)
+   ═══════════════════════════════════════════════════════════ */
+.sectionRight {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-shrink: 0;
+}
+
+.navIconBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: all var(--transition-fast);
+}
+.navIconBtn:hover {
+  background: var(--sidebar-hover);
+  color: var(--text-primary);
+}
+
+.notifBadge {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--radius-full);
+  background: var(--accent-red);
+  color: #fff;
+  font-size: 9px;
+  font-weight: var(--fw-bold);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 2px var(--navbar-bg);
+  line-height: 1;
+  pointer-events: none;
+}
+
+.notifBadgePulse {
+  animation: badgePulse 2s ease-in-out infinite;
+}
+
+.bellShake {
+  animation: bellShake 0.6s ease-in-out;
+}
+
+@keyframes badgePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 2px var(--navbar-bg), 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 2px var(--navbar-bg), 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  10%, 30%, 50%, 70%, 90% { transform: rotate(8deg); }
+  20%, 40%, 60%, 80% { transform: rotate(-8deg); }
+}
+
+/* ── Dropdown wrapper positioning ── */
+.notifWrapper,
+.quickWrapper {
+  position: relative;
+}
+
+/* ── Notification dropdown ── */
+.notifDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: min(360px, 90vw);
+  max-height: 460px;
+  overflow-y: auto;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated), 0 0 30px rgba(0, 0, 0, 0.15);
+  z-index: 1050;
+  animation: dropdownIn 0.15s ease;
+}
+
+.notifHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-bottom: 1px solid var(--border-color);
+  position: sticky;
+  top: 0;
+  background: var(--bg-elevated);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  z-index: 1;
+}
+
+.notifTitle {
+  font-size: var(--text-sm);
+  font-weight: var(--fw-bold);
+  color: var(--text-primary);
+}
+
+.notifCount {
+  color: var(--text-tertiary);
+  font-weight: var(--fw-medium);
+  margin-right: var(--space-1);
+}
+
+.markAllRead {
+  background: none;
+  border: none;
+  color: var(--accent-blue);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  font-weight: var(--fw-semibold);
+  font-family: inherit;
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+  transition: background var(--transition-fast);
+}
+.markAllRead:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.notifEmpty {
+  padding: var(--space-8);
+  text-align: center;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+.notifItem {
+  padding: var(--space-3) var(--space-4);
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  text-align: right;
+  transition: background var(--transition-fast);
+}
+.notifItem:hover {
+  background: var(--sidebar-hover);
+}
+.notifItemUnread {
+  background: var(--sidebar-active);
+}
+
+.notifItemTitle {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+.notifItemBody {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  margin-top: 2px;
+}
+.notifItemTime {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: var(--space-1);
+}
+
+/* ── Quick actions dropdown ── */
+.quickActionsDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  width: 200px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated), 0 0 30px rgba(0, 0, 0, 0.15);
+  padding: var(--space-1);
+  z-index: 1050;
+  animation: dropdownIn 0.15s ease;
+}
+
+.sidebarCollapseDesk {
+  display: flex;
+}
+
+.searchMobileTrigger {
+  display: none;
+}
+
+/* ── Mobile search overlay ── */
+.mobileSearchOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1030;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4);
+  animation: fadeIn 0.12s ease;
+}
+
+.mobileSearchHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.mobileSearchInput {
+  flex: 1;
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  color: var(--text-primary);
+  font-size: var(--text-lg);
+  font-family: inherit;
+  outline: none;
+  direction: rtl;
+}
+.mobileSearchInput:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 3px var(--input-focus);
+}
+
+.mobileSearchHint {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: var(--text-sm);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ═══════════════════════════════════════════════════════════ */
+
+/* Laptop: hide user info text, hide breadcrumbs */
+@media (max-width: 1024px) {
+  .userInfo {
+    display: none;
+  }
+  .breadcrumbs {
+    display: none;
+  }
+  .searchBar {
+    min-width: 160px;
+    max-width: 220px;
+  }
+}
+
+/* Tablet: hide desktop search bar, tighten gaps */
+@media (max-width: 768px) {
+  .searchBar {
+    display: none;
+  }
+  .sectionRight {
+    gap: 0;
+  }
+  .pageTitle {
+    font-size: var(--text-base);
+  }
+  .userSection {
+    padding: 0;
+  }
+  .sectionCenter {
+    gap: var(--space-2);
+  }
+  .sidebarCollapseDesk {
+    display: none;
+  }
+  .searchMobileTrigger {
+    display: flex;
+  }
+}
+
+/* Mobile: compact padding, smaller buttons */
+@media (max-width: 480px) {
+  .inner {
+    padding: 0 var(--space-2);
+    gap: var(--space-2);
+  }
+  .sidebarToggle {
+    width: 32px;
+    height: 32px;
+  }
+  .navIconBtn {
+    width: 32px;
+    height: 32px;
+  }
+  .profileDropdown {
+    left: auto;
+    right: 0;
+    width: 200px;
+  }
+  .quickActionsDropdown {
+    left: auto;
+    right: 0;
+  }
+  .notifDropdown {
+    left: auto;
+    right: 0;
+  }
+}
