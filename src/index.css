@@ -335,7 +335,7 @@ a {
   color: var(--text-secondary);
 }
 
-..small-label {
+.small-label {
   font-size: var(--text-sm);
   font-weight: var(--fw-regular);
   color: var(--text-secondary);
