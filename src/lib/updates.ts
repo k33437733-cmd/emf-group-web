@@ -46,19 +46,27 @@ const DEFAULT_CONFIG: UpdateConfig = {
 
 // Service Worker Registration
 export async function registerServiceWorker(): Promise<boolean> {
-  if ('serviceWorker' in navigator) {
-    try {
-      const registration = await navigator.serviceWorker.register('/sw.js', {
-        scope: '/'
-      });
-      console.log('Service Worker registered:', registration);
-      return true;
-    } catch (error) {
-      console.warn('Service Worker registration failed:', error);
-      return false;
-    }
+  if (!('serviceWorker' in navigator)) return false;
+  try {
+    const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+    console.log('[SW] Registered:', registration.scope);
+
+    registration.addEventListener('updatefound', () => {
+      const installing = registration.installing;
+      if (installing) {
+        installing.addEventListener('statechange', () => {
+          if (installing.state === 'activated') {
+            window.dispatchEvent(new CustomEvent('sw-updated'));
+          }
+        });
+      }
+    });
+
+    return true;
+  } catch (error) {
+    console.warn('[SW] Registration failed:', error);
+    return false;
   }
-  return false;
 }
 
 // Progressive Web App Install
