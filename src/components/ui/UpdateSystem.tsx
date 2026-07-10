@@ -10,6 +10,11 @@ import type {
 import type { ToastType } from './Toast';
 import { showToast } from './Toast';
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
 interface UpdateSystemProps {
   config?: {
     checkInterval?: number;
@@ -26,7 +31,7 @@ export default function UpdateSystem({ config }: UpdateSystemProps) {
   const [showBanner, setShowBanner] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
   const [isReloading, setIsReloading] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
+  const [installPrompt, setInstallPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   
   const updateSystem = React.useRef<ReturnType<typeof initUpdateSystem> | null>(null);
 
@@ -58,7 +63,7 @@ export default function UpdateSystem({ config }: UpdateSystemProps) {
     
     // Check for PWA install prompt
     if ('BeforeInstallPromptEvent' in window) {
-      const handler = (e: Event) => {
+      const handler = (e: BeforeInstallPromptEvent) => {
         e.preventDefault();
         setInstallPrompt(e);
       };

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, Info, X, type FC } from 'lucide-react';
+import { useState, useEffect, type FC } from 'react';
+import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
 import type { LucideProps } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';

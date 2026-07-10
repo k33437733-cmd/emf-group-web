@@ -13,7 +13,7 @@ interface KpiCardProps {
 }
 
 function KpiCardInner({ label, value, trend, icon, color, sparklineData }: KpiCardProps) {
-  const IconComp: FC<LucideProps> = (Icons as Record<string, FC<LucideProps>>)[icon] || Icons.BarChart3;
+  const IconComp: FC<LucideProps> = (Icons as unknown as Record<string, FC<LucideProps>>)[icon] || Icons.BarChart3;
   const trendUp = trend >= 0;
 
   return (
