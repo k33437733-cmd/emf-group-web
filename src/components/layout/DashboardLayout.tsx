@@ -1,19 +1,49 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 
+const SIDEBAR_STORAGE_KEY = 'emf_sidebar_collapsed';
+
+function getInitialCollapsed(): boolean {
+  try {
+    const stored = localStorage.getItem(SIDEBAR_STORAGE_KEY);
+    if (stored !== null) return stored === 'true';
+  } catch {}
+  return false;
+}
+
 export default function DashboardLayout() {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(getInitialCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const toggleSidebar = () => {
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed));
+    } catch {}
+  }, [collapsed]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 768 && mobileOpen) {
+        setMobileOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [mobileOpen]);
+
+  const toggleSidebar = useCallback(() => {
     if (window.innerWidth < 768) {
       setMobileOpen(s => !s);
     } else {
       setCollapsed(s => !s);
     }
-  };
+  }, []);
+
+  const closeMobile = useCallback(() => {
+    setMobileOpen(false);
+  }, []);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', direction: 'rtl' }}>
@@ -21,12 +51,13 @@ export default function DashboardLayout() {
         collapsed={collapsed}
         onToggle={() => setCollapsed(s => !s)}
         mobileOpen={mobileOpen}
-        onMobileClose={() => setMobileOpen(false)}
+        onMobileClose={closeMobile}
       />
       <div style={{
         flex: 1,
-        marginRight: collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)',
-        transition: 'margin-right var(--transition-slow)',
+        minWidth: 0,
+        marginRight: 'var(--sidebar-collapsed-width)',
+        transition: 'margin-right 250ms cubic-bezier(0.16, 1, 0.3, 1)',
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
@@ -34,12 +65,26 @@ export default function DashboardLayout() {
         <Navbar onToggleSidebar={toggleSidebar} />
         <main style={{
           flex: 1,
-          padding: 'var(--space-8)',
           background: 'var(--bg-primary)',
+          width: '100%',
+          overflowX: 'hidden',
         }}>
           <Outlet />
         </main>
       </div>
+
+      <style>{`
+        @media (min-width: 768px) {
+          div[style*="margin-right"] {
+            margin-right: ${collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'} !important;
+          }
+        }
+        @media (max-width: 767px) {
+          div[style*="margin-right"] {
+            margin-right: 0 !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -268,7 +268,7 @@ export default function ChatPage() {
         direction: 'rtl', 
         background: 'var(--bg-secondary)' 
       }} 
-      className="animate-fade chat-workspace-container"
+      className="page-enter chat-workspace-container"
     >
 
       {/* ─── Sidebar Contacts Pane ─── */}

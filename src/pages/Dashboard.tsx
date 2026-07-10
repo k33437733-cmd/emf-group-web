@@ -15,9 +15,10 @@ import { uploadFile, deleteFileFromStorage } from '../firebase/storage';
 import type { ContentItem, UserProfile, AuditLog, UserRole, UserStatus } from '../types';
 import { 
   BarChart3, Video, FolderPlus, Users, FileText, Download, Plus, Trash2,
-  Settings, Loader2, Film, HardDrive, Eye, ShieldAlert
+  Settings, Loader2, Film, HardDrive, Eye, ShieldAlert, Inbox, ClipboardList
 } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
+import EmptyState from '../components/ui/EmptyState';
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -186,21 +187,21 @@ export default function Dashboard() {
 
   if (authLoading) {
     return (
-      <div className="flex-center" style={{ minHeight: '60vh', color: 'var(--text-secondary)' }}>
-        <Loader2 className="animate-spin-fast me-2" size={24} />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-secondary)' }}>
+        <Loader2 className="animate-spin-fast" size={24} style={{ marginLeft: 'var(--space-2)' }} />
         جاري التحقق من الحساب...
       </div>
     );
   }
 
   return (
-    <div className="container-fluid px-0 animate-fade" style={{ direction: 'rtl' }}>
+    <div className="container-fluid px-4 page-enter" style={{ direction: 'rtl' }}>
       
       {/* Page Header */}
       <div className="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
           <h1 className="page-title">لوحة التحكم</h1>
-          <p className="body-text m-0" style={{ marginTop: 'var(--space-2) !important' }}>
+          <p className="body-text m-0" style={{ marginTop: 'var(--space-2)' }}>
             أهلاً بك يا <strong style={{ color: 'var(--text-primary)' }}>{user?.name}</strong>، صلاحية حسابك:{' '}
             <strong style={{ color: 'var(--accent-blue)' }}>
               {user?.role === 'super_admin' ? 'مدير عام' : user?.role === 'admin' ? 'مدير عادي' : 'عضو'}
@@ -211,9 +212,9 @@ export default function Dashboard() {
 
       <div className="row g-4">
         
-        {/* Tabpill Sidebar Selector */}
+        {/* Tabpill Selector */}
         <div className="col-lg-3 col-xl-2">
-          <div className="card-base" style={{ padding: 'var(--space-2)' }}>
+          <div className="card-base dashboard-tab-nav" style={{ padding: 'var(--space-2)' }}>
             <nav className="nav flex-column gap-1" role="tablist">
               {visibleTabs.map(tab => (
                 <button
@@ -237,6 +238,24 @@ export default function Dashboard() {
           </div>
         </div>
 
+        <style>{`
+          @media (max-width: 991px) {
+            .dashboard-tab-nav {
+              overflow-x: auto;
+              -webkit-overflow-scrolling: touch;
+            }
+            .dashboard-tab-nav .nav {
+              flex-direction: row !important;
+              white-space: nowrap;
+              gap: var(--space-1) !important;
+              padding-bottom: var(--space-1);
+            }
+            .dashboard-tab-nav .nav .nav-link {
+              flex-shrink: 0;
+            }
+          }
+        `}</style>
+
         {/* Dynamic Display Panel */}
         <div className="col-lg-9 col-xl-10">
           
@@ -245,72 +264,67 @@ export default function Dashboard() {
             <div className="d-flex flex-column gap-4 animate-scale">
               {isAdmin ? (
                 <>
-                  {/* Grid Metrics - Premium Cards */}
-                  <div className="row g-4">
+                  {/* Grid Metrics — responsive auto-fit */}
+                  <div className="grid-stats">
                     {statCards.map((card, i) => (
-                      <div className="col-sm-6 col-xl-3" key={i}>
-                        <div 
-                          className="card-base" 
-                          style={{ 
-                            height: '120px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '0 var(--space-6)',
-                          }}
-                        >
-                          <div className="d-flex align-items-center gap-4 w-100">
-                            <div 
-                              style={{
-                                width: '56px', height: '56px', borderRadius: 'var(--radius-lg)', flexShrink: 0,
-                                background: `${card.color}12`,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                              }}
-                            >
-                              <card.icon size={24} style={{ color: card.color }} />
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div className="small-label">{card.label}</div>
-                              <div className="stat-number">{card.value}</div>
-                            </div>
+                      <div
+                        key={i}
+                        className="card-base"
+                        style={{
+                          height: '120px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          padding: '0 var(--space-6)',
+                        }}
+                      >
+                        <div className="d-flex align-items-center gap-4 w-100">
+                          <div
+                            style={{
+                              width: '56px', height: '56px', borderRadius: 'var(--radius-lg)', flexShrink: 0,
+                              background: `${card.color}12`,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            }}
+                          >
+                            <card.icon size={24} style={{ color: card.color }} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div className="small-label">{card.label}</div>
+                            <div className="stat-number">{card.value}</div>
                           </div>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Second row stats - Premium Cards */}
-                  <div className="row g-4">
-                    <div className="col-md-6">
-                      <div className="card-base" style={{ height: '104px', display: 'flex', alignItems: 'center', padding: '0 var(--space-6)' }}>
-                        <div className="d-flex align-items-center gap-4 w-100">
-                          <div style={{
-                            width: '52px', height: '52px', borderRadius: 'var(--radius-lg)', flexShrink: 0,
-                            background: 'rgba(234,179,8,0.1)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            <Eye size={22} style={{ color: 'var(--accent-amber)' }} />
-                          </div>
-                          <div>
-                            <div className="small-label">إجمالي المشاهدات</div>
-                            <div className="stat-number">{stats.totalViews}</div>
-                          </div>
+                  {/* Second row stats */}
+                  <div className="grid-stats" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(250px, 100%), 1fr))' }}>
+                    <div className="card-base" style={{ height: '104px', display: 'flex', alignItems: 'center', padding: '0 var(--space-6)' }}>
+                      <div className="d-flex align-items-center gap-4 w-100">
+                        <div style={{
+                          width: '52px', height: '52px', borderRadius: 'var(--radius-lg)', flexShrink: 0,
+                          background: 'rgba(245,158,11,0.1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <Eye size={22} style={{ color: 'var(--accent-amber)' }} />
+                        </div>
+                        <div>
+                          <div className="small-label">إجمالي المشاهدات</div>
+                          <div className="stat-number">{stats.totalViews}</div>
                         </div>
                       </div>
                     </div>
-                    <div className="col-md-6">
-                      <div className="card-base" style={{ height: '104px', display: 'flex', alignItems: 'center', padding: '0 var(--space-6)' }}>
-                        <div className="d-flex align-items-center gap-4 w-100">
-                          <div style={{
-                            width: '52px', height: '52px', borderRadius: 'var(--radius-lg)', flexShrink: 0,
-                            background: 'rgba(6,182,212,0.1)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          }}>
-                            <HardDrive size={22} style={{ color: 'var(--accent-cyan)' }} />
-                          </div>
-                          <div>
-                            <div className="small-label">الملفات الأخرى</div>
-                            <div className="stat-number">{stats.filesCount}</div>
-                          </div>
+                    <div className="card-base" style={{ height: '104px', display: 'flex', alignItems: 'center', padding: '0 var(--space-6)' }}>
+                      <div className="d-flex align-items-center gap-4 w-100">
+                        <div style={{
+                          width: '52px', height: '52px', borderRadius: 'var(--radius-lg)', flexShrink: 0,
+                          background: 'rgba(6,182,212,0.1)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <HardDrive size={22} style={{ color: 'var(--accent-cyan)' }} />
+                        </div>
+                        <div>
+                          <div className="small-label">الملفات الأخرى</div>
+                          <div className="stat-number">{stats.filesCount}</div>
                         </div>
                       </div>
                     </div>
@@ -322,7 +336,7 @@ export default function Dashboard() {
                       <ShieldAlert size={18} style={{ color: 'var(--accent-blue)' }} />
                       ملاحظات الرفع والأمان للمسؤولين
                     </h5>
-                    <ul className="body-text mb-0" style={{ lineHeight: 1.85, paddingRight: '1.25rem' }}>
+                    <ul className="body-text mb-0" style={{ lineHeight: 'var(--lh-relaxed)', paddingRight: 'var(--space-5)' }}>
                       <li>أقصى حجم مسموح به لرفع مقاطع الفيديو هو <strong>50 ميجابايت</strong>.</li>
                       <li>أقصى حجم مسموح به لرفع التطبيقات والملفات التنفيذية هو <strong>100 ميجابايت</strong>.</li>
                       <li>تأكد من اختيار القسم الصحيح للمحتوى (فيديوهات / تطبيقات / ملفات) لتسهيل الفلترة.</li>
@@ -337,7 +351,7 @@ export default function Dashboard() {
                   <p className="body-text mb-4 mx-auto" style={{ maxWidth: '520px' }}>
                     تتيح لك بوابتنا تصفح الفيديوهات وتنزيل التطبيقات المخصصة لمسجلات كاميرات المراقبة والفيديو المسجلة. يمكنك زيارة المكتبة للبدء.
                   </p>
-                  <button onClick={() => navigate('/content')} className="btn btn-primary px-4 py-2">
+                  <button onClick={() => navigate('/content')} className="btn btn-primary">
                     اذهب للمكتبة الرقمية
                   </button>
                 </div>
@@ -448,63 +462,56 @@ export default function Dashboard() {
               <h4 className="section-title mb-4">إدارة محتويات المكتبة</h4>
               
               {contents.length === 0 ? (
-                <div className="text-center py-5 text-secondary">لا توجد ملفات مرفوعة حالياً.</div>
+                <EmptyState icon={<Inbox size={48} />} title="لا توجد ملفات" message="لم يتم رفع أي ملفات إلى المكتبة بعد." />
               ) : (
-                <div className="table-responsive">
-                  <table className="table align-middle mb-0" style={{ fontSize: '0.85rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                        <th className="py-3 text-secondary fw-semibold">الملف</th>
-                        <th className="py-3 text-secondary fw-semibold">القسم</th>
-                        <th className="py-3 text-secondary fw-semibold">الحجم</th>
-                        <th className="py-3 text-secondary fw-semibold">بواسطة</th>
-                        <th className="py-3 text-secondary fw-semibold">المشاهدات</th>
-                        <th className="py-3 text-secondary fw-semibold">التنزيلات</th>
-                        <th className="py-3 text-secondary fw-semibold text-center">التحكم</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {contents.map(item => (
-                        <tr key={item.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }} className="table-row-hover">
-                          <td className="py-3 fw-bold text-white">{item.title}</td>
-                          <td className="py-3">
-                            <span 
-                              className="badge" 
-                              style={{ 
-                                background: 'rgba(255,255,255,0.02)', 
+                <div className="table-container">
+                  <div className="table-responsive">
+                    <table className="table align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th>الملف</th>
+                          <th>القسم</th>
+                          <th>الحجم</th>
+                          <th>بواسطة</th>
+                          <th>المشاهدات</th>
+                          <th>التنزيلات</th>
+                          <th className="text-center">التحكم</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {contents.map(item => (
+                          <tr key={item.id}>
+                            <td className="fw-semibold">{item.title}</td>
+                            <td>
+                              <span className="badge" style={{ 
+                                background: 'var(--badge-bg)', 
                                 border: '1px solid var(--border-color)',
                                 color: 'var(--text-secondary)',
                                 padding: '5px 10px',
-                                borderRadius: '8px'
-                              }}
-                            >
-                              {item.type === 'video' ? '🎬 فيديو' : item.type === 'app' ? '📱 تطبيق' : '📎 ملف'}
-                            </span>
-                          </td>
-                          <td className="py-3 text-secondary">{(item.fileSize / (1024 * 1024)).toFixed(1)} MB</td>
-                          <td className="py-3 text-secondary">{item.uploadedByName}</td>
-                          <td className="py-3 text-white">{item.views || 0}</td>
-                          <td className="py-3 text-white">{item.downloads || 0}</td>
-                          <td className="py-3 text-center">
-                            <button 
-                              onClick={() => handleDeleteContent(item)} 
-                              className="btn btn-sm" 
-                              style={{
-                                background: 'rgba(239,68,68,0.06)',
-                                border: '1px solid rgba(239,68,68,0.12)',
-                                color: 'var(--accent-red)',
-                                padding: '6px 8px',
-                                borderRadius: '8px'
-                              }}
-                              title="حذف المحتوى"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                                borderRadius: 'var(--radius-sm)'
+                              }}>
+                                {item.type === 'video' ? '🎬 فيديو' : item.type === 'app' ? '📱 تطبيق' : '📎 ملف'}
+                              </span>
+                            </td>
+                            <td className="text-secondary">{(item.fileSize / (1024 * 1024)).toFixed(1)} MB</td>
+                            <td className="text-secondary">{item.uploadedByName}</td>
+                            <td>{item.views || 0}</td>
+                            <td>{item.downloads || 0}</td>
+                            <td className="text-center">
+                              <button 
+                                onClick={() => handleDeleteContent(item)} 
+                                className="btn btn-sm btn-icon btn-ghost"
+                                style={{ color: 'var(--accent-red)' }}
+                                title="حذف المحتوى"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
@@ -515,121 +522,83 @@ export default function Dashboard() {
             <div className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
               <h4 className="section-title mb-4">إدارة صلاحيات وحالة الأعضاء</h4>
               
-              <div className="table-responsive">
-                <table className="table align-middle mb-0" style={{ fontSize: '0.85rem' }}>
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid var(--border-color)' }}>
-                      <th className="py-3 text-secondary fw-semibold">العضو</th>
-                      <th className="py-3 text-secondary fw-semibold">البريد الإلكتروني</th>
-                      <th className="py-3 text-secondary fw-semibold">الصلاحية</th>
-                      <th className="py-3 text-secondary fw-semibold">الحالة</th>
-                      <th className="py-3 text-secondary fw-semibold">تغيير الدور</th>
-                      <th className="py-3 text-secondary fw-semibold text-center">تعديل الحالة</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {usersList.map(targetUser => (
-                      <tr key={targetUser.uid} style={{ borderBottom: '1px solid rgba(255,255,255,0.02)' }} className="table-row-hover">
-                        <td className="py-3 fw-bold text-white">{targetUser.name}</td>
-                        <td className="py-3 text-secondary">{targetUser.email}</td>
-                        <td className="py-3">
-                          <span 
-                            className="badge" 
-                            style={{
-                              background: targetUser.role === 'super_admin' 
-                                ? 'rgba(245,158,11,0.12)' 
-                                : targetUser.role === 'admin' 
-                                ? 'rgba(6,182,212,0.12)' 
-                                : 'rgba(255,255,255,0.04)',
-                              border: targetUser.role === 'super_admin'
-                                ? '1px solid rgba(245,158,11,0.25)'
-                                : targetUser.role === 'admin'
-                                ? '1px solid rgba(6,182,212,0.25)'
-                                : '1px solid var(--border-color)',
-                              color: targetUser.role === 'super_admin'
-                                ? 'var(--accent-amber)'
-                                : targetUser.role === 'admin'
-                                ? 'var(--accent-cyan)'
-                                : 'var(--text-secondary)',
+              <div className="table-container">
+                <div className="table-responsive">
+                  <table className="table align-middle mb-0">
+                    <thead>
+                      <tr>
+                        <th>العضو</th>
+                        <th>البريد الإلكتروني</th>
+                        <th>الصلاحية</th>
+                        <th>الحالة</th>
+                        <th>تغيير الدور</th>
+                        <th className="text-center">تعديل الحالة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {usersList.map(targetUser => (
+                        <tr key={targetUser.uid}>
+                          <td className="fw-semibold">{targetUser.name}</td>
+                          <td className="text-secondary">{targetUser.email}</td>
+                          <td>
+                            <span className="badge" style={{ 
+                              background: targetUser.role === 'super_admin' ? 'rgba(245,158,11,0.12)' : targetUser.role === 'admin' ? 'rgba(6,182,212,0.12)' : 'var(--badge-bg)',
+                              border: targetUser.role === 'super_admin' ? '1px solid rgba(245,158,11,0.25)' : targetUser.role === 'admin' ? '1px solid rgba(6,182,212,0.25)' : '1px solid var(--border-color)',
+                              color: targetUser.role === 'super_admin' ? 'var(--accent-amber)' : targetUser.role === 'admin' ? 'var(--accent-cyan)' : 'var(--text-secondary)',
                               padding: '5px 10px',
-                              borderRadius: '8px'
-                            }}
-                          >
-                            {targetUser.role === 'super_admin' ? 'مدير عام' : targetUser.role === 'admin' ? 'مدير' : 'عضو'}
-                          </span>
-                        </td>
-                        <td className="py-3">
-                          <span 
-                            className="badge"
-                            style={{
+                              borderRadius: 'var(--radius-sm)'
+                            }}>
+                              {targetUser.role === 'super_admin' ? 'مدير عام' : targetUser.role === 'admin' ? 'مدير' : 'عضو'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="badge" style={{ 
                               background: targetUser.status === 'blocked' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
                               border: targetUser.status === 'blocked' ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(16,185,129,0.25)',
                               color: targetUser.status === 'blocked' ? 'var(--accent-red)' : 'var(--accent-emerald)',
                               padding: '5px 10px',
-                              borderRadius: '8px'
-                            }}
-                          >
-                            {targetUser.status === 'blocked' ? '🚫 محظور' : '✓ نشط'}
-                          </span>
-                        </td>
-                        <td className="py-3">
-                          {targetUser.role !== 'super_admin' && (
-                            <div className="d-flex gap-1">
+                              borderRadius: 'var(--radius-sm)'
+                            }}>
+                              {targetUser.status === 'blocked' ? '🚫 محظور' : '✓ نشط'}
+                            </span>
+                          </td>
+                          <td>
+                            {targetUser.role !== 'super_admin' && (
+                              <div className="d-flex gap-1">
+                                <button 
+                                  onClick={() => handleChangeRole(targetUser, 'admin')} 
+                                  className={`btn btn-sm ${targetUser.role === 'admin' ? 'btn-ghost' : 'btn-secondary'}`}
+                                  style={targetUser.role === 'admin' ? { color: 'var(--accent-cyan)' } : {}}
+                                  disabled={targetUser.role === 'admin'}
+                                >
+                                  مدير
+                                </button>
+                                <button 
+                                  onClick={() => handleChangeRole(targetUser, 'user')} 
+                                  className={`btn btn-sm ${targetUser.role === 'user' ? 'btn-ghost' : 'btn-secondary'}`}
+                                  disabled={targetUser.role === 'user'}
+                                >
+                                  عضو
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                          <td className="text-center">
+                            {targetUser.role !== 'super_admin' && (
                               <button 
-                                onClick={() => handleChangeRole(targetUser, 'admin')} 
-                                className="btn btn-sm"
-                                style={{
-                                  background: 'rgba(6,182,212,0.04)',
-                                  border: '1px solid rgba(6,182,212,0.15)',
-                                  color: 'var(--accent-cyan)',
-                                  padding: '5px 10px',
-                                  fontSize: '0.78rem',
-                                  borderRadius: '8px'
-                                }}
-                                disabled={targetUser.role === 'admin'}
+                                onClick={() => handleToggleBlock(targetUser)} 
+                                className={`btn btn-sm ${targetUser.status === 'blocked' ? 'btn-ghost' : 'btn-ghost'}`}
+                                style={{ color: targetUser.status === 'blocked' ? 'var(--accent-emerald)' : 'var(--accent-red)' }}
                               >
-                                مدير
+                                {targetUser.status === 'blocked' ? 'تفعيل' : 'حظر'}
                               </button>
-                              <button 
-                                onClick={() => handleChangeRole(targetUser, 'user')} 
-                                className="btn btn-sm"
-                                style={{
-                                  background: 'rgba(255,255,255,0.02)',
-                                  border: '1px solid var(--border-color)',
-                                  color: 'var(--text-secondary)',
-                                  padding: '5px 10px',
-                                  fontSize: '0.78rem',
-                                  borderRadius: '8px'
-                                }}
-                                disabled={targetUser.role === 'user'}
-                              >
-                                عضو
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-3 text-center">
-                          {targetUser.role !== 'super_admin' && (
-                            <button 
-                              onClick={() => handleToggleBlock(targetUser)} 
-                              className={`btn btn-sm ${targetUser.status === 'blocked' ? 'btn-success' : 'btn-danger'}`}
-                              style={{
-                                background: targetUser.status === 'blocked' ? 'rgba(16,185,129,0.08)' : 'rgba(239,68,68,0.08)',
-                                border: targetUser.status === 'blocked' ? '1px solid rgba(16,185,129,0.2)' : '1px solid rgba(239,68,68,0.2)',
-                                color: targetUser.status === 'blocked' ? 'var(--accent-emerald)' : 'var(--accent-red)',
-                                padding: '5px 12px',
-                                fontSize: '0.78rem',
-                                borderRadius: '8px'
-                              }}
-                            >
-                              {targetUser.status === 'blocked' ? 'تفعيل الحساب' : 'حظر الحساب'}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -639,40 +608,40 @@ export default function Dashboard() {
             <div className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
               <h4 className="section-title mb-4">سجل نشاط مديري النظام</h4>
               
-              <div className="d-flex flex-column gap-3" style={{ maxHeight: '480px', overflowY: 'auto', paddingRight: '4px' }}>
+              <div className="d-flex flex-column gap-2" style={{ maxHeight: '480px', overflowY: 'auto', paddingLeft: 'var(--space-2)' }}>
                 {auditLogs.length === 0 ? (
-                  <div className="text-center py-4 text-secondary small">لا توجد سجلات نشاط مسجلة.</div>
+                  <EmptyState icon={<ClipboardList size={48} />} title="لا توجد سجلات" message="لم يتم تسجيل أي أحداث نشاط بعد." />
                 ) : (
                   auditLogs.map(log => (
                     <div 
                       key={log.id} 
-                      className="d-flex justify-content-between align-items-center p-3 log-timeline-row" 
+                      className="d-flex justify-content-between align-items-center p-3" 
                       style={{ 
-                        background: 'rgba(255,255,255,0.01)', 
+                        background: 'var(--bg-tertiary)',
                         border: '1px solid var(--border-color)',
-                        borderRadius: '12px',
-                        transition: 'border-color 0.2s',
+                        borderRadius: 'var(--radius-md)',
+                        transition: 'all var(--transition-base)',
                       }}
                     >
                       <div className="text-end">
-                        <span className="fw-bold text-white" style={{ fontSize: '0.85rem' }}>{log.userName}</span>
+                        <span className="fw-semibold" style={{ fontSize: 'var(--text-sm)' }}>{log.userName}</span>
                         <span 
                           className="badge mx-2"
                           style={{
                             background: 'rgba(59,130,246,0.08)',
                             border: '1px solid rgba(59,130,246,0.15)',
                             color: 'var(--accent-blue)',
-                            fontSize: '0.72rem',
-                            padding: '4px 8px',
-                            borderRadius: '6px'
+                            fontSize: 'var(--text-xs)',
+                            padding: '3px 8px',
+                            borderRadius: 'var(--radius-sm)'
                           }}
                         >
                           {log.action}
                         </span>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', marginTop: '6px' }}>{log.description}</div>
+                        <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', marginTop: '4px' }}>{log.description}</div>
                       </div>
                       
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', direction: 'ltr', whiteSpace: 'nowrap' }}>
+                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', direction: 'ltr', whiteSpace: 'nowrap' }}>
                         {new Date(log.createdAt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
                       </span>
                     </div>
@@ -684,15 +653,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <style>{`
-        .table-row-hover:hover {
-          background: rgba(255, 255, 255, 0.01) !important;
-        }
-        .log-timeline-row:hover {
-          border-color: rgba(255, 255, 255, 0.1) !important;
-          background: rgba(255, 255, 255, 0.02) !important;
-        }
-      `}</style>
+
     </div>
   );
 }

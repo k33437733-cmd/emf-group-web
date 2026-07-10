@@ -21,87 +21,72 @@ export function showToast(message: string, type: ToastType = 'success') {
   listeners.forEach(listener => listener(toast));
 }
 
+const config: Record<ToastType, { icon: any; border: string; glow: string }> = {
+  success: { icon: CheckCircle, border: 'var(--accent-emerald)', glow: 'rgba(16,185,129,0.12)' },
+  error:   { icon: XCircle,      border: 'var(--accent-red)',     glow: 'rgba(239,68,68,0.12)' },
+  warning: { icon: AlertTriangle,border: 'var(--accent-amber)',   glow: 'rgba(245,158,11,0.12)' },
+  info:    { icon: Info,          border: 'var(--accent-blue)',    glow: 'rgba(59,130,246,0.12)' },
+};
+
 export function ToastContainer() {
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
   useEffect(() => {
     const handleNewToast = (newToast: ToastMessage) => {
       setToasts(prev => [...prev, newToast]);
-      setTimeout(() => {
-        removeToast(newToast.id);
-      }, 4000);
+      setTimeout(() => removeToast(newToast.id), 4000);
     };
-
     listeners.add(handleNewToast);
-    return () => {
-      listeners.delete(handleNewToast);
-    };
+    return () => { listeners.delete(handleNewToast); };
   }, []);
 
-  const removeToast = (id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  };
+  const removeToast = (id: string) => setToasts(prev => prev.filter(t => t.id !== id));
 
   if (toasts.length === 0) return null;
 
   return (
-    <div className="toast-container" style={{ direction: 'rtl' }}>
+    <div style={{
+      position: 'fixed',
+      bottom: 'var(--space-6)',
+      left: 'var(--space-6)',
+      zIndex: 9999,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 'var(--space-3)',
+      direction: 'rtl',
+    }}>
       {toasts.map(toast => {
-        let icon = <CheckCircle className="text-emerald-500" style={{ color: '#10b981' }} size={20} />;
-        let borderColor = '#10b981';
-        let bgGlow = 'rgba(16, 185, 129, 0.1)';
-
-        if (toast.type === 'error') {
-          icon = <XCircle style={{ color: '#ef4444' }} size={20} />;
-          borderColor = '#ef4444';
-          bgGlow = 'rgba(239, 68, 68, 0.1)';
-        } else if (toast.type === 'warning') {
-          icon = <AlertTriangle style={{ color: '#f59e0b' }} size={20} />;
-          borderColor = '#f59e0b';
-          bgGlow = 'rgba(245, 158, 11, 0.1)';
-        } else if (toast.type === 'info') {
-          icon = <Info style={{ color: '#3b82f6' }} size={20} />;
-          borderColor = '#3b82f6';
-          bgGlow = 'rgba(59, 130, 246, 0.1)';
-        }
-
+        const c = config[toast.type];
+        const Icon = c.icon;
         return (
           <div
             key={toast.id}
-            className="animate-fade"
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
-              padding: '14px 20px',
-              borderRadius: '12px',
-              background: 'rgba(15, 22, 42, 0.9)',
-              backdropFilter: 'blur(10px)',
-              borderRight: `4px solid ${borderColor}`,
-              boxShadow: `0 10px 25px -5px rgba(0, 0, 0, 0.5), ${bgGlow} 0px 4px 15px`,
-              minWidth: '300px',
-              maxWidth: '450px',
+              gap: 'var(--space-3)',
+              padding: 'var(--space-3) var(--space-4)',
+              borderRadius: 'var(--radius-lg)',
+              background: 'var(--bg-elevated)',
+              border: `1px solid var(--border-color)`,
+              borderRight: `3px solid ${c.border}`,
+              boxShadow: `var(--shadow-elevated), 0 0 20px ${c.glow}`,
+              minWidth: '320px',
+              maxWidth: '460px',
               justifyContent: 'space-between',
-              color: '#f3f4f6'
+              color: 'var(--text-primary)',
+              animation: 'toast-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              {icon}
-              <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>{toast.message}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+              <Icon size={20} style={{ color: c.border, flexShrink: 0 }} />
+              <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>{toast.message}</span>
             </div>
-            <button
-              onClick={() => removeToast(toast.id)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: '#9ca3af',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                padding: '2px'
-              }}
-            >
-              <X size={16} />
+            <button onClick={() => removeToast(toast.id)} style={{
+              background: 'none', border: 'none', color: 'var(--text-tertiary)',
+              cursor: 'pointer', display: 'flex', padding: '2px', flexShrink: 0,
+            }}>
+              <X size={15} />
             </button>
           </div>
         );

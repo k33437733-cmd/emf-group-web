@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
-import { Bell, LogOut, Sun, Moon, Menu, Search, Settings, User, ChevronDown } from 'lucide-react';
+import { Bell, LogOut, Sun, Moon, Menu, Search, Settings, ChevronDown } from 'lucide-react';
 import { subscribeToNotifications, markNotificationAsRead, markAllNotificationsAsRead } from '../../firebase/db';
 import type { SystemNotification } from '../../types';
 
@@ -81,7 +81,8 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: '0 var(--space-6)',
+      padding: '0 var(--space-4)',
+      paddingRight: 'var(--space-6)',
       direction: 'rtl',
       position: 'sticky',
       top: 0,
@@ -89,7 +90,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
       transition: 'background var(--transition-base)',
     }}>
       {/* Right side: menu + page title */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(8px, 2vw, 16px)' }}>
         <button
           onClick={onToggleSidebar}
           style={{
@@ -99,19 +100,21 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             transition: 'var(--transition-base)',
           }}
           className="navbar-icon-btn"
+          aria-label="فتح القائمة"
         >
           <Menu size={20} />
         </button>
         <h1 style={{
-          fontSize: 'var(--text-xl)',
+          fontSize: 'clamp(0.875rem, 2vw, 1.125rem)',
           fontWeight: 700,
           color: 'var(--text-primary)',
           margin: 0,
+          whiteSpace: 'nowrap',
         }}>{pageTitle}</h1>
       </div>
 
       {/* Left side: actions */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(2px, 0.75vw, 8px)' }}>
         {/* Search */}
         <button
           onClick={() => setSearchOpen(!searchOpen)}
@@ -122,11 +125,12 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             transition: 'var(--transition-base)',
           }}
           className="navbar-icon-btn"
+          aria-label="بحث"
         >
           <Search size={19} />
         </button>
 
-        {/* Theme toggle */}
+        {/* Theme toggle — hidden on smallest screens inside navbar, still in sidebar */}
         <button
           onClick={toggleTheme}
           style={{
@@ -135,7 +139,8 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             padding: 'var(--space-2)', display: 'flex', borderRadius: 'var(--radius-md)',
             transition: 'var(--transition-base)',
           }}
-          className="navbar-icon-btn"
+          className="navbar-icon-btn d-md-none"
+          aria-label={theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
         >
           {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
         </button>
@@ -151,6 +156,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
               position: 'relative', transition: 'var(--transition-base)',
             }}
             className="navbar-icon-btn"
+            aria-label={`الإشعارات${unreadCount > 0 ? ` (${unreadCount} غير مقروء)` : ''}`}
           >
             <Bell size={19} />
             {unreadCount > 0 && (
@@ -169,7 +175,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             <div style={{
               ...sharedMenuStyle,
               position: 'absolute', top: '48px', left: '0',
-              width: '360px', maxHeight: '460px', overflowY: 'auto',
+              width: 'min(360px, 90vw)', maxHeight: '460px', overflowY: 'auto',
               animation: 'scaleIn 0.18s ease',
             }}>
               <div style={{
@@ -231,6 +237,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                 transition: 'var(--transition-base)',
               }}
               className="navbar-profile-btn"
+              aria-label="قائمة الملف الشخصي"
             >
               <div style={{
                 width: '34px', height: '34px', borderRadius: '50%',
@@ -241,13 +248,13 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
               }}>
                 {user.name?.charAt(0) || '?'}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', textAlign: 'right', lineHeight: 1.2 }}>
+              <div className="profile-name-desktop" style={{ display: 'flex', flexDirection: 'column', textAlign: 'right', lineHeight: 1.2 }}>
                 <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>{user.name}</span>
                 <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
                   {user.role === 'super_admin' ? 'مدير عام' : user.role === 'admin' ? 'مدير' : 'عضو'}
                 </span>
               </div>
-              <ChevronDown size={14} color="var(--text-tertiary)" style={{ transition: 'var(--transition-base)', transform: profileOpen ? 'rotate(180deg)' : 'none' }} />
+              <ChevronDown className="profile-chevron-desktop" size={14} color="var(--text-tertiary)" style={{ transition: 'var(--transition-base)', transform: profileOpen ? 'rotate(180deg)' : 'none' }} />
             </button>
 
             {profileOpen && (
@@ -289,23 +296,12 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
       </div>
 
       <style>{`
-        .navbar-icon-btn:hover {
-          background: var(--sidebar-hover) !important;
-          color: var(--text-primary) !important;
-        }
-        .navbar-profile-btn:hover {
-          background: var(--sidebar-hover) !important;
-        }
-        .notif-item:hover {
-          background: var(--sidebar-hover) !important;
-        }
-        .dropdown-item-custom:hover {
-          background: var(--sidebar-hover) !important;
-        }
         @media (max-width: 767px) {
-          .navbar-profile-btn > div:last-of-type {
-            display: none !important;
-          }
+          .profile-name-desktop { display: none !important; }
+          .profile-chevron-desktop { display: none !important; }
+        }
+        @media (min-width: 768px) {
+          .d-md-none { display: none !important; }
         }
       `}</style>
     </header>

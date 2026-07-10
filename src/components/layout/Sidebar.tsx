@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
 import {
   LayoutDashboard, FileText, MessageSquare, HeadphonesIcon,
-  FolderKanban, ChevronLeft, LogOut, Sun, Moon, Users,
+  FolderKanban, ChevronLeft, LogOut, Sun, Moon,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -57,46 +57,56 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
 
   const isActive = (path: string) => location.pathname === path;
 
+  const handleNavClick = () => {
+    if (window.innerWidth < 768 && onMobileClose) {
+      onMobileClose();
+    }
+  };
+
   return (
     <>
-      {/* Overlay for mobile */}
       {mobileOpen && (
         <div
           onClick={onMobileClose}
           style={{
             position: 'fixed', inset: 0, zIndex: 1031,
             background: 'var(--bg-overlay)',
+            animation: 'fadeIn 0.2s ease',
           }}
+          aria-hidden="true"
         />
       )}
 
-      <aside style={{
-        width: collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)',
-        height: '100vh',
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        zIndex: 1032,
-        background: 'var(--sidebar-bg)',
-        borderLeft: '1px solid var(--sidebar-border)',
-        display: 'flex',
-        flexDirection: 'column',
-        transition: `width var(--transition-slow)`,
-        overflow: 'hidden',
-        boxShadow: 'var(--shadow-sidebar)',
-        transform: mobileOpen !== undefined
-          ? `translateX(${mobileOpen ? '0' : collapsed ? 'calc(100% + 20px)' : '0'})`
-          : 'none',
-        ...(mobileOpen !== undefined ? {
+      <aside
+        role="navigation"
+        aria-label="القائمة الجانبية"
+        style={{
+          width: collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)',
+          height: '100vh',
           position: 'fixed',
           top: 0,
           right: 0,
-          bottom: 0,
           zIndex: 1032,
-          transition: 'transform var(--transition-slow)',
+          background: 'var(--sidebar-bg)',
+          borderLeft: '1px solid var(--sidebar-border)',
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'width 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+          overflow: 'hidden',
           boxShadow: mobileOpen ? 'var(--shadow-sidebar)' : 'none',
-        } : {}),
-      }}>
+          transform: mobileOpen !== undefined
+            ? `translateX(${mobileOpen ? '0' : 'calc(100% + 20px)'})`
+            : 'none',
+          ...(mobileOpen !== undefined ? {
+            position: 'fixed' as const,
+            top: 0,
+            right: 0,
+            bottom: 0,
+            zIndex: 1032,
+            transition: 'transform 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+          } : {}),
+        }}
+      >
         {/* Logo */}
         <div style={{
           height: 'var(--navbar-height)',
@@ -109,36 +119,39 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
           flexShrink: 0,
         }}>
           {!collapsed && (
-            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ color: 'var(--text-primary)', fontWeight: 900, fontSize: '1.25rem', letterSpacing: '0.3px' }}>EMF</span>
+            <Link to="/" onClick={handleNavClick} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 900, fontSize: '1.1rem', letterSpacing: '0.3px' }}>EMF</span>
               <span style={{
                 background: 'var(--gradient-gold)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                fontWeight: 900, fontSize: '1.25rem',
+                fontWeight: 900, fontSize: '1.1rem',
               }}>GROUP</span>
             </Link>
           )}
           {collapsed && (
-            <Link to="/" style={{ textDecoration: 'none' }}>
+            <Link to="/" onClick={handleNavClick} style={{ textDecoration: 'none' }}>
               <span style={{ color: 'var(--accent-gold)', fontWeight: 900, fontSize: '1.1rem' }}>E</span>
             </Link>
           )}
-          <button onClick={onToggle} style={{
-            background: 'transparent',
-            border: 'none',
-            borderRadius: 'var(--radius-sm)',
-            color: 'var(--sidebar-text)',
-            cursor: 'pointer',
-            padding: 'var(--space-1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            transition: 'var(--transition-base)',
-            flexShrink: 0,
-            opacity: 0.6,
-          }}
+          <button
+            onClick={onToggle}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              color: 'var(--sidebar-text)',
+              cursor: 'pointer',
+              padding: 'var(--space-1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'var(--transition-base)',
+              flexShrink: 0,
+              opacity: 0.6,
+            }}
             className="sidebar-toggle-btn"
+            aria-label={collapsed ? 'توسيع القائمة' : 'طي القائمة'}
           >
             <ChevronLeft size={16} style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'var(--transition-base)' }} />
           </button>
@@ -173,7 +186,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                   <Link
                     key={item.path}
                     to={item.path}
-                    onClick={onMobileClose}
+                    onClick={handleNavClick}
                     style={{
                       display: 'flex',
                       alignItems: 'center',
@@ -197,6 +210,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                     }}
                     title={collapsed ? item.label : undefined}
                     className="sidebar-link"
+                    aria-current={active ? 'page' : undefined}
                   >
                     <item.icon size={20} style={{ flexShrink: 0, opacity: active ? 1 : 0.7 }} />
                     {!collapsed && <span>{item.label}</span>}
@@ -218,21 +232,25 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
           justifyContent: collapsed ? 'center' : 'space-between',
         }}>
           {/* Theme toggle */}
-          <button onClick={toggleTheme} style={{
-            background: 'transparent',
-            border: '1px solid var(--sidebar-border)',
-            borderRadius: 'var(--radius-md)',
-            color: 'var(--sidebar-text)',
-            cursor: 'pointer',
-            padding: collapsed ? 'var(--space-2)' : 'var(--space-2) var(--space-3)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: collapsed ? '0' : 'var(--space-2)',
-            transition: 'var(--transition-base)',
-            flexShrink: 0,
-            width: collapsed ? '40px' : 'auto',
-            justifyContent: 'center',
-          }}>
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--sidebar-border)',
+              borderRadius: 'var(--radius-md)',
+              color: 'var(--sidebar-text)',
+              cursor: 'pointer',
+              padding: collapsed ? 'var(--space-2)' : 'var(--space-2) var(--space-3)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: collapsed ? '0' : 'var(--space-2)',
+              transition: 'var(--transition-base)',
+              flexShrink: 0,
+              width: collapsed ? '40px' : 'auto',
+              justifyContent: 'center',
+            }}
+            aria-label={theme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
+          >
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
             {!collapsed && <span style={{ fontSize: 'var(--text-xs)' }}>{theme === 'dark' ? 'فاتح' : 'داكن'}</span>}
           </button>
@@ -256,22 +274,32 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                   {user.role === 'super_admin' ? 'مدير عام' : user.role === 'admin' ? 'مدير' : 'عضو'}
                 </div>
               </div>
-              <button onClick={logout} style={{
-                background: 'transparent', border: 'none',
-                color: 'var(--accent-red)', cursor: 'pointer',
-                padding: 'var(--space-1)', display: 'flex', opacity: 0.7,
-                transition: 'var(--transition-base)',
-              }} title="تسجيل الخروج">
+              <button
+                onClick={logout}
+                style={{
+                  background: 'transparent', border: 'none',
+                  color: 'var(--accent-red)', cursor: 'pointer',
+                  padding: 'var(--space-1)', display: 'flex', opacity: 0.7,
+                  transition: 'var(--transition-base)',
+                }}
+                title="تسجيل الخروج"
+                aria-label="تسجيل الخروج"
+              >
                 <LogOut size={15} />
               </button>
             </div>
           )}
           {user && collapsed && (
-            <button onClick={logout} style={{
-              background: 'transparent', border: 'none',
-              color: 'var(--accent-red)', cursor: 'pointer',
-              padding: 'var(--space-1)', display: 'flex', opacity: 0.7,
-            }} title="تسجيل الخروج">
+            <button
+              onClick={logout}
+              style={{
+                background: 'transparent', border: 'none',
+                color: 'var(--accent-red)', cursor: 'pointer',
+                padding: 'var(--space-1)', display: 'flex', opacity: 0.7,
+              }}
+              title="تسجيل الخروج"
+              aria-label="تسجيل الخروج"
+            >
               <LogOut size={16} />
             </button>
           )}
@@ -279,18 +307,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       </aside>
 
       <style>{`
-        .sidebar-link:hover {
-          background: var(--sidebar-hover) !important;
-          color: var(--sidebar-text-active) !important;
-        }
-        .sidebar-link:hover svg {
-          opacity: 1 !important;
-        }
         .sidebar-toggle-btn:hover {
           opacity: 1 !important;
-          background: var(--sidebar-hover) !important;
         }
-        @media (max-width: 767px) {
+        @media (max-width: 1023px) {
           aside[style*="position: fixed"] {
             transform: translateX(\${mobileOpen ? '0' : 'calc(100% + 20px)'}) !important;
           }

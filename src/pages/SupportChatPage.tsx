@@ -143,7 +143,7 @@ export default function SupportChatPage() {
         padding: '0 24px', 
         direction: 'rtl' 
       }} 
-      className="animate-fade support-chat-page-wrapper"
+      className="page-enter support-chat-page-wrapper"
     >
       
       <div 
