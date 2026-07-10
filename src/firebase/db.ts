@@ -30,6 +30,7 @@ export async function addContentItem(item: Omit<ContentItem, 'id' | 'views' | 'd
     id: docRef.id,
     views: 0,
     downloads: 0,
+    downloadProtected: item.downloadProtected || false,
     createdAt: new Date().toISOString()
   };
   await setDoc(docRef, newItem);

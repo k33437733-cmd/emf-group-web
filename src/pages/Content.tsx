@@ -21,17 +21,24 @@ export default function Content() {
   const [activeVideoUrl, setActiveVideoUrl] = useState<string | null>(null);
   const [activeVideoTitle, setActiveVideoTitle] = useState<string>('');
 
+  const canViewRestricted = !!user && ['agent', 'admin', 'super_admin'].includes(user.role);
+  const canUseAdminDownload = !!user && ['admin', 'super_admin'].includes(user.role);
+
   useEffect(() => {
-    if (!user) return;
     const unsub = subscribeToContents((list) => {
       setItems(list);
       setLoading(false);
     });
     return () => unsub();
-  }, [user]);
+  }, []);
 
   useEffect(() => {
-    let result = items;
+    let result = items.filter(item => {
+      if (item.accessLevel === 'all') return true;
+      if (item.accessLevel === 'agent') return canViewRestricted;
+      if (item.accessLevel === 'admin') return canUseAdminDownload;
+      return false;
+    });
     if (selectedType !== 'all') result = result.filter(item => item.type === selectedType);
     if (search.trim()) {
       const term = search.toLowerCase().trim();
@@ -40,9 +47,14 @@ export default function Content() {
       );
     }
     setFilteredItems(result);
-  }, [items, search, selectedType]);
+  }, [items, search, selectedType, canViewRestricted, canUseAdminDownload]);
 
   const handleDownload = async (item: ContentItem) => {
+    if (item.downloadProtected && !canUseAdminDownload) {
+      showToast('هذا المحتوى محمي من التنزيل.', 'warning');
+      return;
+    }
+
     try {
       await incrementContentDownloads(item.id);
       window.open(item.url, '_blank');
@@ -223,16 +235,26 @@ export default function Content() {
                         <Play size={14} style={{ fill: '#fff' }} /> عرض الفيديو
                       </button>
                     ) : (
-                      <button onClick={() => handleDownload(item)} className="btn btn-primary" style={{ flex: 1, height: '36px', fontSize: 'var(--text-sm)' }}>
+                      <button onClick={() => handleDownload(item)} className="btn btn-primary" disabled={item.downloadProtected && !canUseAdminDownload} style={{ flex: 1, height: '36px', fontSize: 'var(--text-sm)', opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1, cursor: item.downloadProtected && !canUseAdminDownload ? 'not-allowed' : 'pointer' }}>
                         <Download size={14} /> تنزيل
                       </button>
                     )}
-                    <button onClick={() => handleDownload(item)} title="تحميل مباشر" className="btn btn-secondary" style={{ width: '36px', height: '36px', padding: 0, borderRadius: 'var(--radius-md)' }}>
+                    <button onClick={() => handleDownload(item)} title={item.downloadProtected ? 'محتوى محمي من التنزيل' : 'تحميل مباشر'} className="btn btn-secondary" disabled={item.downloadProtected && !canUseAdminDownload} style={{ width: '36px', height: '36px', padding: 0, borderRadius: 'var(--radius-md)', opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1, cursor: item.downloadProtected && !canUseAdminDownload ? 'not-allowed' : 'pointer' }}>
                       <Download size={14} />
                     </button>
                     <button onClick={() => handleShare(item, 'whatsapp')} title="مشاركة واتساب" className="btn btn-icon btn-sm btn-ghost" style={{ color: 'var(--accent-emerald)' }}>
                       <Share2 size={14} />
                     </button>
+                  </div>
+                  {item.downloadProtected && (
+                    <div style={{ marginTop: '8px', fontSize: '0.78rem', color: 'var(--accent-red)' }}>{'هذا المحتوى محمي من التنزيل'}</div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
                   </div>
                 </div>
               </div>

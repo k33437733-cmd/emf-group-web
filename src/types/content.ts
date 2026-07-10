@@ -21,6 +21,7 @@ export interface ContentItem {
   uploadedByName: string;
   views: number;
   downloads: number;
+  downloadProtected?: boolean;
   tags: string[];
   accessLevel: ContentAccessLevel;
   isPublished: boolean;
@@ -44,12 +45,13 @@ export interface CreateContentPayload {
   uploadedByName: string;
   tags?: string[];
   accessLevel?: ContentAccessLevel;
+  downloadProtected?: boolean;
 }
 
 // ─── Update Payload ───────────────────────────────────────────────────────────
 
 export type UpdateContentPayload = Partial<
-  Pick<ContentItem, 'title' | 'description' | 'tags' | 'accessLevel' | 'isPublished' | 'thumbnailUrl'>
+  Pick<ContentItem, 'title' | 'description' | 'tags' | 'accessLevel' | 'isPublished' | 'thumbnailUrl' | 'downloadProtected'>
 >;
 
 // ─── Validation ───────────────────────────────────────────────────────────────

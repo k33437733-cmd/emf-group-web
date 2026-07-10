@@ -41,14 +41,23 @@ export default function Home() {
     };
   }, [latestItems]); // Trigger overlay triggers when items load
 
+  const canViewRestricted = !!user && ['agent', 'admin', 'super_admin'].includes(user.role);
+  const canViewAdminOnly = !!user && ['admin', 'super_admin'].includes(user.role);
+
   useEffect(() => {
     const unsub = subscribeToContents((items) => {
+      const visibleItems = items.filter(item => {
+        if (item.accessLevel === 'all') return true;
+        if (item.accessLevel === 'agent') return canViewRestricted;
+        if (item.accessLevel === 'admin') return canViewAdminOnly;
+        return false;
+      });
       // Show only top 6 latest items on home page
-      setLatestItems(items.slice(0, 6));
+      setLatestItems(visibleItems.slice(0, 6));
       setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [canViewRestricted, canViewAdminOnly]);
 
   const handleShare = (item: ContentItem, platform: 'whatsapp' | 'facebook') => {
     const text = `تفضل بمشاهدة وتحميل "${item.title}" من منصة EMF Group:`;
