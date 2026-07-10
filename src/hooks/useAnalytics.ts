@@ -1,10 +1,9 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { UserProfile } from '../types/auth';
 import type { ContentItem } from '../types/content';
 import type { AuditLog } from '../types/audit';
-import type { Ticket } from '../types/support';
 
 export type DatePreset = 'today' | '7d' | '30d' | '90d' | 'year' | 'custom';
 
@@ -52,12 +51,6 @@ export interface ActivityEvent {
   timestamp: string;
   icon: string;
   color: string;
-}
-
-function getTodayRange(): DateRange {
-  const s = new Date(); s.setHours(0,0,0,0);
-  const e = new Date(); e.setHours(23,59,59,999);
-  return { preset: 'today', start: s, end: e };
 }
 
 function getRange(preset: DatePreset, customStart?: Date, customEnd?: Date): DateRange {
@@ -135,10 +128,7 @@ export function useAnalytics(): AnalyticsState {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [contents, setContents] = useState<ContentItem[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const unsubRef = useRef<(() => void)[]>([]);
 
   useEffect(() => {
     const unsubs: (() => void)[] = [];
@@ -158,15 +148,6 @@ export function useAnalytics(): AnalyticsState {
       setAuditLogs(snap.docs.map(d => ({ ...d.data() }) as AuditLog));
     }, err => console.error('[Analytics] audit error:', err)));
 
-    const ticketsQ = query(collection(db, 'tickets'), orderBy('createdAt', 'desc'));
-    unsubs.push(onSnapshot(ticketsQ, snap => {
-      setTickets(snap.docs.filter(d => {
-        const s = d.data().status;
-        return s === 'new' || s === 'open' || s === 'pending_agent' || s === 'pending_customer';
-      }).map(d => ({ ...d.data() }) as Ticket));
-    }, err => console.error('[Analytics] tickets error:', err)));
-
-    unsubRef.current = unsubs;
     setLoading(false);
 
     return () => { unsubs.forEach(u => u()); };
@@ -396,9 +377,6 @@ export function useAnalytics(): AnalyticsState {
     events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
     return events.slice(0, 50);
   }, [auditLogs, users]);
-
-  const filteredUsers = useMemo(() => users.filter(isInCurrent), [users, dateRange]);
-  const filteredContents = useMemo(() => contents.filter(isInCurrent), [contents, dateRange]);
 
   const kpiCards = useMemo((): KpiData[] => {
     const now = new Date();

@@ -1,5 +1,6 @@
-import { memo } from 'react';
+import { memo, type FC } from 'react';
 import * as Icons from 'lucide-react';
+import type { LucideProps } from 'lucide-react';
 import Sparkline from './Sparkline';
 
 interface KpiCardProps {
@@ -12,7 +13,7 @@ interface KpiCardProps {
 }
 
 function KpiCardInner({ label, value, trend, icon, color, sparklineData }: KpiCardProps) {
-  const IconComp = (Icons as any)[icon] || Icons.BarChart3;
+  const IconComp: FC<LucideProps> = (Icons as Record<string, FC<LucideProps>>)[icon] || Icons.BarChart3;
   const trendUp = trend >= 0;
 
   return (

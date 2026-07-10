@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useAnalytics } from '../hooks/useAnalytics';
 import {
+  subscribeToStats,
   subscribeToContents,
   subscribeToUsers,
   subscribeToAuditLogs,
@@ -14,8 +15,8 @@ import {
 import { uploadFile, deleteFileFromStorage } from '../firebase/storage';
 import type { ContentItem, UserProfile, AuditLog, UserRole, UserStatus } from '../types';
 import {
-  BarChart3, Video, FolderPlus, Users, FileText, Download, Plus, Trash2,
-  Settings, Loader2, Film, HardDrive, Eye, ShieldAlert, Inbox, ClipboardList
+  BarChart3, Video, FolderPlus, Users, FileText, Plus, Trash2,
+  Loader2, ShieldAlert, Inbox, ClipboardList
 } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
 import EmptyState from '../components/ui/EmptyState';
@@ -115,9 +116,10 @@ export default function Dashboard() {
       showToast('تم رفع ونشر الملف بنجاح!', 'success');
       setUploadTitle(''); setUploadDesc(''); setSelectedFile(null);
       setActiveTab('content');
-    } catch (err: any) {
+    } catch (err) {
       console.error(err);
-      showToast(err.message || 'فشل رفع الملف المختار', 'error');
+      const msg = err instanceof Error ? err.message : 'فشل رفع الملف المختار';
+      showToast(msg, 'error');
     } finally {
       setUploading(false);
     }
@@ -169,7 +171,17 @@ export default function Dashboard() {
     return true;
   });
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  interface TooltipPayloadItem {
+    color: string;
+    name: string;
+    value?: number;
+  }
+  interface CustomTooltipProps {
+    active?: boolean;
+    payload?: TooltipPayloadItem[];
+    label?: string;
+  }
+  const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
     if (!active || !payload?.length) return null;
     return (
       <div style={{
@@ -178,7 +190,7 @@ export default function Dashboard() {
         boxShadow: 'var(--shadow-lg)', fontSize: 'var(--text-xs)',
       }}>
         <div style={{ color: 'var(--text-tertiary)', marginBottom: 'var(--space-1)' }}>{label}</div>
-        {payload.map((p: any, i: number) => (
+        {payload.map((p, i) => (
           <div key={i} style={{ color: p.color, fontWeight: 600 }}>{p.name}: {p.value?.toLocaleString('ar-SA')}</div>
         ))}
       </div>
@@ -461,7 +473,7 @@ export default function Dashboard() {
                   <div className="col-md-4">
                     <div className="form-group">
                       <label className="form-label">قسم المحتوى</label>
-                      <select className="form-input" value={uploadType} onChange={e => setUploadType(e.target.value as any)} disabled={uploading} style={{ appearance: 'auto' }}>
+                      <select className="form-input" value={uploadType} onChange={e => setUploadType(e.target.value as 'video' | 'app' | 'other')} disabled={uploading} style={{ appearance: 'auto' }}>
                         <option value="video">فيديو 🎬</option>
                         <option value="app">تطبيق تسجيل 📱</option>
                         <option value="other">ملفات أخرى 📎</option>
@@ -596,7 +608,7 @@ export default function Dashboard() {
                           </td>
                           <td className="text-center">
                             {targetUser.role !== 'super_admin' && (
-                              <button onClick={() => handleToggleBlock(targetUser)} className={`btn btn-sm ${targetUser.role === 'blocked' ? 'btn-ghost' : 'btn-ghost'}`} style={{ color: targetUser.status === 'blocked' ? 'var(--accent-emerald)' : 'var(--accent-red)' }}>
+                              <button onClick={() => handleToggleBlock(targetUser)} className="btn btn-sm btn-ghost" style={{ color: targetUser.status === 'blocked' ? 'var(--accent-emerald)' : 'var(--accent-red)' }}>
                                 {targetUser.status === 'blocked' ? 'تفعيل' : 'حظر'}
                               </button>
                             )}

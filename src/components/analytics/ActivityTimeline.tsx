@@ -1,5 +1,6 @@
-import { memo } from 'react';
+import { memo, type FC } from 'react';
 import * as Icons from 'lucide-react';
+import type { LucideProps } from 'lucide-react';
 import type { ActivityEvent } from '../../hooks/useAnalytics';
 
 interface ActivityTimelineProps {
@@ -18,7 +19,7 @@ function ActivityTimelineInner({ events }: ActivityTimelineProps) {
   return (
     <div style={{ maxHeight: 420, overflowY: 'auto', paddingLeft: 'var(--space-2)' }}>
       {events.map((event, i) => {
-        const IconComp = (Icons as any)[event.icon] || Icons.Circle;
+        const IconComp: FC<LucideProps> = (Icons as Record<string, FC<LucideProps>>)[event.icon] || Icons.Circle;
         return (
           <div
             key={event.id}
