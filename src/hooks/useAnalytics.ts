@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { onSnapshot, collection, query, orderBy } from 'firebase/firestore';
+import { onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import type { UserProfile } from '../types/auth';
 import type { ContentItem } from '../types/content';
