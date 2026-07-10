@@ -3,7 +3,6 @@ import { Download, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { sendNotification } from '../../firebase/db';
 import initUpdateSystem from '../../lib/updates';
-import type { UpdateInfo } from '../../lib/updates';
 import { APP_EVENTS } from '../../constants/events';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -25,7 +24,7 @@ export default function UpdateSystem({ config }: UpdateSystemProps) {
   useEffect(() => {
     initUpdateSystem(config);
 
-    const handleUpdateApplied = (event: Event) => {
+    const handleUpdateApplied = () => {
       if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) return;
 
       try {
