@@ -16,6 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from './config';
 import type { ContentItem, UserProfile, SystemNotification, AuditLog, AuditAction, UserRole, UserStatus } from '../types';
+import type { QuerySnapshot, DocumentData } from 'firebase/firestore';
 
 // ==========================================
 // 1. Content CRUD (Videos, Apps, Files)
@@ -228,13 +229,23 @@ export function subscribeToAuditLogs(callback: (logs: AuditLog[]) => void) {
 // 5. Aggregate Stats
 // ==========================================
 
-export function subscribeToStats(callback: (stats: any) => void) {
+interface DashboardStats {
+  usersCount: number;
+  adminsCount: number;
+  videosCount: number;
+  appsCount: number;
+  filesCount: number;
+  totalViews: number;
+  totalDownloads: number;
+}
+
+export function subscribeToStats(callback: (stats: DashboardStats) => void) {
   const contentsQuery = collection(db, 'contents');
   const usersQuery = collection(db, 'users');
 
   let usersUnsub: (() => void) | null = null;
 
-  const contentsUnsub = onSnapshot(contentsQuery, (contentSnap) => {
+  const contentsUnsub = onSnapshot(contentsQuery, (contentSnap: QuerySnapshot<DocumentData>) => {
     const items = contentSnap.docs.map(d => d.data() as ContentItem);
     const videos = items.filter(i => i.type === 'video');
     const apps = items.filter(i => i.type === 'app');
@@ -242,11 +253,11 @@ export function subscribeToStats(callback: (stats: any) => void) {
     const views = items.reduce((acc, curr) => acc + (curr.views || 0), 0);
     const downloads = items.reduce((acc, curr) => acc + (curr.downloads || 0), 0);
 
-    const processUsers = (userSnap: any) => {
-      const users = userSnap.docs.map((d: any) => d.data() as UserProfile);
+    const processUsers = (userSnap: QuerySnapshot<DocumentData>) => {
+      const users = userSnap.docs.map(d => d.data() as UserProfile);
       callback({
         usersCount: users.length,
-        adminsCount: users.filter((u: UserProfile) => u.role === 'admin' || u.role === 'super_admin').length,
+        adminsCount: users.filter(u => u.role === 'admin' || u.role === 'super_admin').length,
         videosCount: videos.length,
         appsCount: apps.length,
         filesCount: files.length,

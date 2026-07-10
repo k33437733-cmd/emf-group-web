@@ -73,12 +73,12 @@ export async function registerServiceWorker(): Promise<boolean> {
 export function showInstallPrompt(): Promise<boolean> {
   return new Promise((resolve) => {
     if ('BeforeInstallPromptEvent' in window) {
-      const handler = (e: any) => {
+      const handler = (e: Event) => {
         e.preventDefault();
-        window.deferredPrompt = e;
+        window.__deferredPrompt = e;
         resolve(true);
       };
-      window.addEventListener('beforeinstallprompt', handler);
+      window.addEventListener('beforeinstallprompt', handler as EventListener);
     } else {
       resolve(false);
     }
@@ -95,7 +95,7 @@ export async function checkForUpdates(): Promise<UpdateInfo | null> {
     if (!response.ok) return null;
 
     const data = await response.json();
-    const currentBuildTime = (window as any).__BUILD_TIME__ || __BUILD_TIME__;
+    const currentBuildTime = window.__BUILD_TIME__ || __BUILD_TIME__;
 
     if (data.time && data.time > currentBuildTime) {
       return {
@@ -218,7 +218,8 @@ export function initUpdateSystem(config?: Partial<UpdateConfig>) {
 // Extend Window interface
 declare global {
   interface Window {
-    deferredPrompt?: any;
+    __BUILD_TIME__: number;
+    __deferredPrompt?: Event;
     __UPDATE_SYSTEM?: ReturnType<typeof initUpdateSystem>;
   }
 }

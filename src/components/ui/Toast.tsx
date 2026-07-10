@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, AlertTriangle, Info, X } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle, Info, X, type FC } from 'lucide-react';
+import type { LucideProps } from 'lucide-react';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -21,7 +22,7 @@ export function showToast(message: string, type: ToastType = 'success') {
   listeners.forEach(listener => listener(toast));
 }
 
-const config: Record<ToastType, { icon: any; border: string; glow: string }> = {
+const config: Record<ToastType, { icon: FC<LucideProps>; border: string; glow: string }> = {
   success: { icon: CheckCircle, border: 'var(--accent-emerald)', glow: 'rgba(16,185,129,0.12)' },
   error:   { icon: XCircle,      border: 'var(--accent-red)',     glow: 'rgba(239,68,68,0.12)' },
   warning: { icon: AlertTriangle,border: 'var(--accent-amber)',   glow: 'rgba(245,158,11,0.12)' },

@@ -7,6 +7,7 @@ import initUpdateSystem from '../../lib/updates';
 import type { 
   UpdateInfo, UpdateNotification, UpdateType, UpdatePriority 
 } from '../../lib/updates';
+import type { ToastType } from './Toast';
 import { showToast } from './Toast';
 
 interface UpdateSystemProps {
@@ -25,9 +26,9 @@ export default function UpdateSystem({ config }: UpdateSystemProps) {
   const [showBanner, setShowBanner] = useState(false);
   const [showPanel, setShowPanel] = useState(false);
   const [isReloading, setIsReloading] = useState(false);
-  const [installPrompt, setInstallPrompt] = useState<any>(null);
+  const [installPrompt, setInstallPrompt] = useState<Event | null>(null);
   
-  const updateSystem = React.useRef<any>(null);
+  const updateSystem = React.useRef<ReturnType<typeof initUpdateSystem> | null>(null);
 
   useEffect(() => {
     // Initialize update system
@@ -42,7 +43,7 @@ export default function UpdateSystem({ config }: UpdateSystemProps) {
       const priority = event.detail.priority;
       const type = event.detail.type;
       
-      let toastType: any = 'info';
+      let toastType: ToastType = 'info';
       if (priority === 'critical') toastType = 'error';
       else if (priority === 'high') toastType = 'warning';
       else if (type === 'major') toastType = 'success';
@@ -57,11 +58,11 @@ export default function UpdateSystem({ config }: UpdateSystemProps) {
     
     // Check for PWA install prompt
     if ('BeforeInstallPromptEvent' in window) {
-      const handler = (e: any) => {
+      const handler = (e: Event) => {
         e.preventDefault();
         setInstallPrompt(e);
       };
-      window.addEventListener('beforeinstallprompt', handler);
+      window.addEventListener('beforeinstallprompt', handler as EventListener);
     }
     
     // Check for updates immediately on mount

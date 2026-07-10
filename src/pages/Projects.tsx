@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { subscribeToProjects, addProject, updateProjectStatus, deleteProject } from '../firebase/db/projects';
 import type { Project, ProjectStatus } from '../types';
-import { Plus, Clock, Loader2, Calendar, MoreVertical, Trash2, CheckCircle2, AlertCircle, PlayCircle, XCircle, X, FolderKanban } from 'lucide-react';
+import { Plus, Clock, Loader2, Calendar, MoreVertical, Trash2, X, FolderKanban } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
 import EmptyState from '../components/ui/EmptyState';
 import StatusBadge from '../components/ui/StatusBadge';
