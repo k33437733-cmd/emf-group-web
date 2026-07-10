@@ -9,8 +9,8 @@ import NotificationCenter from '../notifications/NotificationCenter';
 import CommandPalette from '../ui/CommandPalette';
 import {
   Menu, Search, Bell, Settings, Plus,
-  PanelLeftClose, ChevronDown, LogOut, User, Shield,
-  Palette, X, FileText, FolderKanban, MessageSquare, Languages
+  ChevronDown, LogOut, User,
+  Palette, FileText, FolderKanban, MessageSquare, Languages
 } from 'lucide-react';
 import styles from './Navbar.module.css';
 
@@ -62,7 +62,6 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
   const [quickOpen, setQuickOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
-  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [bellShake, setBellShake] = useState(false);
 
@@ -109,7 +108,6 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
         setProfileOpen(false);
         setNotifOpen(false);
         setQuickOpen(false);
-        setMobileSearchOpen(false);
       }
     };
     document.addEventListener('keydown', handleKeyDown);

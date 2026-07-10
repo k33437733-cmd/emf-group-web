@@ -92,7 +92,7 @@ export default function Dashboard() {
   const [membersSearch, setMembersSearch] = useState('');
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [membersPage, setMembersPage] = useState(1);
-  const [membersSort, setMembersSort] = useState<{ field: 'name' | 'email' | 'joined', desc: boolean }>({ field: 'name', desc: false });
+  const [membersSort, setMembersSort] = useState<{ field: 'name' | 'email' | 'createdAt', desc: boolean }>({ field: 'name', desc: false });
 
   // Floating Actions Panel state
   const [showQuickActions, setShowQuickActions] = useState(false);
@@ -132,12 +132,8 @@ export default function Dashboard() {
     }
     // Sorting
     result.sort((a, b) => {
-      let valA = a[membersSort.field] || '';
-      let valB = b[membersSort.field] || '';
-      if (membersSort.field === 'joined') {
-        valA = a.createdAt || '';
-        valB = b.createdAt || '';
-      }
+      const valA = membersSort.field === 'createdAt' ? a.createdAt || '' : a[membersSort.field] || '';
+      const valB = membersSort.field === 'createdAt' ? b.createdAt || '' : b[membersSort.field] || '';
       return membersSort.desc
         ? valB.localeCompare(valA)
         : valA.localeCompare(valB);
@@ -674,7 +670,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {contents.map((item, idx) => (
+                  {contents.map((item) => (
                     <tr key={item.id} style={{ borderBottom: '1px solid var(--border-light)', fontSize: 'var(--text-sm)', color: 'var(--text-primary)' }}>
                       <td style={{ padding: '16px' }}>{item.title}</td>
                       <td style={{ padding: '16px' }}>
@@ -758,7 +754,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {paginatedMembers.map((member, idx) => {
+                  {paginatedMembers.map((member) => {
                     const isSelected = selectedMembers.includes(member.uid);
                     return (
                       <tr key={member.uid} style={{ borderBottom: '1px solid var(--border-light)', fontSize: 'var(--text-sm)', color: 'var(--text-primary)', background: isSelected ? 'var(--sidebar-active)' : 'transparent' }}>
