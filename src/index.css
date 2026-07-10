@@ -43,6 +43,51 @@
   --blur-glass: 12px;
 }
 
+/* Bootstrap dark theme overrides */
+[data-bs-theme=dark], body {
+  --bs-body-bg: #0a0f1d;
+  --bs-body-color: #f3f4f6;
+  --bs-secondary-color: #9ca3af;
+  --bs-tertiary-color: #6b7280;
+  --bs-border-color: rgba(255,255,255,0.08);
+  --bs-card-bg: #141d2b;
+  --bs-card-border-color: rgba(255,255,255,0.06);
+  --bs-card-cap-bg: rgba(0,0,0,0.2);
+  --bs-table-bg: transparent;
+  --bs-table-color: #f3f4f6;
+  --bs-table-hover-bg: rgba(255,255,255,0.02);
+  --bs-table-hover-color: #f3f4f6;
+  --bs-table-striped-bg: rgba(255,255,255,0.01);
+  --bs-table-striped-color: #f3f4f6;
+  --bs-nav-pills-link-active-bg: #3b82f6;
+  --bs-nav-link-color: #9ca3af;
+  --bs-nav-link-hover-color: #f3f4f6;
+  --bs-link-color: #3b82f6;
+  --bs-form-control-bg: rgba(255,255,255,0.04);
+  --bs-form-control-color: #f3f4f6;
+  --bs-form-control-border-color: rgba(255,255,255,0.08);
+  --bs-form-select-bg: rgba(255,255,255,0.04);
+  --bs-form-select-color: #f3f4f6;
+  --bs-form-select-border-color: rgba(255,255,255,0.08);
+  --bs-btn-bg: rgba(255,255,255,0.04);
+  --bs-btn-color: #f3f4f6;
+  --bs-btn-border-color: rgba(255,255,255,0.08);
+  --bs-btn-hover-bg: rgba(255,255,255,0.08);
+  --bs-btn-hover-color: #f3f4f6;
+  --bs-btn-active-bg: rgba(255,255,255,0.12);
+  --bs-btn-active-color: #f3f4f6;
+  --bs-primary-bg-subtle: rgba(13,110,253,0.1);
+  --bs-success-bg-subtle: rgba(25,135,84,0.1);
+  --bs-danger-bg-subtle: rgba(220,53,69,0.1);
+  --bs-warning-bg-subtle: rgba(255,193,7,0.1);
+  --bs-info-bg-subtle: rgba(13,202,240,0.1);
+}
+
+.table-dark {
+  --bs-table-bg: transparent !important;
+  --bs-table-color: #f3f4f6 !important;
+}
+
 /* Reset & Global */
 * {
   box-sizing: border-box;
@@ -136,70 +181,7 @@ body {
   z-index: 100;
 }
 
-/* Buttons */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 10px;
-  font-weight: 600;
-  font-family: inherit;
-  font-size: 0.9rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: none;
-  text-decoration: none;
-  color: #white;
-}
-
-.btn-primary {
-  background: var(--gradient-primary);
-  color: white;
-  box-shadow: 0 4px 14px 0 rgba(0, 114, 255, 0.3);
-}
-
-.btn-primary:hover {
-  opacity: 0.95;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px 0 rgba(0, 114, 255, 0.4);
-}
-
-.btn-secondary {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--border-color);
-  color: var(--text-primary);
-}
-
-.btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-
-.btn-danger {
-  background: var(--gradient-danger);
-  color: white;
-  box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.3);
-}
-
-.btn-danger:hover {
-  opacity: 0.95;
-  transform: translateY(-1px);
-}
-
-.btn:active {
-  transform: translateY(1px);
-}
-
-.btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none !important;
-  box-shadow: none !important;
-}
-
-/* Form Inputs */
+/* Form Inputs (legacy - kept for backward compatibility with other pages) */
 .form-group {
   margin-bottom: 20px;
   display: flex;
@@ -230,40 +212,6 @@ body {
   border-color: var(--border-focus);
   background: rgba(255, 255, 255, 0.07);
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
-}
-
-/* Badges */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.badge-super-admin {
-  background: rgba(139, 92, 246, 0.15);
-  color: #a78bfa;
-  border: 1px solid rgba(139, 92, 246, 0.3);
-}
-
-.badge-admin {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
-  border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-.badge-user {
-  background: rgba(16, 185, 129, 0.15);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.badge-blocked {
-  background: rgba(239, 68, 68, 0.15);
-  color: #f87171;
-  border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
 /* Toast System container */

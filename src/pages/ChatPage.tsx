@@ -50,6 +50,7 @@ export default function ChatPage() {
   const [showNewChat, setShowNewChat] = useState(false);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showGroupSettings, setShowGroupSettings] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -214,19 +215,20 @@ export default function ChatPage() {
   };
 
   const handleUpdateGroupInfo = async (updates: { name?: string; avatar?: string }) => {
-    if (!activeConvId) return;
-    await updateGroupInfo(activeConvId, updates);
+    if (!activeConvId || !user) return;
+    await updateGroupInfo(activeConvId, updates, user);
     showToast('تم الحفظ', 'success');
   };
 
   const handleRemoveMember = async (uid: string) => {
-    if (!activeConvId) return;
-    await removeGroupMember(activeConvId, uid);
+    if (!activeConvId || !user) return;
+    const memberName = activeConv?.memberNames?.[uid] || uid;
+    await removeGroupMember(activeConvId, uid, user, memberName);
   };
 
   const handleAddMembers = async (newMembers: UserProfile[]) => {
-    if (!activeConvId) return;
-    await addGroupMembers(activeConvId, newMembers);
+    if (!activeConvId || !user) return;
+    await addGroupMembers(activeConvId, newMembers, user);
     showToast('تمت الإضافة', 'success');
   };
 
@@ -239,7 +241,12 @@ export default function ChatPage() {
     <div style={{ width: '100%', height: 'calc(100vh - 70px)', display: 'flex', gap: '0', padding: '0', margin: '0', direction: 'rtl', background: 'var(--bg-primary)' }} className="animate-fade">
 
       {/* ─── Sidebar ─── */}
-      <div className={`chat-sidebar ${activeConvId ? 'hide-mobile' : ''}`} style={{ width: '380px', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0, background: 'var(--bg-secondary)', borderLeft: '1px solid var(--border-color)', position: 'relative' }}>
+      <div className={`chat-sidebar ${activeConvId ? 'hide-mobile' : ''}`} style={{
+        width: sidebarCollapsed ? '0px' : '380px',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
+        background: 'var(--bg-secondary)', borderLeft: '1px solid var(--border-color)',
+        position: 'relative', transition: 'width 0.25s ease',
+      }}>
 
         {/* Tab switcher */}
         <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)' }}>
@@ -447,6 +454,12 @@ export default function ChatPage() {
           <>
             {/* Header */}
             <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--bg-secondary)' }}>
+              <button onClick={() => setSidebarCollapsed(s => !s)} style={{
+                background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                padding: '4px', display: 'flex', alignItems: 'center', transition: '0.2s',
+              }} title={sidebarCollapsed ? 'إظهار القائمة' : 'إخفاء القائمة'}>
+                <ArrowRight size={18} style={{ transform: sidebarCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: '0.2s' }} />
+              </button>
               <button onClick={() => setActiveConvId(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'none' }} className="mobile-back-chat">
                 <ArrowRight size={22} />
               </button>
@@ -494,6 +507,23 @@ export default function ChatPage() {
               ) : messages.map(msg => {
                 const isSelf = msg.senderId === user.uid;
                 const isBot = msg.senderId === 'bot';
+                const isSystem = msg.type === 'system_event';
+                if (isSystem) {
+                  return (
+                    <div key={msg.id} style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
+                      <div style={{
+                        background: 'rgba(255,255,255,0.04)', borderRadius: '8px',
+                        padding: '6px 16px', fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)',
+                        textAlign: 'center', maxWidth: '80%',
+                      }}>
+                        {msg.content}
+                        <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
+                          {formatTime(msg.createdAt)}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                }
                 return (
                   <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignSelf: isSelf ? 'flex-start' : 'flex-end', maxWidth: isBot ? '80%' : '72%', gap: '4px' }}>
                     {activeConv.isGroup && !isSelf && !isBot && (

@@ -30,6 +30,7 @@ import type { Conversation, ConversationType } from '../../types/chat';
 import type { UserProfile } from '../../types/auth';
 import { fromSnapshot, nowISO, wrapFirestoreError } from './base';
 import { listAgents } from './users';
+import { createSystemEvent } from './messages';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -465,12 +466,23 @@ export async function createGroupConversation(
 export async function updateGroupInfo(
   groupId: string,
   updates: { name?: string; avatar?: string },
+  actor?: UserProfile,
 ): Promise<void> {
   try {
     const data: Record<string, unknown> = { updatedAt: nowISO() };
     if (updates.name !== undefined) data['groupName'] = updates.name;
     if (updates.avatar !== undefined) data['avatar'] = updates.avatar;
     await updateDoc(ref(groupId), data);
+
+    // System event
+    if (actor) {
+      if (updates.name !== undefined) {
+        createSystemEvent(groupId, `${actor.name} غير اسم المجموعة إلى "${updates.name}"`).catch(() => {});
+      }
+      if (updates.avatar !== undefined) {
+        createSystemEvent(groupId, `${actor.name} غير صورة المجموعة`).catch(() => {});
+      }
+    }
   } catch (err) {
     wrapFirestoreError(err, 'updateGroupInfo');
   }
@@ -480,6 +492,7 @@ export async function updateGroupInfo(
 export async function addGroupMembers(
   groupId: string,
   newMembers: UserProfile[],
+  actor?: UserProfile,
 ): Promise<void> {
   try {
     const snap = await getDoc(ref(groupId));
@@ -498,6 +511,13 @@ export async function addGroupMembers(
     });
 
     await updateDoc(ref(groupId), updates);
+
+    // System events
+    if (actor) {
+      toAdd.forEach(m => {
+        createSystemEvent(groupId, `${actor.name} أضاف ${m.name} إلى المجموعة`).catch(() => {});
+      });
+    }
   } catch (err) {
     wrapFirestoreError(err, 'addGroupMembers');
   }
@@ -507,6 +527,8 @@ export async function addGroupMembers(
 export async function removeGroupMember(
   groupId: string,
   uid: string,
+  actor?: UserProfile,
+  memberName?: string,
 ): Promise<void> {
   try {
     const snap = await getDoc(ref(groupId));
@@ -521,6 +543,12 @@ export async function removeGroupMember(
     };
 
     await updateDoc(ref(groupId), updates);
+
+    // System event
+    if (actor) {
+      const removedName = memberName || uid;
+      createSystemEvent(groupId, `${actor.name} أزال ${removedName} من المجموعة`).catch(() => {});
+    }
   } catch (err) {
     wrapFirestoreError(err, 'removeGroupMember');
   }

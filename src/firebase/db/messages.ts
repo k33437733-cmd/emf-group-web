@@ -158,6 +158,36 @@ export async function createMessage(
   }
 }
 
+/**
+ * Write a system event message (group name change, member added/removed, etc).
+ * System events have senderType='system' so the UI can style them differently.
+ */
+export async function createSystemEvent(
+  conversationId: string,
+  content: string,
+): Promise<void> {
+  try {
+    const msgRef = doc(col());
+    const msg: ChatMessage = {
+      id:             msgRef.id,
+      conversationId,
+      senderId:       'system',
+      senderName:     'النظام',
+      senderRole:     'system',
+      senderType:     'system',
+      content,
+      type:           'system_event',
+      isInternal:     false,
+      deliveryStatus: 'sent',
+      readBy:         {},
+      createdAt:      nowISO(),
+    };
+    await setDoc(msgRef, cleanUndefined(msg as unknown as Record<string, unknown>));
+  } catch (err) {
+    wrapFirestoreError(err, 'createSystemEvent');
+  }
+}
+
 export async function editMessage(
   messageId: string,
   newContent: string,

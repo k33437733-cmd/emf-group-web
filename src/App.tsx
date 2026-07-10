@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider } from './hooks/useAuth';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import ErrorBoundary from './components/ui/ErrorBoundary';
-import Navbar from './components/layout/Navbar';
+import DashboardLayout from './components/layout/DashboardLayout';
 import UpdateSystem from './components/ui/UpdateSystem';
 import { ToastContainer } from './components/ui/Toast';
 
@@ -38,26 +38,24 @@ export default function App() {
               enableServiceWorker: true
             }}
           />
-          {/* Header Navbar */}
-          <Navbar />
           
-          {/* Main content body wrapper */}
           <div id="app-content" style={{ flexGrow: 1 }}>
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-                <Route path="/content" element={<ProtectedRoute><Content /></ProtectedRoute>} />
-                <Route path="/chat" element={<ProtectedRoute><ChatPage /></ProtectedRoute>} />
-                <Route path="/support" element={<ProtectedRoute><SupportChatPage /></ProtectedRoute>} />
-                <Route path="/projects" element={<ProtectedRoute><Projects /></ProtectedRoute>} />
+                <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/content" element={<Content />} />
+                  <Route path="/chat" element={<ChatPage />} />
+                  <Route path="/support" element={<SupportChatPage />} />
+                  <Route path="/projects" element={<Projects />} />
+                </Route>
                 <Route path="*" element={<Navigate to="/" replace />} />
               </Routes>
             </Suspense>
           </div>
           
-          {/* Toast notifications container */}
           <ToastContainer />
         </div>
         </ErrorBoundary>
