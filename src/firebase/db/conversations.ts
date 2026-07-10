@@ -409,3 +409,119 @@ export async function archiveConversation(conversationId: string): Promise<void>
     wrapFirestoreError(err, 'archiveConversation');
   }
 }
+
+// ─── Group management ──────────────────────────────────────────────────────────
+
+/**
+ * Create a new admin group with a generated ID.
+ * Returns the new conversation ID.
+ */
+export async function createGroupConversation(
+  name: string,
+  members: UserProfile[],
+  creator: UserProfile,
+  avatar?: string,
+): Promise<string> {
+  try {
+    const convRef = doc(col());
+    const now = nowISO();
+    const memberNames: Record<string, string> = {};
+    const memberRoles: Record<string, string> = {};
+    const unreadCount: Record<string, number> = {};
+
+    members.forEach(m => {
+      memberNames[m.uid] = m.name;
+      memberRoles[m.uid] = m.role;
+      unreadCount[m.uid] = 0;
+    });
+
+    const conv: Conversation = {
+      id:                  convRef.id,
+      type:                'admin_group',
+      members:             members.map(m => m.uid),
+      memberNames,
+      memberRoles,
+      isGroup:             true,
+      groupName:           name,
+      avatar,
+      lastMessage:         'تم إنشاء المجموعة 🎉',
+      lastMessageTime:     now,
+      lastMessageSenderId: 'system',
+      unreadCount,
+      status:              'active',
+      createdAt:           now,
+      createdBy:           creator.uid,
+      updatedAt:           now,
+    };
+
+    await setDoc(convRef, conv);
+    return convRef.id;
+  } catch (err) {
+    wrapFirestoreError(err, 'createGroupConversation');
+  }
+}
+
+/** Update group info: name, avatar, or both */
+export async function updateGroupInfo(
+  groupId: string,
+  updates: { name?: string; avatar?: string },
+): Promise<void> {
+  try {
+    const data: Record<string, unknown> = { updatedAt: nowISO() };
+    if (updates.name !== undefined) data['groupName'] = updates.name;
+    if (updates.avatar !== undefined) data['avatar'] = updates.avatar;
+    await updateDoc(ref(groupId), data);
+  } catch (err) {
+    wrapFirestoreError(err, 'updateGroupInfo');
+  }
+}
+
+/** Add members to an existing group */
+export async function addGroupMembers(
+  groupId: string,
+  newMembers: UserProfile[],
+): Promise<void> {
+  try {
+    const snap = await getDoc(ref(groupId));
+    if (!snap.exists()) return;
+    const conv = snap.data() as Conversation;
+    const existing = new Set(conv.members ?? []);
+    const toAdd = newMembers.filter(m => !existing.has(m.uid));
+    if (toAdd.length === 0) return;
+
+    const updates: Record<string, unknown> = { updatedAt: nowISO() };
+    updates['members'] = [...(conv.members ?? []), ...toAdd.map(m => m.uid)];
+    toAdd.forEach(m => {
+      updates[`memberNames.${m.uid}`] = m.name;
+      updates[`memberRoles.${m.uid}`] = m.role;
+      updates[`unreadCount.${m.uid}`] = 0;
+    });
+
+    await updateDoc(ref(groupId), updates);
+  } catch (err) {
+    wrapFirestoreError(err, 'addGroupMembers');
+  }
+}
+
+/** Remove a member from a group */
+export async function removeGroupMember(
+  groupId: string,
+  uid: string,
+): Promise<void> {
+  try {
+    const snap = await getDoc(ref(groupId));
+    if (!snap.exists()) return;
+    const conv = snap.data() as Conversation;
+    const updatedMembers = (conv.members ?? []).filter((m: string) => m !== uid);
+    if (updatedMembers.length === conv.members?.length) return; // not found
+
+    const updates: Record<string, unknown> = {
+      members: updatedMembers,
+      updatedAt: nowISO(),
+    };
+
+    await updateDoc(ref(groupId), updates);
+  } catch (err) {
+    wrapFirestoreError(err, 'removeGroupMember');
+  }
+}

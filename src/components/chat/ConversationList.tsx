@@ -105,14 +105,20 @@ export default function ConversationList({
               background: isActive ? 'rgba(59,130,246,0.08)' : 'transparent'
             }} className="chat-hover">
               <div style={{
-                width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
-                background: conv.type === 'agent_member' ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)',
-                border: '1px solid', borderColor: conv.type === 'agent_member' ? 'rgba(16,185,129,0.2)' : 'rgba(59,130,246,0.2)',
+                width: '40px', height: '40px', borderRadius: conv.isGroup ? '12px' : '50%', flexShrink: 0,
+                background: conv.isGroup ? 'var(--gradient-cyber)' : conv.type === 'agent_member' ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)',
+                overflow: 'hidden', position: 'relative',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontWeight: 'bold', fontSize: '0.8rem',
-                color: conv.type === 'agent_member' ? '#10b981' : 'var(--accent-blue)'
+                color: conv.isGroup ? 'white' : conv.type === 'agent_member' ? '#10b981' : 'var(--accent-blue)'
               }}>
-                {otherName?.substring(0, 2) || '??'}
+                {conv.isGroup && conv.avatar ? (
+                  <img src={conv.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                ) : conv.isGroup ? (
+                  <Users size={20} />
+                ) : (
+                  otherName?.substring(0, 2) || '??'
+                )}
               </div>
               <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
                 <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'white' }}>{otherName}</div>

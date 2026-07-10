@@ -6,6 +6,10 @@ import {
   getOrCreateDMConversation,
   subscribeToConversations,
   subscribeToSupportConversations,
+  createGroupConversation,
+  updateGroupInfo,
+  addGroupMembers,
+  removeGroupMember,
 } from '../firebase/db/conversations';
 import {
   listAgents,
@@ -17,9 +21,11 @@ import {
 } from '../firebase/db/messages';
 import { sendMessage, markRead } from '../services/ChatService';
 import type { Conversation, UserProfile } from '../types';
-import { MessageSquare, ArrowRight, CheckCheck, Users, MessageCirclePlus } from 'lucide-react';
+import { MessageSquare, ArrowRight, CheckCheck, Users, MessageCirclePlus, Settings } from 'lucide-react';
 import ChatInput from '../components/chat/ChatInput';
 import ConversationList from '../components/chat/ConversationList';
+import CreateGroupModal from '../components/chat/CreateGroupModal';
+import GroupSettings from '../components/chat/GroupSettings';
 import { showToast } from '../components/ui/Toast';
 
 type ChatTab = 'admin' | 'member' | 'support';
@@ -42,6 +48,8 @@ export default function ChatPage() {
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [showNewChat, setShowNewChat] = useState(false);
+  const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showGroupSettings, setShowGroupSettings] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -196,6 +204,32 @@ export default function ChatPage() {
     });
   };
 
+  // ─── Group management handlers ──────────────────────────────────────────────
+
+  const handleCreateGroup = async (name: string, members: UserProfile[], avatar?: string) => {
+    if (!user) return;
+    const id = await createGroupConversation(name, members, user, avatar);
+    setActiveConvId(id);
+    showToast('تم إنشاء المجموعة بنجاح', 'success');
+  };
+
+  const handleUpdateGroupInfo = async (updates: { name?: string; avatar?: string }) => {
+    if (!activeConvId) return;
+    await updateGroupInfo(activeConvId, updates);
+    showToast('تم الحفظ', 'success');
+  };
+
+  const handleRemoveMember = async (uid: string) => {
+    if (!activeConvId) return;
+    await removeGroupMember(activeConvId, uid);
+  };
+
+  const handleAddMembers = async (newMembers: UserProfile[]) => {
+    if (!activeConvId) return;
+    await addGroupMembers(activeConvId, newMembers);
+    showToast('تمت الإضافة', 'success');
+  };
+
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 
@@ -271,6 +305,24 @@ export default function ChatPage() {
                 <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
                   <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'white' }}>مجموعة الإدارة العامة 📢</div>
                   <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>تواصل جماعي مع كافة المدراء</div>
+                </div>
+              </div>
+
+              {/* Create group button */}
+              <div onClick={() => setShowCreateGroup(true)} style={{
+                padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: '12px',
+              }} className="chat-hover">
+                <div style={{
+                  width: '42px', height: '42px', borderRadius: '12px',
+                  background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981',
+                }}>
+                  <MessageCirclePlus size={20} />
+                </div>
+                <div style={{ flex: 1, textAlign: 'right' }}>
+                  <div style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>إنشاء مجموعة جديدة</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>مجموعة محادثة مع المشرفين</div>
                 </div>
               </div>
 
@@ -414,12 +466,20 @@ export default function ChatPage() {
                     </div>
                     <div style={{ flex: 1, textAlign: 'right' }}>
                       <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'white' }}>
-                        {isGroup ? 'مجموعة الإدارة العامة 📢' : otherName}
+                        {isGroup ? activeConv.groupName || 'المجموعة' : otherName}
                       </div>
                       <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                        {isGroup ? 'جميع المشرفين' : activeConv.type === 'agent_member' ? 'عضو في الموقع' : 'محادثة مباشرة'}
+                        {isGroup ? `${activeConv.members.length} مشرف` : activeConv.type === 'agent_member' ? 'عضو في الموقع' : 'محادثة مباشرة'}
                       </div>
                     </div>
+                    {isGroup && (
+                      <button onClick={() => setShowGroupSettings(true)} style={{
+                        background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
+                        padding: '8px', borderRadius: '8px',
+                      }} className="chat-hover">
+                        <Settings size={18} />
+                      </button>
+                    )}
                   </>
                 );
               })()}
@@ -492,6 +552,28 @@ export default function ChatPage() {
           </div>
         )}
       </div>
+
+      {/* Create Group Modal */}
+      {showCreateGroup && user && (
+        <CreateGroupModal
+          allAdmins={[user, ...agents]}
+          onClose={() => setShowCreateGroup(false)}
+          onCreate={handleCreateGroup}
+        />
+      )}
+
+      {/* Group Settings Modal */}
+      {showGroupSettings && activeConv && activeConv.isGroup && user && (
+        <GroupSettings
+          conv={activeConv}
+          allAdmins={[user, ...agents]}
+          currentUid={user.uid}
+          onClose={() => setShowGroupSettings(false)}
+          onUpdate={handleUpdateGroupInfo}
+          onRemoveMember={handleRemoveMember}
+          onAddMembers={handleAddMembers}
+        />
+      )}
 
       <style>{`
         .chat-hover:hover { background: rgba(255,255,255,0.03) !important; }

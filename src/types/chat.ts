@@ -31,6 +31,7 @@ export interface Conversation {
   isGroup: boolean;
   name?: string;
   groupName?: string;
+  avatar?: string;            // group avatar URL
   lastMessage: string;
   lastMessageTime: string;
   lastMessageSenderId: string;
