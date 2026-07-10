@@ -177,20 +177,15 @@ export interface SendMessageOptions {
 }
 
 /**
- * Send a message and keep the conversation metadata in sync.
- * Steps:
- *  1. Validate
- *  2. Write message document
- *  3. Update conversation.lastMessage + lastMessageTime
- *  4. Increment unreadCount for all other members
- *  5. Clear typing indicator for this user
+ * Send a message.  Critical path = writing the message document only.
+ * Everything else (preview, unread counters, typing clear) is fire-and-forget
+ * so a failure there never prevents the message from being saved.
  */
 export async function sendMessage(opts: SendMessageOptions): Promise<ChatMessage> {
   const type = opts.type ?? 'text';
 
   validateMessagePayload(opts.content, type, opts.imageUrls);
 
-  // Internal notes are only allowed for agents/admins
   if (opts.isInternal && !isAgent(opts.sender)) {
     throw new RepositoryError('Only agents can post internal notes', 'permission-denied');
   }
@@ -200,11 +195,11 @@ export async function sendMessage(opts: SendMessageOptions): Promise<ChatMessage
     throw new RepositoryError(`Conversation not found: ${opts.conversationId}`, 'not-found');
   }
 
-  // Verify sender is a member of the conversation
   if (!conv.members.includes(opts.sender.uid)) {
     throw new RepositoryError('Sender is not a member of this conversation', 'permission-denied');
   }
 
+  // ── Write the message (critical — fail if this throws) ──
   const msg = await createMessage({
     conversationId: opts.conversationId,
     senderId:       opts.sender.uid,
@@ -221,20 +216,21 @@ export async function sendMessage(opts: SendMessageOptions): Promise<ChatMessage
     replyTo:        opts.replyTo,
   });
 
-  // Internal notes do not update the public conversation preview
+  // ── Non-critical housekeeping (fire-and-forget) ──
   if (!opts.isInternal) {
     const preview = messagePreview(msg);
-    await updateLastMessage(opts.conversationId, preview, opts.sender.uid);
-    await incrementUnreadForOthers(opts.conversationId, opts.sender.uid, conv.members);
+    updateLastMessage(opts.conversationId, preview, opts.sender.uid).catch(e =>
+      console.warn('updateLastMessage failed:', e),
+    );
+    incrementUnreadForOthers(opts.conversationId, opts.sender.uid, conv.members).catch(e =>
+      console.warn('incrementUnreadForOthers failed:', e),
+    );
   }
 
-  // Clear typing indicator (fire and forget)
   setTyping(opts.conversationId, opts.sender, false).catch(() => {});
 
-  // Notify all admins when a customer sends a message in a support conversation
   if (!opts.isInternal && conv.type === 'support' && !isAgent(opts.sender)) {
-    notifyAdminsCustomerMessage(opts.sender, opts.content, opts.conversationId)
-      .catch(() => {});
+    notifyAdminsCustomerMessage(opts.sender, opts.content, opts.conversationId).catch(() => {});
   }
 
   return msg;

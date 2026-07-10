@@ -144,14 +144,14 @@ export async function createMessage(
 ): Promise<ChatMessage> {
   try {
     const msgRef = doc(col());
-    const msg: Record<string, unknown> = {
+    const msg: ChatMessage = {
       ...payload,
       id:             msgRef.id,
       deliveryStatus: 'sent',
       readBy:         {},
       createdAt:      nowISO(),
     };
-    await setDoc(msgRef, cleanUndefined(msg));
+    await setDoc(msgRef, cleanUndefined(msg as unknown as Record<string, unknown>));
     return msg;
   } catch (err) {
     wrapFirestoreError(err, 'createMessage');
