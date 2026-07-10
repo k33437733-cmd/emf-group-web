@@ -38,7 +38,7 @@ export default function App() {
               <UpdateSystem 
                 config={{
                   checkInterval: 5,
-                  enableServiceWorker: true
+                  enableServiceWorker: false
                 }}
               />
               

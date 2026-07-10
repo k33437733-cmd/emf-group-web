@@ -14,13 +14,20 @@ var SKIP_PATTERNS = [
   /googleapis\.com/,
 ];
 
+function isHtmlResponse(response) {
+  if (!response || !response.headers) return false;
+  var contentType = response.headers.get('content-type') || '';
+  return contentType.indexOf('text/html') !== -1;
+}
+
 function shouldCache(request) {
   if (request.method !== 'GET') return false;
+  if (request.destination === 'document') return false;
   var url = request.url;
   for (var i = 0; i < SKIP_PATTERNS.length; i++) {
     if (SKIP_PATTERNS[i].test(url)) return false;
   }
-  return true;
+  return STATIC_ASSETS.test(url);
 }
 
 function shouldServeOffline(request) {
@@ -30,7 +37,7 @@ function shouldServeOffline(request) {
 async function networkFirst(request) {
   try {
     var response = await fetch(request);
-    if (response.ok && response.status !== 206 && shouldCache(request)) {
+    if (response.ok && response.status !== 206 && shouldCache(request) && !isHtmlResponse(response)) {
       var cache = await caches.open(CACHE_NAME);
       try { cache.put(request, response.clone()); } catch (e) { /* ignore */ }
     }
@@ -46,7 +53,7 @@ async function cacheFirst(request) {
   if (cached) return cached;
   try {
     var response = await fetch(request);
-    if (response.ok && response.status !== 206) {
+    if (response.ok && response.status !== 206 && !isHtmlResponse(response)) {
       var cache = await caches.open(CACHE_NAME);
       try { cache.put(request, response.clone()); } catch (e) { /* ignore */ }
     }
