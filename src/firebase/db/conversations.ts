@@ -57,6 +57,29 @@ export async function getConversationById(id: string): Promise<Conversation | nu
 // ─── Real-time subscriptions ──────────────────────────────────────────────────
 
 /**
+ * Subscribe to ALL admin_group conversations regardless of membership.
+ * Used to show groups that the user hasn't joined yet.
+ */
+export function subscribeToAllGroups(
+  callback: (convs: Conversation[]) => void,
+): Unsubscribe {
+  const q = query(
+    col(),
+    where('type', '==', 'admin_group' as ConversationType),
+    where('status', '==', 'active')
+  );
+  return onSnapshot(
+    q,
+    snap => {
+      let convs = snap.docs.map(d => ({ ...d.data() }) as Conversation);
+      convs.sort((a, b) => new Date(b.lastMessageTime).getTime() - new Date(a.lastMessageTime).getTime());
+      callback(convs);
+    },
+    err => wrapFirestoreError(err, 'subscribeToAllGroups'),
+  );
+}
+
+/**
  * Subscribe to all conversations where the user is a member,
  * filtered by type and sorted by most recent message.
  */

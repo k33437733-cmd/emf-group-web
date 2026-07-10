@@ -5,6 +5,7 @@ import {
   getOrCreateAdminGroup,
   getOrCreateDMConversation,
   subscribeToConversations,
+  subscribeToAllGroups,
   subscribeToSupportConversations,
   createGroupConversation,
   updateGroupInfo,
@@ -43,6 +44,9 @@ export default function ChatPage() {
   const [adminConvs, setAdminConvs] = useState<Conversation[]>([]);
   const [memberConvs, setMemberConvs] = useState<Conversation[]>([]);
   const [supportConvs, setSupportConvs] = useState<Conversation[]>([]);
+
+  // All groups (including non-member)
+  const [allGroups, setAllGroups] = useState<Conversation[]>([]);
 
   // Active conversation
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
@@ -101,12 +105,15 @@ export default function ChatPage() {
       updateAdminConvs();
     });
 
+    const unsubAllGroups = subscribeToAllGroups(setAllGroups);
+
     const unsubMember = subscribeToConversations(user.uid, 'agent_member', setMemberConvs);
     const unsubSupport = subscribeToSupportConversations(user.uid, setSupportConvs);
 
     return () => {
       unsubAdminDMs();
       unsubAdminGroups();
+      unsubAllGroups();
       unsubMember();
       unsubSupport();
     };
@@ -137,7 +144,7 @@ export default function ChatPage() {
   }, []);
 
   const activeConv = useMemo(() => {
-    const existing = [...adminConvs, ...memberConvs, ...supportConvs].find(c => c.id === activeConvId);
+    const existing = [...adminConvs, ...memberConvs, ...supportConvs, ...allGroups].find(c => c.id === activeConvId);
     if (existing) return existing;
     
     // Fallback for new DM conversations that haven't synced yet
@@ -162,7 +169,9 @@ export default function ChatPage() {
       }
     }
     return undefined;
-  }, [adminConvs, memberConvs, supportConvs, activeConvId, user, agents, members]);
+  }, [adminConvs, memberConvs, supportConvs, allGroups, activeConvId, user, agents, members]);
+
+  const isGroupMember = activeConv ? (activeConv.members?.includes(user?.uid ?? '') ?? false) : false;
 
   const handleSelectConv = (conv: Conversation) => {
     setActiveConvId(conv.id);
@@ -181,6 +190,11 @@ export default function ChatPage() {
       console.error('Failed to open group chat:', err);
       showToast(err?.message || 'فشل فتح مجموعة الإدارة', 'error');
     }
+  };
+
+  const handleSelectNonMemberGroup = (conv: Conversation) => {
+    setActiveConvId(conv.id);
+    setShowNewChat(false);
   };
 
   const handleSelectMember = async (member: UserProfile) => {
@@ -231,6 +245,9 @@ export default function ChatPage() {
     await addGroupMembers(activeConvId, newMembers, user);
     showToast('تمت الإضافة', 'success');
   };
+
+  const memberGroups = useMemo(() => allGroups.filter(g => g.members?.includes(user?.uid ?? '')), [allGroups, user]);
+  const nonMemberGroups = useMemo(() => allGroups.filter(g => !g.members?.includes(user?.uid ?? '')), [allGroups, user]);
 
   const formatTime = (iso: string) =>
     new Date(iso).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
@@ -395,6 +412,94 @@ export default function ChatPage() {
                 </div>
               </div>
 
+              {/* Groups section header */}
+              {(memberGroups.length > 0 || nonMemberGroups.length > 0) && (
+                <div style={{ padding: '10px 16px 4px', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.5px' }}>
+                  المجموعات
+                </div>
+              )}
+
+              {/* Member groups */}
+              {memberGroups.map(group => (
+                <div 
+                  key={group.id}
+                  onClick={() => handleSelectConv(group)}
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid rgba(255,255,255,0.02)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    transition: 'background 0.2s',
+                    background: activeConvId === group.id ? 'rgba(59,130,246,0.08)' : 'transparent'
+                  }}
+                  className="chat-list-hover-row"
+                >
+                  <div style={{
+                    width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+                    background: group.avatar ? 'transparent' : 'rgba(139,92,246,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: '#a78bfa', fontWeight: 700, fontSize: '0.75rem',
+                    overflow: 'hidden',
+                  }}>
+                    {group.avatar ? (
+                      <img src={group.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <Users size={16} />
+                    )}
+                  </div>
+                  <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {group.groupName || 'مجموعة'}
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                      {group.members.length} عضو
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Non-member groups */}
+              {nonMemberGroups.map(group => (
+                <div 
+                  key={group.id}
+                  onClick={() => handleSelectNonMemberGroup(group)}
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid rgba(255,255,255,0.02)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '12px',
+                    transition: 'background 0.2s',
+                    opacity: 0.55,
+                    background: activeConvId === group.id ? 'rgba(234,179,8,0.06)' : 'transparent'
+                  }}
+                  className="chat-list-hover-row"
+                  title="لم يتم ضمك إلى هذه المجموعة"
+                >
+                  <div style={{
+                    width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+                    background: 'rgba(255,255,255,0.03)',
+                    border: '1px dashed rgba(255,255,255,0.1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: 'rgba(255,255,255,0.3)', fontSize: '0.75rem',
+                  }}>
+                    🔒
+                  </div>
+                  <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
+                    <div style={{ fontWeight: 500, fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {group.groupName || 'مجموعة'}
+                    </div>
+                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
+                      غير مضاف
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* DMs */}
               <ConversationList
                 conversations={adminConvs.filter(c => !c.isGroup)}
                 activeId={activeConvId}
@@ -532,6 +637,70 @@ export default function ChatPage() {
         }}
       >
         {activeConvId && activeConv ? (
+          !isGroupMember && activeConv.isGroup ? (
+            /* Restricted: non-member group view */
+            <>
+              {/* Header */}
+              <div 
+                style={{ 
+                  padding: '14px 20px', 
+                  borderBottom: '1px solid var(--border-color)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '12px', 
+                  background: 'var(--bg-secondary)' 
+                }}
+              >
+                <button onClick={() => setActiveConvId(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer' }} className="mobile-back-chat">
+                  <ArrowRight size={20} />
+                </button>
+                <div style={{
+                  width: '38px', height: '38px', borderRadius: '10px', flexShrink: 0,
+                  background: 'rgba(255,255,255,0.03)',
+                  border: '1px dashed rgba(255,255,255,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  color: 'rgba(255,255,255,0.3)',
+                }}>
+                  🔒
+                </div>
+                <div style={{ flex: 1, textAlign: 'right' }}>
+                  <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'rgba(255,255,255,0.6)' }}>
+                    {activeConv.groupName || 'مجموعة'}
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
+                    غير مضاف إلى المجموعة
+                  </div>
+                </div>
+              </div>
+              {/* Restricted message */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ textAlign: 'center', maxWidth: '400px', padding: '40px 20px' }}>
+                  <div style={{
+                    width: '80px', height: '80px', borderRadius: '20px',
+                    background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.12)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    margin: '0 auto 20px', fontSize: '2rem',
+                  }}>
+                    🔒
+                  </div>
+                  <h4 style={{ fontWeight: 700, fontSize: '1rem', color: 'rgba(255,255,255,0.7)', marginBottom: '10px' }}>
+                    {activeConv.groupName || 'مجموعة خاصة'}
+                  </h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', lineHeight: 1.7 }}>
+                    لم يتم ضمك إلى هذه المجموعة بعد، سيتمكن أحد مدراء المجموعة من إضافتك لتتمكن من المشاركة في المحادثة
+                  </p>
+                  <div style={{
+                    marginTop: '20px', padding: '10px 20px', borderRadius: '12px',
+                    background: 'rgba(234,179,8,0.06)', border: '1px solid rgba(234,179,8,0.1)',
+                    display: 'inline-block', fontSize: '0.75rem', color: 'var(--accent-amber)',
+                    fontWeight: 600,
+                  }}>
+                    انتظر حتى يتم ضمك إلى المجموعة
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
           <>
             {/* Window Header */}
             <div 
@@ -727,20 +896,21 @@ export default function ChatPage() {
               placeholder={tab === 'member' ? 'اكتب ردك للعضو...' : 'اكتب رسالتك...'}
             />
           </>
-        ) : (
-          /* Empty Active state banner */
-          <div style={{ margin: 'auto', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-            <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-              <MessageSquare size={26} />
-            </div>
-            <div>
-              <h4 style={{ fontWeight: 700, fontSize: '0.94rem', color: 'white', marginBottom: '4px' }}>بوابة المحادثات</h4>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', maxWidth: '300px', margin: '0 auto' }}>
-                اختر محادثة من القائمة الجانبية للبدء
-              </p>
-            </div>
+        )
+      ) : (
+        /* Empty Active state banner */
+        <div style={{ margin: 'auto', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+            <MessageSquare size={26} />
           </div>
-        )}
+          <div>
+            <h4 style={{ fontWeight: 700, fontSize: '0.94rem', color: 'white', marginBottom: '4px' }}>بوابة المحادثات</h4>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', maxWidth: '300px', margin: '0 auto' }}>
+              اختر محادثة من القائمة الجانبية للبدء
+            </p>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* Create Group Modal */}
