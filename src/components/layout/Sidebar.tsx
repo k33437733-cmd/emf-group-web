@@ -1,317 +1,299 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useTheme } from '../../context/ThemeContext';
 import {
   LayoutDashboard, FileText, MessageSquare, HeadphonesIcon,
-  FolderKanban, ChevronLeft, LogOut, Layers,
+  FolderKanban, ChevronLeft, LogOut, Sun, Moon, Users,
 } from 'lucide-react';
-import { UserAvatar } from '../ui/UIComponents';
 
 interface SidebarProps {
-  collapsed:       boolean;
-  onToggle:        () => void;
-  mobileOpen?:     boolean;
-  onCloseMobile?:  () => void;
+  collapsed: boolean;
+  onToggle: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-interface NavSection {
-  label: string;
-  items: NavItem[];
-}
-
-interface NavItem {
-  path:      string;
-  label:     string;
-  icon:      React.ComponentType<{ size?: number; style?: React.CSSProperties }>;
-  adminOnly: boolean;
-}
-
-const NAV_SECTIONS: NavSection[] = [
-  {
-    label: 'الرئيسية',
-    items: [
-      { path: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard, adminOnly: true },
-      { path: '/content',   label: 'المكتبة الرقمية', icon: FileText,        adminOnly: false },
-      { path: '/projects',  label: 'المشاريع',        icon: FolderKanban,    adminOnly: true },
-    ],
-  },
-  {
-    label: 'التواصل',
-    items: [
-      { path: '/chat',    label: 'الشات الداخلي', icon: MessageSquare,   adminOnly: true },
-      { path: '/support', label: 'الدعم الفني',   icon: HeadphonesIcon,  adminOnly: false },
-    ],
-  },
-];
-
-export default function Sidebar({ collapsed, onToggle, mobileOpen = false, onCloseMobile }: SidebarProps) {
+export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
 
-  const isAdmin    = user && (user.role === 'admin' || user.role === 'super_admin');
-  const isActive   = (path: string) => location.pathname === path;
+  const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
 
-  const handleNavClick = () => {
-    if (window.innerWidth <= 768 && onCloseMobile) onCloseMobile();
-  };
+  const navSections = [
+    {
+      label: 'الرئيسية',
+      items: [
+        { path: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard, adminOnly: false },
+      ],
+    },
+    {
+      label: 'المحتوى',
+      items: [
+        { path: '/content', label: 'المكتبة الرقمية', icon: FileText, adminOnly: false },
+      ],
+    },
+    {
+      label: 'التواصل',
+      adminOnly: true,
+      items: [
+        { path: '/chat', label: 'الشات الداخلي', icon: MessageSquare, adminOnly: true },
+        { path: '/support', label: 'الدعم الفني', icon: HeadphonesIcon, adminOnly: true },
+      ],
+    },
+    {
+      label: 'المشاريع',
+      items: [
+        { path: '/projects', label: 'المشاريع', icon: FolderKanban, adminOnly: false },
+      ],
+    },
+  ];
+
+  const visibleSections = navSections.filter(s => {
+    if (!isAdmin && s.adminOnly) return false;
+    const hasVisibleItems = s.items.filter(i => !i.adminOnly || isAdmin).length > 0;
+    return hasVisibleItems;
+  });
+
+  const isActive = (path: string) => location.pathname === path;
 
   return (
     <>
-      <aside
-        style={{
-          width:      collapsed ? 'var(--sidebar-w-sm)' : 'var(--sidebar-w)',
-          height:     '100vh',
-          position:   'fixed',
-          top:        0,
-          right:      0,
-          zIndex:     1030,
-          background: 'linear-gradient(180deg, #07101f 0%, #060d19 60%, #050c18 100%)',
-          borderLeft: '1px solid rgba(255,255,255,0.06)',
-          display:    'flex',
-          flexDirection: 'column',
-          transition: 'width 0.3s var(--ease-spring), transform 0.3s var(--ease-spring)',
-          overflow:   'hidden',
-        }}
-        className={`sidebar-el ${mobileOpen ? 'sidebar-mobile-open' : ''}`}
-      >
-        {/* ─── Logo Area ─── */}
+      {/* Overlay for mobile */}
+      {mobileOpen && (
+        <div
+          onClick={onMobileClose}
+          style={{
+            position: 'fixed', inset: 0, zIndex: 1031,
+            background: 'var(--bg-overlay)',
+          }}
+        />
+      )}
+
+      <aside style={{
+        width: collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)',
+        height: '100vh',
+        position: 'fixed',
+        top: 0,
+        right: 0,
+        zIndex: 1032,
+        background: 'var(--sidebar-bg)',
+        borderLeft: '1px solid var(--sidebar-border)',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: `width var(--transition-slow)`,
+        overflow: 'hidden',
+        boxShadow: 'var(--shadow-sidebar)',
+        transform: mobileOpen !== undefined
+          ? `translateX(${mobileOpen ? '0' : collapsed ? 'calc(100% + 20px)' : '0'})`
+          : 'none',
+        ...(mobileOpen !== undefined ? {
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: 1032,
+          transition: 'transform var(--transition-slow)',
+          boxShadow: mobileOpen ? 'var(--shadow-sidebar)' : 'none',
+        } : {}),
+      }}>
+        {/* Logo */}
         <div style={{
-          height:          'var(--navbar-h)',
-          display:         'flex',
-          alignItems:      'center',
-          justifyContent:  collapsed ? 'center' : 'space-between',
-          padding:         collapsed ? '0' : '0 18px',
-          borderBottom:    '1px solid rgba(255,255,255,0.05)',
-          flexShrink:      0,
+          height: 'var(--navbar-height)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'space-between',
+          padding: collapsed ? '0' : '0 var(--space-5)',
+          borderBottom: '1px solid var(--sidebar-border)',
+          gap: 'var(--space-2)',
+          flexShrink: 0,
         }}>
           {!collapsed && (
-            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{
-                width:           32,
-                height:          32,
-                borderRadius:    10,
-                background:      'var(--gradient-gold)',
-                display:         'flex',
-                alignItems:      'center',
-                justifyContent:  'center',
-                flexShrink:      0,
-              }}>
-                <Layers size={16} style={{ color: '#000' }} />
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
-                <span style={{ fontWeight: 800, fontSize: '0.96rem', color: '#fff', letterSpacing: '0.5px' }}>EMF</span>
-                <span style={{
-                  fontSize:   '0.62rem',
-                  fontWeight: 600,
-                  background: 'var(--gradient-gold-text)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  letterSpacing: '1.5px',
-                }}>GROUP</span>
-              </div>
+            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 900, fontSize: '1.25rem', letterSpacing: '0.3px' }}>EMF</span>
+              <span style={{
+                background: 'var(--gradient-gold)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                fontWeight: 900, fontSize: '1.25rem',
+              }}>GROUP</span>
             </Link>
           )}
-
           {collapsed && (
             <Link to="/" style={{ textDecoration: 'none' }}>
-              <div style={{
-                width:          34,
-                height:         34,
-                borderRadius:   10,
-                background:     'var(--gradient-gold)',
-                display:        'flex',
-                alignItems:     'center',
-                justifyContent: 'center',
-              }}>
-                <Layers size={16} style={{ color: '#000' }} />
-              </div>
+              <span style={{ color: 'var(--accent-gold)', fontWeight: 900, fontSize: '1.1rem' }}>E</span>
             </Link>
           )}
+          <button onClick={onToggle} style={{
+            background: 'transparent',
+            border: 'none',
+            borderRadius: 'var(--radius-sm)',
+            color: 'var(--sidebar-text)',
+            cursor: 'pointer',
+            padding: 'var(--space-1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            transition: 'var(--transition-base)',
+            flexShrink: 0,
+            opacity: 0.6,
+          }}
+            className="sidebar-toggle-btn"
+          >
+            <ChevronLeft size={16} style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'var(--transition-base)' }} />
+          </button>
+        </div>
 
-          {/* Desktop collapse toggle */}
-          {!collapsed && (
-            <button
-              onClick={onToggle}
-              className="sidebar-toggle-btn"
-              style={{
-                background:   'rgba(255,255,255,0.03)',
-                border:       '1px solid rgba(255,255,255,0.07)',
-                borderRadius: '8px',
-                color:        'var(--text-3)',
-                cursor:       'pointer',
-                padding:      '6px',
-                display:      'flex',
-                alignItems:   'center',
-                transition:   'all 0.2s',
-                flexShrink:   0,
-              }}
-            >
-              <ChevronLeft size={15} />
-            </button>
+        {/* Navigation */}
+        <nav style={{
+          flex: 1,
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          padding: collapsed ? 'var(--space-3) 0' : 'var(--space-4) 0',
+          direction: 'rtl',
+        }}>
+          {visibleSections.map(section => (
+            <div key={section.label} style={{ marginBottom: collapsed ? 'var(--space-2)' : 'var(--space-4)' }}>
+              {!collapsed && (
+                <div style={{
+                  padding: '0 var(--space-5)',
+                  marginBottom: 'var(--space-2)',
+                  fontSize: 'var(--text-xs)',
+                  fontWeight: 700,
+                  color: 'var(--text-tertiary)',
+                  letterSpacing: '0.8px',
+                  textTransform: 'uppercase',
+                }}>
+                  {section.label}
+                </div>
+              )}
+              {section.items.filter(i => !i.adminOnly || isAdmin).map(item => {
+                const active = isActive(item.path);
+                return (
+                  <Link
+                    key={item.path}
+                    to={item.path}
+                    onClick={onMobileClose}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: collapsed ? '0' : 'var(--space-3)',
+                      padding: collapsed ? 'var(--space-3) 0' : 'var(--space-3) var(--space-5)',
+                      margin: collapsed ? 'var(--space-1) auto' : 'var(--space-1) var(--space-3)',
+                      borderRadius: collapsed ? '50%' : 'var(--radius-md)',
+                      textDecoration: 'none',
+                      fontSize: 'var(--text-sm)',
+                      fontWeight: active ? 700 : 500,
+                      color: active ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
+                      background: active ? 'var(--sidebar-active)' : 'transparent',
+                      transition: 'all var(--transition-base)',
+                      position: 'relative',
+                      borderRight: active && !collapsed ? '3px solid var(--accent-blue)' : '3px solid transparent',
+                      width: collapsed ? '44px' : 'auto',
+                      height: collapsed ? '44px' : 'auto',
+                      justifyContent: collapsed ? 'center' : 'flex-start',
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                    }}
+                    title={collapsed ? item.label : undefined}
+                    className="sidebar-link"
+                  >
+                    <item.icon size={20} style={{ flexShrink: 0, opacity: active ? 1 : 0.7 }} />
+                    {!collapsed && <span>{item.label}</span>}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div style={{
+          borderTop: '1px solid var(--sidebar-border)',
+          padding: collapsed ? 'var(--space-3)' : 'var(--space-4) var(--space-5)',
+          display: 'flex',
+          flexDirection: collapsed ? 'column' : 'row',
+          alignItems: 'center',
+          gap: collapsed ? 'var(--space-2)' : 'var(--space-3)',
+          justifyContent: collapsed ? 'center' : 'space-between',
+        }}>
+          {/* Theme toggle */}
+          <button onClick={toggleTheme} style={{
+            background: 'transparent',
+            border: '1px solid var(--sidebar-border)',
+            borderRadius: 'var(--radius-md)',
+            color: 'var(--sidebar-text)',
+            cursor: 'pointer',
+            padding: collapsed ? 'var(--space-2)' : 'var(--space-2) var(--space-3)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: collapsed ? '0' : 'var(--space-2)',
+            transition: 'var(--transition-base)',
+            flexShrink: 0,
+            width: collapsed ? '40px' : 'auto',
+            justifyContent: 'center',
+          }}>
+            {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
+            {!collapsed && <span style={{ fontSize: 'var(--text-xs)' }}>{theme === 'dark' ? 'فاتح' : 'داكن'}</span>}
+          </button>
+
+          {/* User */}
+          {user && !collapsed && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0, flex: 1 }}>
+              <div style={{
+                width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
+                background: 'var(--gradient-cyber)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: 'white', fontWeight: 'bold', fontSize: 'var(--text-xs)',
+              }}>
+                {user.name?.charAt(0) || '?'}
+              </div>
+              <div style={{ flex: 1, textAlign: 'right', minWidth: 0, lineHeight: 1.2 }}>
+                <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.name}
+                </div>
+                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
+                  {user.role === 'super_admin' ? 'مدير عام' : user.role === 'admin' ? 'مدير' : 'عضو'}
+                </div>
+              </div>
+              <button onClick={logout} style={{
+                background: 'transparent', border: 'none',
+                color: 'var(--accent-red)', cursor: 'pointer',
+                padding: 'var(--space-1)', display: 'flex', opacity: 0.7,
+                transition: 'var(--transition-base)',
+              }} title="تسجيل الخروج">
+                <LogOut size={15} />
+              </button>
+            </div>
           )}
-
-          {collapsed && (
-            <button
-              onClick={onToggle}
-              className="sidebar-toggle-btn sidebar-toggle-collapsed"
-              style={{
-                position:   'absolute',
-                bottom:     -1,
-                right:      0,
-                width:      '100%',
-                height:     0,
-                background: 'none',
-                border:     'none',
-                cursor:     'pointer',
-                display:    'none', // shown via CSS
-              }}
-            >
-              <ChevronLeft size={14} style={{ transform: 'rotate(180deg)' }} />
+          {user && collapsed && (
+            <button onClick={logout} style={{
+              background: 'transparent', border: 'none',
+              color: 'var(--accent-red)', cursor: 'pointer',
+              padding: 'var(--space-1)', display: 'flex', opacity: 0.7,
+            }} title="تسجيل الخروج">
+              <LogOut size={16} />
             </button>
           )}
         </div>
-
-        {/* ─── Navigation ─── */}
-        <nav style={{ flex: 1, overflowY: 'auto', padding: '10px 0', direction: 'rtl' }} className="sidebar-nav">
-          {NAV_SECTIONS.map(section => {
-            const visibleItems = section.items.filter(item => !item.adminOnly || isAdmin);
-            if (visibleItems.length === 0) return null;
-
-            return (
-              <div key={section.label}>
-                {/* Section Label */}
-                {!collapsed && (
-                  <div className="sidebar-section-label">{section.label}</div>
-                )}
-                {collapsed && <div style={{ height: 12 }} />}
-
-                {/* Items */}
-                {visibleItems.map(item => {
-                  const active = isActive(item.path);
-                  return (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      onClick={handleNavClick}
-                      title={collapsed ? item.label : undefined}
-                      className={`sidebar-link ${active ? 'active' : ''}`}
-                      style={{
-                        justifyContent: collapsed ? 'center' : 'flex-start',
-                        margin: collapsed ? '2px 8px' : '2px 10px',
-                        padding: collapsed ? '10px 0' : '10px 12px',
-                      }}
-                    >
-                      <span className="link-icon">
-                        <item.icon
-                          size={18}
-                          style={{ color: active ? 'var(--primary-light)' : 'var(--text-3)' }}
-                        />
-                      </span>
-                      {!collapsed && (
-                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
-                      )}
-                      {/* Active indicator */}
-                      {active && !collapsed && (
-                        <div style={{
-                          marginRight: 'auto',
-                          width:  6,
-                          height: 6,
-                          borderRadius: '50%',
-                          background: 'var(--primary)',
-                          flexShrink: 0,
-                        }} />
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </nav>
-
-        {/* ─── User Footer ─── */}
-        {user && (
-          <div style={{
-            borderTop:  '1px solid rgba(255,255,255,0.05)',
-            padding:    collapsed ? '12px 8px' : '14px 14px',
-            display:    'flex',
-            alignItems: 'center',
-            gap:        10,
-            justifyContent: collapsed ? 'center' : 'flex-start',
-            background: 'rgba(0,0,0,0.12)',
-            flexShrink: 0,
-          }}>
-            <UserAvatar name={user.name || '?'} size={34} />
-            {!collapsed && (
-              <>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{
-                    fontSize:     '0.82rem',
-                    fontWeight:   600,
-                    color:        'var(--text-1)',
-                    overflow:     'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace:   'nowrap',
-                  }}>
-                    {user.name}
-                  </div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-3)', marginTop: 1 }}>
-                    {user.role === 'super_admin' ? '👑 مدير عام' : user.role === 'admin' ? 'مدير' : 'عضو'}
-                  </div>
-                </div>
-                <button
-                  onClick={() => { logout(); if (window.innerWidth <= 768 && onCloseMobile) onCloseMobile(); }}
-                  title="تسجيل الخروج"
-                  className="sidebar-logout-btn"
-                  style={{
-                    background:   'transparent',
-                    border:       '1px solid transparent',
-                    borderRadius: 8,
-                    color:        'var(--text-3)',
-                    cursor:       'pointer',
-                    padding:      6,
-                    display:      'flex',
-                    alignItems:   'center',
-                    flexShrink:   0,
-                    transition:   'all 0.2s',
-                  }}
-                >
-                  <LogOut size={14} />
-                </button>
-              </>
-            )}
-          </div>
-        )}
       </aside>
 
-      {/* ─── Collapsed expand button ─── */}
-      {collapsed && (
-        <button
-          onClick={onToggle}
-          className="sidebar-expand-btn"
-          style={{ display: 'none' }}
-          title="توسيع القائمة"
-        >
-          <ChevronLeft size={14} style={{ transform: 'rotate(180deg)' }} />
-        </button>
-      )}
-
       <style>{`
-        .sidebar-link:hover { background: rgba(255,255,255,0.04) !important; color: var(--text-1) !important; }
-        .sidebar-link.active { background: var(--primary-bg) !important; color: var(--primary-light) !important; border-color: var(--primary-border) !important; }
-        .sidebar-link.active:hover { background: rgba(79,142,247,0.14) !important; }
-        .sidebar-logout-btn:hover { background: var(--danger-bg) !important; border-color: var(--danger-border) !important; color: var(--danger) !important; }
-        .sidebar-toggle-btn:hover { background: rgba(255,255,255,0.07) !important; color: var(--text-1) !important; }
-
-        @media (max-width: 768px) {
-          .sidebar-el {
-            width: var(--sidebar-w) !important;
-            transform: translateX(100%);
-            box-shadow: -10px 0 40px rgba(0,0,0,0.6);
+        .sidebar-link:hover {
+          background: var(--sidebar-hover) !important;
+          color: var(--sidebar-text-active) !important;
+        }
+        .sidebar-link:hover svg {
+          opacity: 1 !important;
+        }
+        .sidebar-toggle-btn:hover {
+          opacity: 1 !important;
+          background: var(--sidebar-hover) !important;
+        }
+        @media (max-width: 767px) {
+          aside[style*="position: fixed"] {
+            transform: translateX(\${mobileOpen ? '0' : 'calc(100% + 20px)'}) !important;
           }
-          .sidebar-el.sidebar-mobile-open {
-            transform: translateX(0);
-          }
-          .sidebar-toggle-btn { display: none !important; }
         }
       `}</style>
     </>

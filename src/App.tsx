@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './hooks/useAuth';
+import { ThemeProvider } from './context/ThemeContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import ErrorBoundary from './components/ui/ErrorBoundary';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -26,40 +27,42 @@ function PageLoader() {
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <ErrorBoundary>
-        <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
-          <UpdateSystem 
-            config={{
-              checkInterval: 5,
-              showDelayedBanner: true,
-              autoReloadOnCritical: true,
-              notifyUserOnMinor: true,
-              enableServiceWorker: true
-            }}
-          />
-          
-          <div id="app-content" style={{ flexGrow: 1 }}>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<Home />} />
-                <Route path="/login" element={<Login />} />
-                <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="/content" element={<Content />} />
-                  <Route path="/chat" element={<ChatPage />} />
-                  <Route path="/support" element={<SupportChatPage />} />
-                  <Route path="/projects" element={<Projects />} />
-                </Route>
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </Suspense>
+      <ThemeProvider>
+        <Router>
+          <ErrorBoundary>
+          <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)' }}>
+            <UpdateSystem 
+              config={{
+                checkInterval: 5,
+                showDelayedBanner: true,
+                autoReloadOnCritical: true,
+                notifyUserOnMinor: true,
+                enableServiceWorker: true
+              }}
+            />
+            
+            <div id="app-content" style={{ flexGrow: 1 }}>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                    <Route path="/dashboard" element={<Dashboard />} />
+                    <Route path="/content" element={<Content />} />
+                    <Route path="/chat" element={<ChatPage />} />
+                    <Route path="/support" element={<SupportChatPage />} />
+                    <Route path="/projects" element={<Projects />} />
+                  </Route>
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </div>
+            
+            <ToastContainer />
           </div>
-          
-          <ToastContainer />
-        </div>
-        </ErrorBoundary>
-      </Router>
+          </ErrorBoundary>
+        </Router>
+      </ThemeProvider>
     </AuthProvider>
   );
 }

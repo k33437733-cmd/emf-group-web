@@ -164,10 +164,10 @@ export default function Dashboard() {
   };
 
   const statCards = [
-    { label: 'إجمالي الأعضاء', value: stats.usersCount, icon: Users, color: '#3b82f6', borderGlow: 'rgba(59, 130, 246, 0.25)' },
-    { label: 'الفيديوهات', value: stats.videosCount, icon: Film, color: '#8b5cf6', borderGlow: 'rgba(139, 92, 246, 0.25)' },
-    { label: 'التطبيقات', value: stats.appsCount, icon: Settings, color: '#06b6d4', borderGlow: 'rgba(6, 182, 212, 0.25)' },
-    { label: 'إجمالي التنزيلات', value: stats.totalDownloads, icon: Download, color: '#10b981', borderGlow: 'rgba(16, 185, 129, 0.25)' },
+    { label: 'إجمالي الأعضاء', value: stats.usersCount, icon: Users, color: '#3b82f6' },
+    { label: 'الفيديوهات', value: stats.videosCount, icon: Film, color: '#8b5cf6' },
+    { label: 'التطبيقات', value: stats.appsCount, icon: Settings, color: '#06b6d4' },
+    { label: 'إجمالي التنزيلات', value: stats.totalDownloads, icon: Download, color: '#10b981' },
   ];
 
   const tabs = [
@@ -197,14 +197,14 @@ export default function Dashboard() {
     <div className="container-fluid px-0 animate-fade" style={{ direction: 'rtl' }}>
       
       {/* Page Header */}
-      <div className="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-2">
+      <div className="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
         <div>
-          <h1 className="fw-extrabold fs-3 mb-1 text-white">لوحة التحكم</h1>
-          <p className="text-secondary small m-0">
-            أهلاً بك يا <span className="text-white fw-semibold">{user?.name}</span>، صلاحية حسابك:{' '}
-            <span className="fw-bold" style={{ color: 'var(--accent-blue)' }}>
+          <h1 className="page-title">لوحة التحكم</h1>
+          <p className="body-text m-0" style={{ marginTop: 'var(--space-2) !important' }}>
+            أهلاً بك يا <strong style={{ color: 'var(--text-primary)' }}>{user?.name}</strong>، صلاحية حسابك:{' '}
+            <strong style={{ color: 'var(--accent-blue)' }}>
               {user?.role === 'super_admin' ? 'مدير عام' : user?.role === 'admin' ? 'مدير عادي' : 'عضو'}
-            </span>
+            </strong>
           </p>
         </div>
       </div>
@@ -213,7 +213,7 @@ export default function Dashboard() {
         
         {/* Tabpill Sidebar Selector */}
         <div className="col-lg-3 col-xl-2">
-          <div className="glass-card" style={{ padding: '8px' }}>
+          <div className="card-base" style={{ padding: 'var(--space-2)' }}>
             <nav className="nav flex-column gap-1" role="tablist">
               {visibleTabs.map(tab => (
                 <button
@@ -221,17 +221,15 @@ export default function Dashboard() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`nav-link d-flex align-items-center gap-3 text-start border-0 w-100 ${activeTab === tab.id ? 'active' : ''}`}
                   style={{
-                    borderRadius: '10px',
-                    fontSize: '0.85rem',
-                    padding: '12px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: 'var(--text-sm)',
+                    padding: 'var(--space-3) var(--space-4)',
                     fontWeight: activeTab === tab.id ? 600 : 500,
-                    color: activeTab === tab.id ? '#ffffff' : 'var(--text-secondary)',
-                    background: activeTab === tab.id ? 'var(--accent-blue)' : 'transparent',
-                    transition: 'all 0.2s ease',
+                    transition: 'all var(--transition-base)',
                     cursor: 'pointer'
                   }}
                 >
-                  <tab.icon size={16} style={{ flexShrink: 0 }} />
+                  <tab.icon size={17} style={{ flexShrink: 0 }} />
                   <span>{tab.label}</span>
                 </button>
               ))}
@@ -247,32 +245,32 @@ export default function Dashboard() {
             <div className="d-flex flex-column gap-4 animate-scale">
               {isAdmin ? (
                 <>
-                  {/* Grid Metrics */}
-                  <div className="row g-3">
+                  {/* Grid Metrics - Premium Cards */}
+                  <div className="row g-4">
                     {statCards.map((card, i) => (
                       <div className="col-sm-6 col-xl-3" key={i}>
                         <div 
-                          className="glass-card h-100" 
+                          className="card-base" 
                           style={{ 
-                            padding: '24px 20px', 
-                            borderTop: `3px solid ${card.color}`,
-                            boxShadow: `0 8px 30px rgba(0,0,0,0.2), 0 0 15px ${card.borderGlow}`
+                            height: '120px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            padding: '0 var(--space-6)',
                           }}
                         >
-                          <div className="d-flex align-items-center gap-3">
+                          <div className="d-flex align-items-center gap-4 w-100">
                             <div 
-                              className="d-flex align-items-center justify-content-center rounded-3" 
                               style={{
-                                width: '48px', height: '48px', flexShrink: 0,
-                                background: `${card.color}15`, color: card.color,
-                                border: `1px solid ${card.color}30`
+                                width: '56px', height: '56px', borderRadius: 'var(--radius-lg)', flexShrink: 0,
+                                background: `${card.color}12`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
                               }}
                             >
-                              <card.icon size={22} />
+                              <card.icon size={24} style={{ color: card.color }} />
                             </div>
-                            <div className="min-w-0">
-                              <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>{card.label}</div>
-                              <div className="fw-extrabold fs-3 text-white mt-1">{card.value}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div className="small-label">{card.label}</div>
+                              <div className="stat-number">{card.value}</div>
                             </div>
                           </div>
                         </div>
@@ -280,44 +278,38 @@ export default function Dashboard() {
                     ))}
                   </div>
 
-                  {/* Second row stats */}
-                  <div className="row g-3">
+                  {/* Second row stats - Premium Cards */}
+                  <div className="row g-4">
                     <div className="col-md-6">
-                      <div className="glass-card" style={{ padding: '24px 20px', borderTop: '2px solid rgba(234,179,8,0.2)' }}>
-                        <div className="d-flex align-items-center gap-3">
-                          <div 
-                            className="d-flex align-items-center justify-content-center rounded-3" 
-                            style={{
-                              width: '46px', height: '46px', flexShrink: 0,
-                              background: 'rgba(234,179,8,0.08)', color: 'var(--accent-amber)',
-                              border: '1px solid rgba(234,179,8,0.2)'
-                            }}
-                          >
-                            <Eye size={20} />
+                      <div className="card-base" style={{ height: '104px', display: 'flex', alignItems: 'center', padding: '0 var(--space-6)' }}>
+                        <div className="d-flex align-items-center gap-4 w-100">
+                          <div style={{
+                            width: '52px', height: '52px', borderRadius: 'var(--radius-lg)', flexShrink: 0,
+                            background: 'rgba(234,179,8,0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <Eye size={22} style={{ color: 'var(--accent-amber)' }} />
                           </div>
                           <div>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>إجمالي المشاهدات</div>
-                            <div className="fw-extrabold fs-3 text-white mt-1">{stats.totalViews}</div>
+                            <div className="small-label">إجمالي المشاهدات</div>
+                            <div className="stat-number">{stats.totalViews}</div>
                           </div>
                         </div>
                       </div>
                     </div>
                     <div className="col-md-6">
-                      <div className="glass-card" style={{ padding: '24px 20px', borderTop: '2px solid rgba(6,182,212,0.2)' }}>
-                        <div className="d-flex align-items-center gap-3">
-                          <div 
-                            className="d-flex align-items-center justify-content-center rounded-3" 
-                            style={{
-                              width: '46px', height: '46px', flexShrink: 0,
-                              background: 'rgba(6,182,212,0.08)', color: 'var(--accent-cyan)',
-                              border: '1px solid rgba(6,182,212,0.2)'
-                            }}
-                          >
-                            <HardDrive size={20} />
+                      <div className="card-base" style={{ height: '104px', display: 'flex', alignItems: 'center', padding: '0 var(--space-6)' }}>
+                        <div className="d-flex align-items-center gap-4 w-100">
+                          <div style={{
+                            width: '52px', height: '52px', borderRadius: 'var(--radius-lg)', flexShrink: 0,
+                            background: 'rgba(6,182,212,0.1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          }}>
+                            <HardDrive size={22} style={{ color: 'var(--accent-cyan)' }} />
                           </div>
                           <div>
-                            <div style={{ color: 'var(--text-secondary)', fontSize: '0.78rem' }}>الملفات الأخرى</div>
-                            <div className="fw-extrabold fs-3 text-white mt-1">{stats.filesCount}</div>
+                            <div className="small-label">الملفات الأخرى</div>
+                            <div className="stat-number">{stats.filesCount}</div>
                           </div>
                         </div>
                       </div>
@@ -325,12 +317,12 @@ export default function Dashboard() {
                   </div>
 
                   {/* Guidelines Alert Card */}
-                  <div className="glass-card" style={{ padding: '28px', borderRight: '4px solid var(--accent-blue)' }}>
-                    <h5 className="fw-bold mb-3 text-white" style={{ fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div className="card-base" style={{ padding: 'var(--space-6)', borderRight: '4px solid var(--accent-blue)' }}>
+                    <h5 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
                       <ShieldAlert size={18} style={{ color: 'var(--accent-blue)' }} />
                       ملاحظات الرفع والأمان للمسؤولين
                     </h5>
-                    <ul className="text-secondary small mb-0" style={{ lineHeight: 1.85, paddingRight: '1.25rem' }}>
+                    <ul className="body-text mb-0" style={{ lineHeight: 1.85, paddingRight: '1.25rem' }}>
                       <li>أقصى حجم مسموح به لرفع مقاطع الفيديو هو <strong>50 ميجابايت</strong>.</li>
                       <li>أقصى حجم مسموح به لرفع التطبيقات والملفات التنفيذية هو <strong>100 ميجابايت</strong>.</li>
                       <li>تأكد من اختيار القسم الصحيح للمحتوى (فيديوهات / تطبيقات / ملفات) لتسهيل الفلترة.</li>
@@ -340,9 +332,9 @@ export default function Dashboard() {
                 </>
               ) : (
                 /* Member portal view */
-                <div className="glass-card text-center" style={{ padding: '60px 40px' }}>
-                  <h4 className="fw-bold mb-3 text-white">بوابة الأعضاء EMF Group</h4>
-                  <p className="text-secondary mb-4 mx-auto" style={{ maxWidth: '520px', lineHeight: 1.75, fontSize: '0.88rem' }}>
+                <div className="card-base text-center" style={{ padding: 'var(--space-16) var(--space-10)' }}>
+                  <h4 className="section-title mb-3">بوابة الأعضاء EMF Group</h4>
+                  <p className="body-text mb-4 mx-auto" style={{ maxWidth: '520px' }}>
                     تتيح لك بوابتنا تصفح الفيديوهات وتنزيل التطبيقات المخصصة لمسجلات كاميرات المراقبة والفيديو المسجلة. يمكنك زيارة المكتبة للبدء.
                   </p>
                   <button onClick={() => navigate('/content')} className="btn btn-primary px-4 py-2">
@@ -355,8 +347,8 @@ export default function Dashboard() {
 
           {/* Tab 2: Upload Files */}
           {activeTab === 'upload' && isAdmin && (
-            <div className="glass-card animate-scale" style={{ padding: '32px' }}>
-              <h4 className="fw-bold mb-4 pb-2 text-white border-bottom border-secondary border-opacity-10" style={{ fontSize: '1.2rem' }}>
+            <div className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
+              <h4 className="section-title mb-4 pb-3" style={{ borderBottom: '1px solid var(--border-color)' }}>
                 رفع محتوى وملف جديد للمكتبة
               </h4>
               <form onSubmit={handleUploadSubmit} className="d-flex flex-column gap-3">
@@ -422,10 +414,10 @@ export default function Dashboard() {
                       <span>جاري رفع الملف للمخدم...</span>
                       <span className="fw-bold">{uploadProgress}%</span>
                     </div>
-                    <div className="progress" style={{ height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '99px' }}>
+                    <div className="progress" style={{ height: '6px', background: 'var(--badge-bg)', borderRadius: 'var(--radius-full)' }}>
                       <div 
                         className="progress-bar progress-bar-striped progress-bar-animated" 
-                        style={{ width: `${uploadProgress}%`, background: 'var(--gradient-cyber)' }} 
+                        style={{ width: `${uploadProgress}%`, background: 'var(--gradient-cyber)', borderRadius: 'var(--radius-full)' }} 
                       />
                     </div>
                   </div>
@@ -452,8 +444,8 @@ export default function Dashboard() {
 
           {/* Tab 3: Content List Manager */}
           {activeTab === 'content' && isAdmin && (
-            <div className="glass-card animate-scale" style={{ padding: '32px' }}>
-              <h4 className="fw-bold mb-4 text-white" style={{ fontSize: '1.2rem' }}>إدارة محتويات المكتبة</h4>
+            <div className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
+              <h4 className="section-title mb-4">إدارة محتويات المكتبة</h4>
               
               {contents.length === 0 ? (
                 <div className="text-center py-5 text-secondary">لا توجد ملفات مرفوعة حالياً.</div>
@@ -520,8 +512,8 @@ export default function Dashboard() {
 
           {/* Tab 4: Users Administration */}
           {activeTab === 'users' && isSuperAdmin && (
-            <div className="glass-card animate-scale" style={{ padding: '32px' }}>
-              <h4 className="fw-bold mb-4 text-white" style={{ fontSize: '1.2rem' }}>إدارة صلاحيات وحالة الأعضاء</h4>
+            <div className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
+              <h4 className="section-title mb-4">إدارة صلاحيات وحالة الأعضاء</h4>
               
               <div className="table-responsive">
                 <table className="table align-middle mb-0" style={{ fontSize: '0.85rem' }}>
@@ -644,8 +636,8 @@ export default function Dashboard() {
 
           {/* Tab 5: Activities Logs */}
           {activeTab === 'logs' && isSuperAdmin && (
-            <div className="glass-card animate-scale" style={{ padding: '32px' }}>
-              <h4 className="fw-bold mb-4 text-white" style={{ fontSize: '1.2rem' }}>سجل نشاط مديري النظام</h4>
+            <div className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
+              <h4 className="section-title mb-4">سجل نشاط مديري النظام</h4>
               
               <div className="d-flex flex-column gap-3" style={{ maxHeight: '480px', overflowY: 'auto', paddingRight: '4px' }}>
                 {auditLogs.length === 0 ? (
