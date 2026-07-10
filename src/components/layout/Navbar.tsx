@@ -2,13 +2,15 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
+import { useI18n } from '../../context/I18nContext';
 import { UserAvatar } from '../ui/UIComponents';
 import { subscribeUnreadCount } from '../../firebase/db';
 import NotificationCenter from '../notifications/NotificationCenter';
+import CommandPalette from '../ui/CommandPalette';
 import {
   Menu, Search, Bell, Settings, Plus,
   PanelLeftClose, ChevronDown, LogOut, User, Shield,
-  Palette, X, FileText, FolderKanban, MessageSquare,
+  Palette, X, FileText, FolderKanban, MessageSquare, Languages
 } from 'lucide-react';
 import styles from './Navbar.module.css';
 
@@ -35,13 +37,6 @@ const pageConfigs: Record<string, PageConfig> = {
   '/admin/release-notes': { title: 'سجل الإصدارات', breadcrumbs: [{ label: 'الرئيسية', path: '/dashboard' }, { label: 'الإصدارات' }, { label: 'سجل الإصدارات' }] },
 };
 
-const roleLabels: Record<string, string> = {
-  super_admin: 'مدير عام',
-  admin: 'مدير',
-  agent: 'وكيل',
-  user: 'عضو',
-};
-
 const roleClasses: Record<string, string> = {
   super_admin: styles.roleSuperAdmin,
   admin: styles.roleAdmin,
@@ -58,6 +53,7 @@ const dotClasses: Record<string, string> = {
 export default function Navbar({ onToggleSidebar }: NavbarProps) {
   const { user, logout } = useAuth();
   const { accent, setAccent, mode, setMode } = useTheme();
+  const { language, setLanguage, t, rtl } = useI18n();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -65,8 +61,8 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
   const [notifOpen, setNotifOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
   const [themeOpen, setThemeOpen] = useState(false);
+  const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
   const [bellShake, setBellShake] = useState(false);
 
@@ -74,7 +70,6 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
   const notifRef = useRef<HTMLDivElement>(null);
   const quickRef = useRef<HTMLDivElement>(null);
   const themeRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const prevUnreadRef = useRef(unreadCount);
 
   useEffect(() => {
@@ -108,11 +103,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
         e.preventDefault();
-        if (window.innerWidth < 768) {
-          setMobileSearchOpen(true);
-        } else {
-          searchInputRef.current?.focus();
-        }
+        setCmdPaletteOpen(true);
       }
       if (e.key === 'Escape') {
         setProfileOpen(false);
@@ -124,6 +115,29 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  const translateBreadcrumb = useCallback((label: string) => {
+    if (label === 'الرئيسية') return t('mainMenu');
+    if (label === 'لوحة التحكم') return t('dashboard');
+    if (label === 'المكتبة الرقمية') return t('content');
+    if (label === 'الشات الداخلي') return t('chat');
+    if (label === 'الدعم الفني') return t('support');
+    if (label === 'المشاريع') return t('projects');
+    if (label === 'سجل الإصدارات') return t('releaseNotes');
+    if (label === 'الإصدارات') return t('systemMenu');
+    if (label === 'التواصل') return t('managementMenu');
+    return label;
+  }, [t]);
+
+  const translatePageTitle = useCallback((path: string) => {
+    if (path === '/dashboard') return t('dashboard');
+    if (path === '/content') return t('content');
+    if (path === '/chat') return t('chat');
+    if (path === '/support') return t('support');
+    if (path === '/projects') return t('projects');
+    if (path === '/admin/release-notes') return t('releaseNotes');
+    return t('dashboard');
+  }, [t]);
 
   const config = pageConfigs[location.pathname] || pageConfigs['/dashboard'];
 
@@ -141,20 +155,19 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
     setAccent(color as any);
   }, [setAccent]);
 
-  const roleLabel = roleLabels[user?.role || ''] || 'عضو';
+  const roleLabel = user?.role === 'super_admin' ? t('roleSuperAdmin') : user?.role === 'admin' ? t('roleAdmin') : t('roleUser');
   const roleClass = roleClasses[user?.role || ''] || styles.roleUser;
   const dotClass = user ? dotClasses[user.onlineStatus] || styles.offlineDot : '';
 
   return (
-    <header className={styles.navbar}>
-      <div className={styles.inner}>
-        {/* ── Left section ── */}
-        <div className={styles.sectionLeft}>
+    <header className={styles.navbar} style={{ direction: rtl ? 'rtl' : 'ltr', background: 'var(--navbar-bg)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--border-color)', height: 'var(--navbar-height)' }}>
+      <div className={styles.inner} style={{ flexDirection: rtl ? 'row' : 'row-reverse' }}>
+        {/* ── Left section (brand avatar & user status info) ── */}
+        <div className={styles.sectionLeft} style={{ flexDirection: rtl ? 'row' : 'row-reverse' }}>
           <button
             className={styles.sidebarToggle}
             onClick={onToggleSidebar}
-            aria-label="فتح القائمة الجانبية"
-            aria-controls="sidebar-nav"
+            aria-label="Open sidebar"
           >
             <Menu size={20} />
           </button>
@@ -166,14 +179,15 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
               onClick={() => setProfileOpen(p => !p)}
               role="button"
               tabIndex={0}
-              aria-label="قائمة الملف الشخصي"
+              aria-label="User Profile menu"
               aria-expanded={profileOpen}
+              style={{ flexDirection: rtl ? 'row' : 'row' }}
             >
               <div className={styles.avatarWrap}>
-                <UserAvatar name={user.name} size={38} />
+                <UserAvatar name={user.name} size={34} />
                 <span className={`${styles.onlineDot} ${dotClass}`} />
               </div>
-              <div className={styles.userInfo}>
+              <div className={styles.userInfo} style={{ textAlign: rtl ? 'right' : 'left' }}>
                 <span className={styles.userName}>{user.name}</span>
                 <span className={`${styles.roleBadge} ${roleClass}`}>{roleLabel}</span>
               </div>
@@ -182,7 +196,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
               </span>
 
               {profileOpen && (
-                <div className={styles.profileDropdown}>
+                <div className={styles.profileDropdown} style={{ left: rtl ? 'auto' : 0, right: rtl ? 0 : 'auto', textAlign: rtl ? 'right' : 'left' }}>
                   <div className={styles.dropdownHeader}>
                     <div className={styles.dropdownHeaderName}>{user.name}</div>
                     <div className={styles.dropdownHeaderEmail}>{user.email}</div>
@@ -190,19 +204,11 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                   <div style={{ padding: 'var(--space-1)', display: 'flex', flexDirection: 'column', gap: '2px' }}>
                     <button className={styles.dropdownItem} onClick={() => handleNavigate('/dashboard')}>
                       <User size={15} />
-                      الملف الشخصي
+                      {t('dashboard')}
                     </button>
                     <button className={styles.dropdownItem} onClick={() => handleNavigate('/settings')}>
                       <Settings size={15} />
-                      إعدادات الحساب
-                    </button>
-                    <button className={styles.dropdownItem} onClick={() => handleNavigate('/settings?tab=appearance')}>
-                      <Palette size={15} />
-                      المظهر
-                    </button>
-                    <button className={styles.dropdownItem} onClick={() => handleNavigate('/settings?tab=security')}>
-                      <Shield size={15} />
-                      الأمان
+                      {t('settings')}
                     </button>
                   </div>
                   <div className={styles.dropdownDivider} />
@@ -212,7 +218,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
                       onClick={handleLogout}
                     >
                       <LogOut size={15} />
-                      تسجيل الخروج
+                      {t('logout')}
                     </button>
                   </div>
                 </div>
@@ -221,64 +227,71 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
           )}
         </div>
 
-        {/* ── Center section ── */}
-        <div className={styles.sectionCenter}>
-          <div className={styles.titleArea}>
-            <div className={styles.breadcrumbs}>
+        {/* ── Center section (Breadcrumb & Search Bar) ── */}
+        <div className={styles.sectionCenter} style={{ flex: 1, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 var(--space-4)', flexDirection: rtl ? 'row' : 'row-reverse' }}>
+          <div className={styles.titleArea} style={{ textAlign: rtl ? 'right' : 'left' }}>
+            <div className={styles.breadcrumbs} style={{ direction: rtl ? 'rtl' : 'ltr' }}>
               {config.breadcrumbs.map((item, i) => (
                 <span key={i} className={styles.breadcrumbItem}>
                   {i > 0 && <span className={styles.breadcrumbSeparator}>/</span>}
                   {item.path ? (
                     <span className={styles.breadcrumbLink} onClick={() => navigate(item.path!)}>
-                      {item.label}
+                      {translateBreadcrumb(item.label)}
                     </span>
                   ) : (
-                    <span className={styles.breadcrumbCurrent}>{item.label}</span>
+                    <span className={styles.breadcrumbCurrent}>{translateBreadcrumb(item.label)}</span>
                   )}
                 </span>
               ))}
             </div>
-            <h2 className={styles.pageTitle}>{config.title}</h2>
+            <h2 className={styles.pageTitle} style={{ fontSize: 'var(--text-lg)', fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
+              {translatePageTitle(location.pathname)}
+            </h2>
           </div>
 
+          {/* Search Trigger */}
           <div
             className={styles.searchBar}
-            onClick={() => searchInputRef.current?.focus()}
+            onClick={() => setCmdPaletteOpen(true)}
             role="search"
-            aria-label="بحث سريع"
+            aria-label="Quick Search command palette"
+            style={{ cursor: 'pointer', maxWidth: '300px', display: 'flex', alignItems: 'center', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: 'var(--radius-sm)', padding: '6px 12px', gap: '8px' }}
           >
-            <span className={styles.searchIcon}>
-              <Search size={15} />
+            <Search size={14} style={{ color: 'var(--text-tertiary)' }} />
+            <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-sm)', flex: 1, textAlign: rtl ? 'right' : 'left' }}>
+              {t('searchPlaceholder')}
             </span>
-            <input
-              ref={searchInputRef}
-              className={styles.searchInput}
-              type="text"
-              placeholder="بحث سريع..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              aria-label="بحث سريع"
-            />
-            <kbd className={styles.searchKbd}>
+            <kbd className={styles.searchKbd} style={{ background: 'var(--badge-bg)', border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.65rem', padding: '2px 4px', color: 'var(--text-secondary)' }}>
               <span>⌘</span>K
             </kbd>
           </div>
         </div>
 
-        {/* ── Right section ── */}
-        <div className={styles.sectionRight}>
+        {/* ── Right section (Notifications, Theme Swatch, Language Switcher) ── */}
+        <div className={styles.sectionRight} style={{ flexDirection: rtl ? 'row' : 'row-reverse', gap: 'var(--space-2)' }}>
+          
+          {/* Language Switcher */}
+          <button
+            className={styles.navIconBtn}
+            onClick={() => setLanguage(language === 'ar' ? 'en' : 'ar')}
+            aria-label="Switch interface language"
+            style={{ fontWeight: 700, fontSize: '0.78rem', background: 'var(--badge-bg)', border: '1px solid var(--border-color)', borderRadius: 'var(--radius-sm)', height: '36px', width: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', color: 'var(--text-primary)' }}
+          >
+            <Languages size={15} style={{ opacity: 0.8 }} />
+            <span style={{ textTransform: 'uppercase' }}>{language === 'ar' ? 'EN' : 'AR'}</span>
+          </button>
+
           {/* Notification bell */}
           <div ref={notifRef} className={styles.notifWrapper}>
             <button
               className={`${styles.navIconBtn} ${bellShake ? styles.bellShake : ''}`}
               onClick={() => setNotifOpen(o => !o)}
-              aria-label={`الإشعارات${unreadCount > 0 ? ` (${unreadCount} غير مقروء)` : ''}`}
+              aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
+              style={{ height: '36px', width: '36px', display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-sm)' }}
             >
-              <Bell size={19} />
+              <Bell size={18} />
               {unreadCount > 0 && (
-                <span className={`${styles.notifBadge} ${styles.notifBadgePulse}`}>
-                  {unreadCount > 9 ? '9+' : unreadCount}
-                </span>
+                <span className={styles.notifBadge} style={{ background: 'var(--accent-red)', border: '2px solid var(--bg-primary)', position: 'absolute', top: '4px', right: '4px', width: '8px', height: '8px', borderRadius: '50%' }} />
               )}
             </button>
 
@@ -288,47 +301,47 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             />
           </div>
 
+          {/* Theme Palette Swatches */}
           <div ref={themeRef} style={{ position: 'relative' }}>
-            {/* Theme toggle */}
             <button
               className={`${styles.navIconBtn} ${styles.themeControl}`}
               onClick={() => setThemeOpen(open => !open)}
-              aria-label="فتح لوحة ألوان الثيم"
+              aria-label="Theme Swatches panel"
+              style={{ height: '36px', width: '36px', display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-sm)' }}
             >
               <Palette size={18} />
-              <span className={styles.themeControlLabel}>ألوان</span>
             </button>
 
             {themeOpen && (
-              <div className={styles.themeDropdown}>
+              <div className={styles.themeDropdown} style={{ left: rtl ? 0 : 'auto', right: rtl ? 'auto' : 0 }}>
                 <div className={styles.themeSection}>
-                  <div className={styles.themeSectionTitle}>الوضع</div>
+                  <div className={styles.themeSectionTitle}>{t('theme')}</div>
                   <div className={styles.themeModeOptions}>
                     <button
                       type="button"
                       className={`${styles.themeModeButton} ${mode === 'light' ? 'active' : ''}`}
                       onClick={() => setMode('light')}
-                    >فاتح</button>
+                    >{rtl ? 'فاتح' : 'Light'}</button>
                     <button
                       type="button"
                       className={`${styles.themeModeButton} ${mode === 'dark' ? 'active' : ''}`}
                       onClick={() => setMode('dark')}
-                    >داكن</button>
+                    >{rtl ? 'داكن' : 'Dark'}</button>
                     <button
                       type="button"
                       className={`${styles.themeModeButton} ${mode === 'system' ? 'active' : ''}`}
                       onClick={() => setMode('system')}
-                    >نظام</button>
+                    >{rtl ? 'تلقائي' : 'Auto'}</button>
                   </div>
                 </div>
                 <div className={styles.themeSection}>
-                  <div className={styles.themeSectionTitle}>ألوان لوحة التحكم</div>
+                  <div className={styles.themeSectionTitle}>{rtl ? 'ألوان لوحة التحكم' : 'Accent Swatch'}</div>
                   <div className={styles.themeAccentSwatches}>
                     {['blue','purple','pink','red','orange','gold','green','cyan','dark','navy'].map(color => (
                       <button
                         key={color}
                         type="button"
-                        aria-label={`تبديل اللون إلى ${color}`}
+                        aria-label={`Switch color to ${color}`}
                         className={`${styles.themeAccentSwatch} ${accent === color ? 'active' : ''}`}
                         onClick={() => handleAccentChange(color)}
                         style={{ background: `var(--accent-${color})` }}
@@ -340,97 +353,48 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             )}
           </div>
 
-          {/* Settings */}
-          <button
-            className={styles.navIconBtn}
-            onClick={() => navigate('/settings')}
-            aria-label="الإعدادات"
-          >
-            <Settings size={19} />
-          </button>
-
-          {/* Quick actions */}
+          {/* Quick Actions Add Plus */}
           <div ref={quickRef} className={styles.quickWrapper}>
             <button
               className={styles.navIconBtn}
               onClick={() => setQuickOpen(o => !o)}
-              aria-label="إجراءات سريعة"
+              aria-label="Quick Actions"
+              style={{ height: '36px', width: '36px', display: 'grid', placeItems: 'center', borderRadius: 'var(--radius-sm)' }}
             >
-              <Plus size={19} />
+              <Plus size={18} />
             </button>
 
             {quickOpen && (
-              <div className={styles.quickActionsDropdown}>
+              <div className={styles.quickActionsDropdown} style={{ left: rtl ? 0 : 'auto', right: rtl ? 'auto' : 0, textAlign: rtl ? 'right' : 'left' }}>
                 <button
                   className={styles.dropdownItem}
                   onClick={() => { setQuickOpen(false); navigate('/content'); }}
                 >
-                  <FileText size={15} />
-                  إضافة محتوى
+                  <FileText size={14} />
+                  {rtl ? 'إضافة محتوى' : 'Add Content'}
                 </button>
                 <button
                   className={styles.dropdownItem}
                   onClick={() => { setQuickOpen(false); navigate('/projects'); }}
                 >
-                  <FolderKanban size={15} />
-                  مشروع جديد
+                  <FolderKanban size={14} />
+                  {rtl ? 'مشروع جديد' : 'New Project'}
                 </button>
                 <button
                   className={styles.dropdownItem}
                   onClick={() => { setQuickOpen(false); navigate('/chat'); }}
                 >
-                  <MessageSquare size={15} />
-                  رسالة جديدة
+                  <MessageSquare size={14} />
+                  {rtl ? 'رسالة جديدة' : 'New Message'}
                 </button>
               </div>
             )}
           </div>
-
-          {/* Sidebar collapse (desktop) */}
-          <button
-            className={`${styles.navIconBtn} ${styles.sidebarCollapseDesk}`}
-            onClick={onToggleSidebar}
-            aria-label="طي القائمة"
-          >
-            <PanelLeftClose size={19} />
-          </button>
-
-          {/* Mobile search trigger */}
-          <button
-            className={`${styles.navIconBtn} ${styles.searchMobileTrigger}`}
-            onClick={() => setMobileSearchOpen(true)}
-            aria-label="بحث"
-          >
-            <Search size={19} />
-          </button>
         </div>
       </div>
 
-      {/* ── Mobile search overlay ── */}
-      {mobileSearchOpen && (
-        <div className={styles.mobileSearchOverlay}>
-          <div className={styles.mobileSearchHeader}>
-            <input
-              className={styles.mobileSearchInput}
-              type="text"
-              placeholder="ابحث عن صفحة..."
-              autoFocus
-              onChange={e => setSearchQuery(e.target.value)}
-              aria-label="بحث"
-            />
-            <button
-              className={styles.navIconBtn}
-              onClick={() => setMobileSearchOpen(false)}
-              aria-label="إغلاق البحث"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          <div className={styles.mobileSearchHint}>
-            ابدأ الكتابة للبحث...
-          </div>
-        </div>
-      )}
+      {/* Global Command Palette search Modal */}
+      <CommandPalette isOpen={cmdPaletteOpen} onClose={() => setCmdPaletteOpen(false)} />
     </header>
   );
 }

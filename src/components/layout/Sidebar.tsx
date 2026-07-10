@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useTheme } from '../../context/ThemeContext';
+import { useI18n } from '../../context/I18nContext';
 import {
   LayoutDashboard, FileText, MessageSquare, HeadphonesIcon,
   FolderKanban, ChevronLeft, LogOut, Sun, Moon, Megaphone,
@@ -16,42 +17,43 @@ interface SidebarProps {
 export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const { appliedTheme, toggleTheme } = useTheme();
+  const { t, rtl } = useI18n();
   const location = useLocation();
 
   const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
 
   const navSections = [
     {
-      label: 'الرئيسية',
+      key: 'mainMenu',
       items: [
-        { path: '/dashboard', label: 'لوحة التحكم', icon: LayoutDashboard, adminOnly: false },
+        { path: '/dashboard', key: 'dashboard', icon: LayoutDashboard, adminOnly: false },
       ],
     },
     {
-      label: 'المحتوى',
+      key: 'content',
       items: [
-        { path: '/content', label: 'المكتبة الرقمية', icon: FileText, adminOnly: false },
+        { path: '/content', key: 'content', icon: FileText, adminOnly: false },
       ],
     },
     {
-      label: 'التواصل',
+      key: 'managementMenu',
       adminOnly: true,
       items: [
-        { path: '/chat', label: 'الشات الداخلي', icon: MessageSquare, adminOnly: true },
-        { path: '/support', label: 'الدعم الفني', icon: HeadphonesIcon, adminOnly: true },
+        { path: '/chat', key: 'chat', icon: MessageSquare, adminOnly: true },
+        { path: '/support', key: 'support', icon: HeadphonesIcon, adminOnly: true },
       ],
     },
     {
-      label: 'المشاريع',
+      key: 'projects',
       items: [
-        { path: '/projects', label: 'المشاريع', icon: FolderKanban, adminOnly: false },
+        { path: '/projects', key: 'projects', icon: FolderKanban, adminOnly: false },
       ],
     },
     {
-      label: 'الإصدارات',
+      key: 'systemMenu',
       adminOnly: true,
       items: [
-        { path: '/admin/release-notes', label: 'سجل الإصدارات', icon: Megaphone, adminOnly: true },
+        { path: '/admin/release-notes', key: 'releaseNotes', icon: Megaphone, adminOnly: true },
       ],
     },
   ];
@@ -88,32 +90,27 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
 
       <aside
         role="navigation"
-        aria-label="القائمة الجانبية"
+        aria-label={t('mainMenu')}
         style={{
           width: collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)',
           height: '100vh',
           position: 'fixed',
           top: 0,
-          right: 0,
+          right: rtl ? 0 : 'auto',
+          left: !rtl ? 0 : 'auto',
           zIndex: 1032,
           background: 'var(--sidebar-bg)',
-          borderLeft: '1px solid var(--sidebar-border)',
+          backdropFilter: 'blur(20px)',
+          borderLeft: rtl ? '1px solid var(--sidebar-border)' : 'none',
+          borderRight: !rtl ? '1px solid var(--sidebar-border)' : 'none',
           display: 'flex',
           flexDirection: 'column',
-          transition: 'width 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+          transition: 'width 250ms cubic-bezier(0.16, 1, 0.3, 1), transform 250ms cubic-bezier(0.16, 1, 0.3, 1)',
           overflow: 'hidden',
           boxShadow: mobileOpen ? 'var(--shadow-sidebar)' : 'none',
           transform: mobileOpen !== undefined
-            ? `translateX(${mobileOpen ? '0' : 'calc(100% + 20px)'})`
+            ? `translateX(${mobileOpen ? '0' : (rtl ? 'calc(100% + 20px)' : 'calc(-100% - 20px)')})`
             : 'none',
-          ...(mobileOpen !== undefined ? {
-            position: 'fixed' as const,
-            top: 0,
-            right: 0,
-            bottom: 0,
-            zIndex: 1032,
-            transition: 'transform 250ms cubic-bezier(0.16, 1, 0.3, 1)',
-          } : {}),
         }}
       >
         {/* Logo */}
@@ -126,26 +123,27 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
           borderBottom: '1px solid var(--sidebar-border)',
           gap: 'var(--space-2)',
           flexShrink: 0,
+          flexDirection: rtl ? 'row' : 'row-reverse',
         }}>
           {!collapsed && (
-            <Link to="/" onClick={handleNavClick} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ color: 'var(--text-primary)', fontWeight: 900, fontSize: '1.1rem', letterSpacing: '0.3px' }}>EMF</span>
+            <Link to="/" onClick={handleNavClick} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', flexDirection: rtl ? 'row' : 'row-reverse' }}>
+              <span style={{ color: 'var(--text-primary)', fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.02em' }}>EMF</span>
               <span style={{
-                background: 'var(--gradient-gold)',
+                background: 'var(--gradient-primary)',
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent',
-                fontWeight: 900, fontSize: '1.1rem',
+                fontWeight: 800, fontSize: '1.1rem',
+                letterSpacing: '-0.02em'
               }}>GROUP</span>
             </Link>
           )}
           {collapsed && (
             <Link to="/" onClick={handleNavClick} style={{ textDecoration: 'none' }}>
-              <span style={{ color: 'var(--accent-gold)', fontWeight: 900, fontSize: '1.1rem' }}>E</span>
+              <span style={{ color: 'var(--accent-indigo)', fontWeight: 800, fontSize: '1.1rem' }}>E</span>
             </Link>
           )}
           <button
             onClick={onToggle}
-            onKeyDown={(e) => { if (e.key === 'Escape') onMobileClose?.(); }}
             style={{
               background: 'transparent',
               border: 'none',
@@ -160,9 +158,9 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
               flexShrink: 0,
             }}
             className="sidebar-toggle-btn"
-            aria-label={collapsed ? 'توسيع القائمة' : 'طي القائمة'}
+            aria-label={collapsed ? 'Expand menu' : 'Collapse menu'}
           >
-            <ChevronLeft size={16} style={{ transform: collapsed ? 'rotate(180deg)' : 'none', transition: 'var(--transition-base)' }} />
+            <ChevronLeft size={16} style={{ transform: collapsed ? (rtl ? 'rotate(180deg)' : 'none') : (rtl ? 'none' : 'rotate(180deg)'), transition: 'var(--transition-base)' }} />
           </button>
         </div>
 
@@ -172,10 +170,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
           overflowY: 'auto',
           overflowX: 'hidden',
           padding: collapsed ? 'var(--space-3) 0' : 'var(--space-4) 0',
-          direction: 'rtl',
+          direction: rtl ? 'rtl' : 'ltr',
         }}>
           {visibleSections.map(section => (
-            <div key={section.label} style={{ marginBottom: collapsed ? 'var(--space-2)' : 'var(--space-4)' }}>
+            <div key={section.key} style={{ marginBottom: collapsed ? 'var(--space-2)' : 'var(--space-4)' }}>
               {!collapsed && (
                 <div style={{
                   padding: '0 var(--space-5)',
@@ -183,10 +181,11 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                   fontSize: 'var(--text-xs)',
                   fontWeight: 700,
                   color: 'var(--text-tertiary)',
-                  letterSpacing: '0.8px',
+                  letterSpacing: '0.05em',
                   textTransform: 'uppercase',
+                  textAlign: rtl ? 'right' : 'left',
                 }}>
-                  {section.label}
+                  {t(section.key)}
                 </div>
               )}
               {section.items.filter(i => !i.adminOnly || isAdmin).map(item => {
@@ -202,27 +201,29 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                       gap: collapsed ? '0' : 'var(--space-3)',
                       padding: collapsed ? 'var(--space-3) 0' : 'var(--space-3) var(--space-5)',
                       margin: collapsed ? 'var(--space-1) auto' : 'var(--space-1) var(--space-3)',
-                      borderRadius: collapsed ? '50%' : 'var(--radius-md)',
+                      borderRadius: 'var(--radius-md)',
                       textDecoration: 'none',
                       fontSize: 'var(--text-sm)',
-                      fontWeight: active ? 700 : 500,
+                      fontWeight: active ? 600 : 400,
                       color: active ? 'var(--sidebar-text-active)' : 'var(--sidebar-text)',
                       background: active ? 'var(--sidebar-active)' : 'transparent',
                       transition: 'all var(--transition-base)',
                       position: 'relative',
-                      borderRight: active && !collapsed ? '3px solid var(--accent-blue)' : '3px solid transparent',
+                      borderRight: active && !collapsed && rtl ? '3px solid var(--accent-indigo)' : '3px solid transparent',
+                      borderLeft: active && !collapsed && !rtl ? '3px solid var(--accent-indigo)' : '3px solid transparent',
                       width: collapsed ? '44px' : 'auto',
                       height: collapsed ? '44px' : 'auto',
                       justifyContent: collapsed ? 'center' : 'flex-start',
                       overflow: 'hidden',
                       whiteSpace: 'nowrap',
+                      flexDirection: rtl ? 'row' : 'row',
                     }}
-                    title={collapsed ? item.label : undefined}
+                    title={collapsed ? t(item.key) : undefined}
                     className="sidebar-link"
                     aria-current={active ? 'page' : undefined}
                   >
-                    <item.icon size={20} style={{ flexShrink: 0, opacity: active ? 1 : 0.7 }} />
-                    {!collapsed && <span>{item.label}</span>}
+                    <item.icon size={18} style={{ flexShrink: 0, opacity: active ? 1 : 0.7, strokeWidth: active ? 2.5 : 2 }} />
+                    {!collapsed && <span>{t(item.key)}</span>}
                   </Link>
                 );
               })}
@@ -259,29 +260,29 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
               justifyContent: 'center',
             }}
             className="sidebar-theme-btn"
-            aria-label={appliedTheme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
+            aria-label={appliedTheme === 'dark' ? 'Light Mode' : 'Dark Mode'}
           >
-            {appliedTheme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-            {!collapsed && <span style={{ fontSize: 'var(--text-xs)' }}>{appliedTheme === 'dark' ? 'فاتح' : 'داكن'}</span>}
+            {appliedTheme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            {!collapsed && <span style={{ fontSize: 'var(--text-xs)' }}>{appliedTheme === 'dark' ? 'Light' : 'Dark'}</span>}
           </button>
 
           {/* User */}
           {user && !collapsed && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', minWidth: 0, flex: 1, flexDirection: rtl ? 'row' : 'row' }}>
               <div style={{
-                width: '34px', height: '34px', borderRadius: '50%', flexShrink: 0,
-                background: 'var(--gradient-cyber)',
+                width: '32px', height: '32px', borderRadius: '50%', flexShrink: 0,
+                background: 'var(--gradient-primary)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 color: 'white', fontWeight: 'bold', fontSize: 'var(--text-xs)',
               }}>
                 {user.name?.charAt(0) || '?'}
               </div>
-              <div style={{ flex: 1, textAlign: 'right', minWidth: 0, lineHeight: 1.2 }}>
+              <div style={{ flex: 1, textAlign: rtl ? 'right' : 'left', minWidth: 0, lineHeight: 1.2 }}>
                 <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {user.name}
                 </div>
                 <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>
-                  {user.role === 'super_admin' ? 'مدير عام' : user.role === 'admin' ? 'مدير' : 'عضو'}
+                  {user.role === 'super_admin' ? t('roleSuperAdmin') : user.role === 'admin' ? t('roleAdmin') : t('roleUser')}
                 </div>
               </div>
               <button
@@ -292,10 +293,10 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                   padding: 'var(--space-1)', display: 'flex', opacity: 0.7,
                   transition: 'var(--transition-base)',
                 }}
-                title="تسجيل الخروج"
-                aria-label="تسجيل الخروج"
+                title={t('logout')}
+                aria-label={t('logout')}
               >
-                <LogOut size={15} />
+                <LogOut size={14} />
               </button>
             </div>
           )}
@@ -307,30 +308,14 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                 color: 'var(--accent-red)', cursor: 'pointer',
                 padding: 'var(--space-1)', display: 'flex', opacity: 0.7,
               }}
-              title="تسجيل الخروج"
-              aria-label="تسجيل الخروج"
+              title={t('logout')}
+              aria-label={t('logout')}
             >
-              <LogOut size={16} />
+              <LogOut size={15} />
             </button>
           )}
         </div>
       </aside>
-
-      <style>{`
-        .sidebar-toggle-btn:hover {
-          color: var(--sidebar-text-active) !important;
-          opacity: 1 !important;
-        }
-        .sidebar-theme-btn:hover {
-          border-color: var(--border-hover) !important;
-          color: var(--sidebar-text-active) !important;
-        }
-        @media (max-width: 1023px) {
-          aside[style*="position: fixed"] {
-            transform: translateX(\${mobileOpen ? '0' : 'calc(100% + 20px)'}) !important;
-          }
-        }
-      `}</style>
     </>
   );
 }

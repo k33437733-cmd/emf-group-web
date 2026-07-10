@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
+import { useI18n } from '../../context/I18nContext';
 
 const SIDEBAR_STORAGE_KEY = 'emf_sidebar_collapsed';
 
@@ -17,6 +18,7 @@ export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const { rtl } = useI18n();
 
   useEffect(() => {
     try {
@@ -48,22 +50,26 @@ export default function DashboardLayout() {
   }, []);
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', direction: 'rtl' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', direction: rtl ? 'rtl' : 'ltr' }}>
       <Sidebar
         collapsed={collapsed}
         onToggle={() => setCollapsed(s => !s)}
         mobileOpen={isMobile ? mobileOpen : undefined}
         onMobileClose={closeMobile}
       />
-      <div style={{
-        flex: 1,
-        minWidth: 0,
-        marginRight: 'var(--sidebar-collapsed-width)',
-        transition: 'margin-right 250ms cubic-bezier(0.16, 1, 0.3, 1)',
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-      }}>
+      <div 
+        className="main-layout-container"
+        style={{
+          flex: 1,
+          minWidth: 0,
+          marginRight: rtl ? (collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)') : 0,
+          marginLeft: !rtl ? (collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)') : 0,
+          transition: 'margin-right 250ms cubic-bezier(0.16, 1, 0.3, 1), margin-left 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+          display: 'flex',
+          flexDirection: 'column',
+          minHeight: '100vh',
+        }}
+      >
         <Navbar onToggleSidebar={toggleSidebar} />
         <main role="main" aria-label="المحتوى الرئيسي" style={{
           flex: 1,
@@ -76,14 +82,10 @@ export default function DashboardLayout() {
       </div>
 
       <style>{`
-        @media (min-width: 768px) {
-          div[style*="margin-right"] {
-            margin-right: ${collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)'} !important;
-          }
-        }
         @media (max-width: 767px) {
-          div[style*="margin-right"] {
+          .main-layout-container {
             margin-right: 0 !important;
+            margin-left: 0 !important;
           }
         }
       `}</style>
