@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { useAnalytics } from '../hooks/useAnalytics';
+import { useAnalytics, type ActivityEvent } from '../hooks/useAnalytics';
 import { useI18n } from '../context/I18nContext';
 import {
-  subscribeToStats,
   subscribeToContents,
   subscribeToUsers,
   subscribeToAuditLogs,
@@ -172,13 +171,11 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!user) return;
-    let statsUnsub = () => {};
     let contentUnsub = () => {};
     let usersUnsub = () => {};
     let logsUnsub = () => {};
 
     if (isAdmin) {
-      statsUnsub = subscribeToStats(() => {});
       contentUnsub = subscribeToContents((list) => setContents(list));
     }
     if (isSuperAdmin) {
@@ -186,7 +183,6 @@ export default function Dashboard() {
       logsUnsub = subscribeToAuditLogs((list) => setAuditLogs(list));
     }
     return () => {
-      statsUnsub();
       contentUnsub();
       usersUnsub();
       logsUnsub();
@@ -314,12 +310,20 @@ export default function Dashboard() {
     );
   }
 
-  // Pre-calculated stats mapping to design guidelines
-  const statValues = [
-    { key: 'membersCount', val: 2847, trend: 12, sparklineColor: 'var(--accent-indigo)', icon: Users, trendLabel: t('vsLastMonth') },
-    { key: 'storageCapacity', val: 45.2, trend: 89, sparklineColor: 'var(--accent-amber)', icon: PieChart, suffix: ' GB', trendLabel: '89% ' + t('usedOf') + ' 50 GB' },
-    { key: 'activeToday', val: 24, trend: 24, sparklineColor: 'var(--accent-emerald)', icon: Activity, prefix: '+', trendLabel: t('todayActivity') },
-    { key: 'growthRate', val: 12.5, trend: 12.5, sparklineColor: 'var(--accent-purple)', icon: TrendingUp, suffix: '%', trendLabel: t('growthTrend') },
+  const todayEvents = analytics.timeline.filter((event: ActivityEvent) => {
+    const ts = new Date(event.timestamp).getTime();
+    return ts >= Date.now() - 24 * 60 * 60 * 1000;
+  }).length;
+
+  const storageUsedGB = Math.round((analytics.storage.used / (1024 * 1024 * 1024)) * 10) / 10;
+  const storageTotalGB = Math.round((analytics.storage.total / (1024 * 1024 * 1024)) * 10) / 10;
+  const storagePercent = storageTotalGB ? Math.round((storageUsedGB / storageTotalGB) * 100) : 0;
+
+  const statValues: Array<{ key: string; val: number; trend: number; sparklineColor: string; icon: any; trendLabel: string; suffix?: string; prefix?: string; sparklineData: number[] }> = [
+    { key: 'membersCount', val: analytics.kpiCards[0]?.value ?? 0, trend: analytics.kpiCards[0]?.trend ?? 0, sparklineColor: 'var(--accent-indigo)', icon: Users, trendLabel: t('vsLastMonth'), sparklineData: analytics.membersGrowth.slice(-8).map(item => item.value) },
+    { key: 'storageCapacity', val: storageUsedGB, trend: storagePercent, sparklineColor: 'var(--accent-amber)', icon: PieChart, suffix: ' GB', trendLabel: `${storagePercent}% ${t('usedOf')} ${storageTotalGB} GB`, sparklineData: analytics.contentUploads.slice(-8).map(item => item.videos + item.apps + item.files) },
+    { key: 'activeToday', val: todayEvents, trend: todayEvents, sparklineColor: 'var(--accent-emerald)', icon: Activity, prefix: '+', trendLabel: t('todayActivity'), sparklineData: analytics.timeline.slice(0, 8).map((_, idx) => idx + 1) },
+    { key: 'growthRate', val: analytics.viewsAnalytics.growth, trend: analytics.viewsAnalytics.growth, sparklineColor: 'var(--accent-purple)', icon: TrendingUp, suffix: '%', trendLabel: t('growthTrend'), sparklineData: analytics.viewsAnalytics.daily.slice(-8).map(item => item.value) },
   ];
 
   return (
@@ -346,12 +350,7 @@ export default function Dashboard() {
                     {stat.suffix}
                   </div>
                   {/* Mini Sparkline charts */}
-                  <MiniSparkline data={[12, 19, 14, 25, 22, 30, 28, 35]} color={stat.sparklineColor} />
-                </div>
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: stat.trend >= 0 ? 'var(--accent-emerald)' : 'var(--accent-red)', fontWeight: 600 }}>
-                  <span>{stat.trend >= 0 ? '↑' : '↓'}</span>
-                  <span>{stat.trendLabel}</span>
+                  <MiniSparkline data={stat.sparklineData} color={stat.sparklineColor} />
                 </div>
               </div>
             </div>
@@ -498,9 +497,9 @@ export default function Dashboard() {
                       <RePieChart>
                         <Pie
                           data={[
-                            { name: t('videos'), value: 20, color: 'var(--accent-indigo)' },
-                            { name: t('apps'), value: 15, color: 'var(--accent-emerald)' },
-                            { name: t('files'), value: 10, color: 'var(--accent-amber)' },
+                            { name: t('videos'), value: analytics.storage.videos / (1024 * 1024 * 1024), color: 'var(--accent-indigo)' },
+                            { name: t('apps'), value: analytics.storage.apps / (1024 * 1024 * 1024), color: 'var(--accent-emerald)' },
+                            { name: t('files'), value: analytics.storage.files / (1024 * 1024 * 1024), color: 'var(--accent-amber)' },
                           ]}
                           dataKey="value"
                           innerRadius={38}
@@ -523,15 +522,15 @@ export default function Dashboard() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.74rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-indigo)' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>{t('videos')}: 20.4 GB</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('videos')}: {Math.round((analytics.storage.videos / (1024 * 1024 * 1024)) * 10) / 10} GB</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-emerald)' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>{t('apps')}: 15.1 GB</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('apps')}: {Math.round((analytics.storage.apps / (1024 * 1024 * 1024)) * 10) / 10} GB</span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--accent-amber)' }} />
-                      <span style={{ color: 'var(--text-secondary)' }}>{t('files')}: 9.7 GB</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{t('files')}: {Math.round((analytics.storage.files / (1024 * 1024 * 1024)) * 10) / 10} GB</span>
                     </div>
                   </div>
                 </div>
@@ -541,7 +540,7 @@ export default function Dashboard() {
               <div className="card-base" style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)' }}>
                 <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', textAlign: rtl ? 'right' : 'left' }}>{t('activityHeatmap')}</h3>
                 <span style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', display: 'block', marginBottom: '12px', textAlign: rtl ? 'right' : 'left' }}>{t('heatmapSubtitle')}</span>
-                <ContributionHeatmap />
+                <ContributionHeatmap events={analytics.timeline} />
               </div>
             </div>
           </div>
