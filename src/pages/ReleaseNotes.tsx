@@ -83,7 +83,7 @@ export default function ReleaseNotes() {
 
     setCreating(true);
     try {
-      const _releaseId = await createRelease({
+      await createRelease({
         version: formVersion.trim(),
         title: formTitle.trim(),
         summary: formSummary.trim(),
@@ -129,7 +129,7 @@ export default function ReleaseNotes() {
     }
   };
 
-  const _versions = useMemo(() => [...new Set(releases.map(r => r.version))], [releases]);
+  useMemo(() => [...new Set(releases.map(r => r.version))], [releases]);
 
   const filtered = useMemo(() => {
     let list = [...releases];

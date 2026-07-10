@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { subscribeNotificationsFiltered, subscribeUnreadCount, listNotifications } from '../../firebase/db';
+import { subscribeNotificationsFiltered, subscribeUnreadCount, listNotifications, markAsRead, markAllAsRead, deleteNotification, archiveNotification } from '../../firebase/db';
 import {
   Bell,
   Search,
@@ -68,7 +68,7 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
     setLoading(true);
     setAllNotifications([]);
     setHasMore(true);
-    lastCreatedAtRef.current = null;
+    lastDocRef.current = null;
 
     const cat = category === 'all' ? undefined : category;
     const unsub = subscribeNotificationsFiltered(agentId, (list) => {
@@ -160,7 +160,6 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
   }, []);
 
   const handleAction = useCallback(async (action: string, notif: SystemNotification) => {
-    const { markAsRead, deleteNotification, archiveNotification } = await import('../../firebase/db');
     switch (action) {
       case 'read':
         await markAsRead(notif.id);
@@ -176,13 +175,11 @@ export default function NotificationCenter({ isOpen, onClose }: NotificationCent
 
   const handleMarkAllRead = useCallback(async () => {
     if (!agentId) return;
-    const { markAllAsRead } = await import('../../firebase/db');
     await markAllAsRead(agentId);
   }, [agentId]);
 
   const handleNotifClick = useCallback(async (notif: SystemNotification) => {
     if (!notif.read) {
-      const { markAsRead } = await import('../../firebase/db');
       await markAsRead(notif.id);
     }
     onClose();

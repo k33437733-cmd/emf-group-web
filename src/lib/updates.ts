@@ -112,7 +112,7 @@ export function getStoredNotifications(): UpdateInfo[] {
 
 let initialized = false;
 
-export function initUpdateSystem(config?: Partial<UpdateConfig>) {
+export function initUpdateSystem(config?: Partial<UpdateConfig>): UpdateSystemInstance {
   if (initialized) {
     return window.__UPDATE_SYSTEM!;
   }
@@ -162,12 +162,19 @@ export function initUpdateSystem(config?: Partial<UpdateConfig>) {
   return instance;
 }
 
+export interface UpdateSystemInstance {
+  stop: () => void;
+  checkNow: () => Promise<UpdateInfo | null>;
+  getConfig: () => UpdateConfig;
+  getNotifications: () => UpdateInfo[];
+}
+
 // Extend Window interface
 declare global {
   interface Window {
     __BUILD_TIME__: number;
     __deferredPrompt?: Event;
-    __UPDATE_SYSTEM?: ReturnType<typeof initUpdateSystem>;
+    __UPDATE_SYSTEM?: UpdateSystemInstance;
   }
 }
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Download, X } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { sendNotification } from '../../firebase/db';
@@ -25,30 +25,32 @@ export default function UpdateSystem({ config }: UpdateSystemProps) {
   useEffect(() => {
     initUpdateSystem(config);
 
-    const handleUpdateApplied = async (event: CustomEvent<UpdateInfo>) => {
-      const update = event.detail;
+    const handleUpdateApplied = (event: Event) => {
       if (!user || (user.role !== 'admin' && user.role !== 'super_admin')) return;
 
       try {
-        await sendNotification({
+        sendNotification({
           recipientId: user.uid,
           type: 'system',
+          category: 'updates',
           priority: 'normal',
           title: 'Website Updated Successfully',
           body: 'Click to view release notes.',
           link: '/admin/release-notes',
           channel: 'in_app',
+          archived: false,
           sentVia: { push: false, email: false },
         });
       } catch {}
     };
 
-    window.addEventListener(APP_EVENTS.UPDATE_APPLIED, handleUpdateApplied as EventListener);
-    window.addEventListener('app-update-applied', handleUpdateApplied as EventListener);
+    const listener = handleUpdateApplied as EventListener;
+    window.addEventListener(APP_EVENTS.UPDATE_APPLIED, listener);
+    window.addEventListener('app-update-applied', listener);
 
     return () => {
-      window.removeEventListener(APP_EVENTS.UPDATE_APPLIED, handleUpdateApplied as EventListener);
-      window.removeEventListener('app-update-applied', handleUpdateApplied as EventListener);
+      window.removeEventListener(APP_EVENTS.UPDATE_APPLIED, listener);
+      window.removeEventListener('app-update-applied', listener);
     };
   }, [user]);
 
@@ -61,15 +63,17 @@ export default function UpdateSystem({ config }: UpdateSystemProps) {
     if (user.role !== 'admin' && user.role !== 'super_admin') return;
 
     try {
-      const update = JSON.parse(stored);
+      JSON.parse(stored);
       sendNotification({
         recipientId: user.uid,
         type: 'system',
+        category: 'updates',
         priority: 'normal',
         title: 'Website Updated Successfully',
         body: 'Click to view release notes.',
         link: '/admin/release-notes',
         channel: 'in_app',
+        archived: false,
         sentVia: { push: false, email: false },
       });
     } catch {}

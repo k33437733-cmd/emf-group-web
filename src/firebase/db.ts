@@ -148,11 +148,13 @@ export async function sendGlobalNotification(senderName: string, type: 'upload' 
       recipientId: userDoc.id,
       senderName,
       type,
+      category: 'system',
       priority: 'normal',
       channel: 'in_app',
       title,
       body,
       read: false,
+      archived: false,
       createdAt: new Date().toISOString(),
       sentVia: { push: false, email: false },
       link
@@ -181,7 +183,7 @@ export async function markNotificationAsRead(id: string) {
   await updateDoc(docRef, { read: true });
 }
 
-export { subscribeUnreadCount, createNotification, createNotificationsForMany, subscribeNotificationsFiltered, listNotifications } from './db/notifications';
+export { subscribeUnreadCount, createNotification, createNotificationsForMany, subscribeNotificationsFiltered, listNotifications, markAsRead, markAllAsRead, deleteNotification, archiveNotification } from './db/notifications';
 export { subscribeToReleases, createRelease, deleteRelease } from './db/release_notes';
 
 export async function markAllNotificationsAsRead(recipientId: string) {

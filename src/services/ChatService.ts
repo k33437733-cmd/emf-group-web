@@ -148,6 +148,7 @@ async function notifyAdminsCustomerMessage(
 
     await createNotificationsForMany(agentIds, {
       type: 'chat',
+      category: 'messages',
       priority: 'normal',
       channel: 'in_app',
       title: `رسالة جديدة من ${sender.name}`,
