@@ -454,6 +454,94 @@
   animation: dropdownIn 0.15s ease;
 }
 
+.themeDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 320px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated), 0 0 30px rgba(0, 0, 0, 0.15);
+  z-index: 1050;
+  padding: var(--space-4);
+  animation: dropdownIn 0.15s ease;
+}
+
+.themeSection {
+  display: grid;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+}
+
+.themeSection:last-child {
+  margin-bottom: 0;
+}
+
+.themeSectionTitle {
+  font-size: var(--text-xs);
+  font-weight: var(--fw-bold);
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+
+.themeModeOptions,
+.themeAccentOptions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.themeModeButton,
+.themeAccentButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-weight: var(--fw-medium);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.themeModeButton:hover,
+.themeAccentButton:hover {
+  background: var(--sidebar-hover);
+}
+
+.themeModeButton.active,
+.themeAccentButton.active {
+  border-color: var(--accent-blue);
+  color: var(--accent-blue);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.themeAccentSwatches {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+.themeAccentSwatch {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.themeAccentSwatch.active {
+  transform: scale(1.03);
+  border-color: var(--accent-blue);
+}
+
 .notifHeader {
   display: flex;
   justify-content: space-between;

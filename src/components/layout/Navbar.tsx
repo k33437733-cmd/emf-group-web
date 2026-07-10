@@ -6,7 +6,7 @@ import { UserAvatar } from '../ui/UIComponents';
 import { subscribeUnreadCount } from '../../firebase/db';
 import NotificationCenter from '../notifications/NotificationCenter';
 import {
-  Menu, Search, Bell, Sun, Moon, Settings, Plus,
+  Menu, Search, Bell, Settings, Plus,
   PanelLeftClose, ChevronDown, LogOut, User, Shield,
   Palette, X, FileText, FolderKanban, MessageSquare,
 } from 'lucide-react';
@@ -57,13 +57,14 @@ const dotClasses: Record<string, string> = {
 
 export default function Navbar({ onToggleSidebar }: NavbarProps) {
   const { user, logout } = useAuth();
-  const { appliedTheme, toggleTheme } = useTheme();
+  const { accent, setAccent, mode, setMode } = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
 
   const [profileOpen, setProfileOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
   const [quickOpen, setQuickOpen] = useState(false);
+  const [themeOpen, setThemeOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
@@ -72,6 +73,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
   const profileRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
   const quickRef = useRef<HTMLDivElement>(null);
+  const themeRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const prevUnreadRef = useRef(unreadCount);
 
@@ -96,6 +98,7 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
       if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
       if (quickRef.current && !quickRef.current.contains(e.target as Node)) setQuickOpen(false);
+      if (themeRef.current && !themeRef.current.contains(e.target as Node)) setThemeOpen(false);
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -133,6 +136,10 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
     setProfileOpen(false);
     navigate(path);
   }, [navigate]);
+
+  const handleAccentChange = useCallback((color: string) => {
+    setAccent(color as any);
+  }, [setAccent]);
 
   const roleLabel = roleLabels[user?.role || ''] || 'عضو';
   const roleClass = roleClasses[user?.role || ''] || styles.roleUser;
@@ -281,14 +288,56 @@ export default function Navbar({ onToggleSidebar }: NavbarProps) {
             />
           </div>
 
-          {/* Theme toggle */}
-          <button
-            className={styles.navIconBtn}
-            onClick={toggleTheme}
-            aria-label={appliedTheme === 'dark' ? 'الوضع الفاتح' : 'الوضع الداكن'}
-          >
-            {appliedTheme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
-          </button>
+          <div ref={themeRef} style={{ position: 'relative' }}>
+            {/* Theme toggle */}
+            <button
+              className={styles.navIconBtn}
+              onClick={() => setThemeOpen(open => !open)}
+              aria-label="تبديل الألوان"
+            >
+              <Palette size={19} />
+            </button>
+
+            {themeOpen && (
+              <div className={styles.themeDropdown}>
+                <div className={styles.themeSection}>
+                  <div className={styles.themeSectionTitle}>الوضع</div>
+                  <div className={styles.themeModeOptions}>
+                    <button
+                      type="button"
+                      className={`${styles.themeModeButton} ${mode === 'light' ? 'active' : ''}`}
+                      onClick={() => setMode('light')}
+                    >فاتح</button>
+                    <button
+                      type="button"
+                      className={`${styles.themeModeButton} ${mode === 'dark' ? 'active' : ''}`}
+                      onClick={() => setMode('dark')}
+                    >داكن</button>
+                    <button
+                      type="button"
+                      className={`${styles.themeModeButton} ${mode === 'system' ? 'active' : ''}`}
+                      onClick={() => setMode('system')}
+                    >نظام</button>
+                  </div>
+                </div>
+                <div className={styles.themeSection}>
+                  <div className={styles.themeSectionTitle}>ألوان لوحة التحكم</div>
+                  <div className={styles.themeAccentSwatches}>
+                    {['blue','purple','pink','red','orange','gold','green','cyan','dark','navy'].map(color => (
+                      <button
+                        key={color}
+                        type="button"
+                        aria-label={`تبديل اللون إلى ${color}`}
+                        className={`${styles.themeAccentSwatch} ${accent === color ? 'active' : ''}`}
+                        onClick={() => handleAccentChange(color)}
+                        style={{ background: `var(--accent-${color})` }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Settings */}
           <button

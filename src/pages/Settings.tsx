@@ -17,9 +17,22 @@ const themeOptions: { value: 'light' | 'dark' | 'system'; label: string; desc: s
   { value: 'system', label: 'النظام', desc: 'تطابق إعدادات جهازك تلقائياً', icon: Monitor },
 ];
 
+const accentOptions: { value: 'blue' | 'purple' | 'pink' | 'red' | 'orange' | 'gold' | 'green' | 'cyan' | 'dark' | 'navy'; label: string }[] = [
+  { value: 'blue', label: 'أزرق' },
+  { value: 'purple', label: 'أرجواني' },
+  { value: 'pink', label: 'زهري' },
+  { value: 'red', label: 'أحمر' },
+  { value: 'orange', label: 'برتقالي' },
+  { value: 'gold', label: 'ذهبي' },
+  { value: 'green', label: 'أخضر' },
+  { value: 'cyan', label: 'سيان' },
+  { value: 'dark', label: 'داكن' },
+  { value: 'navy', label: 'كحلي' },
+];
+
 export default function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { mode, appliedTheme, setMode } = useTheme();
+  const { mode, appliedTheme, accent, setMode, setAccent } = useTheme();
 
   const activeTab: Tab = (searchParams.get('tab') as Tab) || 'appearance';
 
@@ -160,6 +173,41 @@ export default function Settings() {
                   </button>
                 );
               })}
+            </div>
+
+            <div style={{ marginTop: 'var(--space-6)' }}>
+              <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--fw-bold)', color: 'var(--text-primary)', margin: '0 0 var(--space-4) 0' }}>
+                ألوان لوحة التحكم
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
+                {accentOptions.map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setAccent(opt.value)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: 'var(--space-3)',
+                      borderRadius: 'var(--radius-lg)',
+                      border: accent === opt.value ? '2px solid var(--accent-blue)' : '1px solid var(--border-color)',
+                      background: accent === opt.value ? 'var(--sidebar-active)' : 'var(--bg-secondary)',
+                      cursor: 'pointer',
+                      minHeight: '60px',
+                    }}
+                  >
+                    <span style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      background: `var(--accent-${opt.value})`,
+                      boxShadow: '0 0 0 1px var(--border-color)',
+                    }} />
+                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-primary)' }}>{opt.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

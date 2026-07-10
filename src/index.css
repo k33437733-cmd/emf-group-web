@@ -71,13 +71,17 @@
   --navbar-height: 72px;
 
   /* Accent colors (shared) */
+  --accent-primary: #3b82f6;
   --accent-blue:    #3b82f6;
   --accent-purple:  #8b5cf6;
-  --accent-cyan:    #06b6d4;
-  --accent-emerald: #10b981;
+  --accent-pink:    #ec4899;
   --accent-red:     #ef4444;
-  --accent-amber:   #f59e0b;
+  --accent-orange:  #f59e0b;
   --accent-gold:    #f1c40f;
+  --accent-green:   #10b981;
+  --accent-cyan:    #06b6d4;
+  --accent-dark:    #0f1724;
+  --accent-navy:    #1e3a8a;
 
   /* Gradients */
   --gradient-cyber: linear-gradient(135deg, #8b5cf6, #3b82f6);
@@ -331,6 +335,53 @@ a {
   border-color: var(--border-hover);
   box-shadow: var(--shadow-elevated);
   transform: translateY(-1px);
+}
+
+.dashboard-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.dashboard-hero-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.dashboard-main-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.9fr) minmax(300px, 1fr);
+}
+
+.dashboard-split-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.dashboard-panel-compact {
+  padding: var(--space-5) var(--space-6);
+  min-height: 100%;
+}
+
+.dashboard-tab-nav {
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.02);
+}
+
+.dashboard-tab-nav .sidebar-link {
+  transition: background var(--transition-fast), color var(--transition-fast), transform var(--transition-fast);
+}
+
+.dashboard-tab-nav .sidebar-link.active {
+  background: rgba(59, 130, 246, 0.14);
+  color: var(--accent-blue);
+  font-weight: 700;
+}
+
+.dashboard-tab-nav .sidebar-link:hover {
+  background: rgba(255,255,255,0.06);
 }
 
 .card-body-custom {
