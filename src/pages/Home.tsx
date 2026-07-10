@@ -39,7 +39,7 @@ export default function Home() {
     return () => {
       observer.disconnect();
     };
-  }, []);
+  }, [latestItems]); // Trigger overlay triggers when items load
 
   useEffect(() => {
     const unsub = subscribeToContents((items) => {
@@ -66,29 +66,31 @@ export default function Home() {
 
   const goldBtnStyle = {
     background: 'var(--gradient-gold)',
-    color: '#0a0f1d',
-    boxShadow: '0 4px 20px rgba(241, 196, 15, 0.25)',
+    color: '#090d16',
+    boxShadow: '0 6px 22px rgba(241, 196, 15, 0.25)',
     border: 'none',
     fontWeight: 700
   };
 
   return (
-    <div className="animate-fade" style={{ direction: 'rtl', width: '100%' }}>
+    <div className="animate-fade" style={{ direction: 'rtl', width: '100%', background: 'var(--bg-primary)' }}>
       
-      {/* Hero Section with Video Background - Full Width & Height */}
-      <div className="hero-container" style={{
-        position: 'relative',
-        width: '100%',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '60px 20px',
-        marginTop: 'calc(-1 * var(--navbar-height))',
-        zIndex: 0,
-        overflow: 'hidden'
-      }}>
+      {/* Hero Section with Video Background */}
+      <div 
+        style={{
+          position: 'relative',
+          width: '100%',
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '80px 20px',
+          marginTop: 'calc(-1 * var(--navbar-height))',
+          zIndex: 0,
+          overflow: 'hidden'
+        }}
+      >
         {/* Background Video */}
         <video
           autoPlay
@@ -103,118 +105,164 @@ export default function Home() {
             height: '100%',
             objectFit: 'cover',
             zIndex: 0,
-            pointerEvents: 'none'
+            pointerEvents: 'none',
+            opacity: 0.65
           }}
         >
           <source src="/entro/6330779-hd_1920_1080_30fps.mp4" type="video/mp4" />
         </video>
 
-        {/* Navy/Dark Blue Identity Overlay */}
+        {/* Overlay Gradients */}
         <div style={{
           position: 'absolute',
           top: 0,
           left: 0,
           width: '100%',
           height: '100%',
-          background: 'radial-gradient(circle, rgba(11, 26, 48, 0.5) 0%, rgba(7, 12, 24, 0.95) 100%)',
+          background: 'radial-gradient(circle, rgba(9, 13, 22, 0.4) 0%, rgba(9, 13, 22, 0.95) 90%)',
           zIndex: 1
         }} />
 
         {/* Content container */}
-        <div style={{ zIndex: 2, maxWidth: '900px', width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '20px', textAlign: 'center', marginTop: 'var(--navbar-height)' }}>
+        <div 
+          style={{ 
+            zIndex: 2, 
+            maxWidth: '850px', 
+            width: '100%', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            gap: '24px', 
+            textAlign: 'center', 
+            marginTop: 'calc(var(--navbar-height) + 20px)' 
+          }}
+        >
           
           {/* Tag */}
-          <span className="reveal" style={{
-            fontSize: '0.85rem',
-            fontWeight: 'bold',
-            letterSpacing: '1px',
-            color: 'var(--accent-gold)',
-            background: 'rgba(241, 196, 15, 0.08)',
-            padding: '8px 20px',
-            borderRadius: '9999px',
-            border: '1px solid rgba(241, 196, 15, 0.25)',
-            display: 'inline-block',
-            backdropFilter: 'blur(5px)'
-          }}>
+          <span 
+            className="reveal active" 
+            style={{
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              letterSpacing: '0.5px',
+              color: 'var(--accent-gold)',
+              background: 'rgba(241, 196, 15, 0.08)',
+              padding: '8px 22px',
+              borderRadius: '9999px',
+              border: '1px solid rgba(241, 196, 15, 0.2)',
+              display: 'inline-block',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+            }}
+          >
             مجموعة EMF للحلول البرمجية والتحول الرقمي
           </span>
           
-          {/* Big EMF logo type with glow effect and enforced LTR */}
-          <h1 className="reveal" style={{
-            fontSize: 'clamp(5rem, 12vw, 9rem)',
-            fontWeight: 900,
-            lineHeight: 0.9,
-            margin: '10px 0 0',
-            letterSpacing: '2px',
-            fontFamily: 'var(--font-en)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            direction: 'ltr',
-            position: 'relative'
-          }}>
-            {/* Glowing Light Behind EMF */}
+          {/* Glowing Brand Type */}
+          <h1 
+            className="reveal active" 
+            style={{
+              fontSize: 'clamp(4.2rem, 11vw, 8.5rem)',
+              fontWeight: 900,
+              lineHeight: 0.95,
+              margin: '10px 0 0',
+              letterSpacing: '1px',
+              fontFamily: 'var(--font-en)',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              direction: 'ltr',
+              position: 'relative'
+            }}
+          >
+            {/* Glowing Light Behind logo */}
             <div style={{
               position: 'absolute',
               top: '50%',
               left: '50%',
               transform: 'translate(-50%, -50%)',
-              width: '120%',
-              height: '120%',
-              background: 'radial-gradient(circle, rgba(241, 196, 15, 0.35) 0%, transparent 60%)',
-              filter: 'blur(50px)',
+              width: '100%',
+              height: '100%',
+              background: 'radial-gradient(circle, rgba(241, 196, 15, 0.25) 0%, transparent 60%)',
+              filter: 'blur(40px)',
               zIndex: -1,
               pointerEvents: 'none'
             }} />
 
-            <span style={{ color: '#ffffff', textShadow: '0 0 35px rgba(255,255,255,0.4)' }}>EM</span>
+            <span style={{ color: '#ffffff', textShadow: '0 0 30px rgba(255,255,255,0.35)' }}>EM</span>
             <span style={{ 
               background: 'var(--gradient-gold)', 
               WebkitBackgroundClip: 'text', 
               WebkitTextFillColor: 'transparent',
-              textShadow: '0 0 45px rgba(241, 196, 15, 0.3)'
+              textShadow: '0 0 40px rgba(241, 196, 15, 0.25)'
             }}>F</span>
           </h1>
 
           {/* Subtitle */}
-          <h2 className="reveal reveal-delay-1" style={{
-            fontSize: 'clamp(1.6rem, 4vw, 2.5rem)',
-            fontWeight: 800,
-            background: 'linear-gradient(135deg, #ffffff 40%, #e2e8f0 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            letterSpacing: '-0.5px',
-            marginTop: '5px'
-          }}>
+          <h2 
+            className="reveal reveal-delay-1 active" 
+            style={{
+              fontSize: 'clamp(1.45rem, 3.5vw, 2.2rem)',
+              fontWeight: 800,
+              background: 'linear-gradient(135deg, #ffffff 40%, #d1d5db 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              marginTop: '5px',
+              lineHeight: 1.3
+            }}
+          >
             نبتكر الحلول البرمجية الذكية ونطور المستقبل الرقمي
           </h2>
 
-          {/* Detailed Paragraph (Web & Mobile app development focus) */}
-          <p className="reveal reveal-delay-2" style={{
-            fontSize: '1.05rem',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.7,
-            maxWidth: '700px',
-            margin: '0 auto',
-            textShadow: '0 2px 10px rgba(0,0,0,0.5)'
-          }}>
+          {/* Paragraph */}
+          <p 
+            className="reveal reveal-delay-2 active" 
+            style={{
+              fontSize: '0.98rem',
+              color: 'var(--text-secondary)',
+              lineHeight: 1.75,
+              maxWidth: '680px',
+              margin: '0 auto',
+              textShadow: '0 2px 12px rgba(0,0,0,0.6)'
+            }}
+          >
             نحن في مجموعة EMF نتخصص في تصميم وتطوير مواقع الويب المتكاملة وتطبيقات الهواتف الذكية (Android & iOS) بأحدث التقنيات وأقوى أنظمة الحماية، لتمكين الشركات والأفراد من تحقيق تحول رقمي مستدام واستجابة فائقة السرعة لجميع الأنظمة.
           </p>
 
-          {/* Action buttons */}
-          <div className="reveal reveal-delay-3" style={{ display: 'flex', gap: '16px', justifyContent: 'center', marginTop: '20px', width: '100%', flexWrap: 'wrap' }}>
+          {/* CTA Buttons */}
+          <div 
+            className="reveal reveal-delay-3 active" 
+            style={{ 
+              display: 'flex', 
+              gap: '16px', 
+              justifyContent: 'center', 
+              marginTop: '16px', 
+              width: '100%', 
+              flexWrap: 'wrap' 
+            }}
+          >
             {user ? (
-              <Link to="/content" className="btn" style={{ ...goldBtnStyle, padding: '16px 36px', fontSize: '1.1rem' }}>
+              <Link to="/content" className="btn" style={{ ...goldBtnStyle, padding: '15px 36px', fontSize: '1rem' }}>
                 استكشف المكتبة الرقمية
-                <ArrowLeft size={18} style={{ marginRight: '8px' }} />
+                <ArrowLeft size={16} style={{ marginRight: '6px' }} />
               </Link>
             ) : (
               <>
-                <Link to="/login" className="btn" style={{ ...goldBtnStyle, padding: '16px 36px', fontSize: '1.1rem' }}>
+                <Link to="/login" className="btn" style={{ ...goldBtnStyle, padding: '15px 36px', fontSize: '1rem' }}>
                   ابدأ الآن مجاناً
-                  <ArrowLeft size={18} style={{ marginRight: '8px' }} />
+                  <ArrowLeft size={16} style={{ marginRight: '6px' }} />
                 </Link>
-                <a href="#about" className="btn btn-secondary" style={{ padding: '16px 36px', fontSize: '1.1rem', backdropFilter: 'blur(5px)', border: '1px solid rgba(255,255,255,0.1)' }}>
+                <a 
+                  href="#about" 
+                  className="btn btn-secondary" 
+                  style={{ 
+                    padding: '15px 36px', 
+                    fontSize: '1rem', 
+                    backdropFilter: 'blur(8px)',
+                    WebkitBackdropFilter: 'blur(8px)',
+                    border: '1px solid var(--border-color)' 
+                  }}
+                >
                   من نحن
                 </a>
               </>
@@ -223,69 +271,94 @@ export default function Home() {
         </div>
       </div>
 
-      <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '60px 24px' }}>
-        {/* About & Services Section */}
-        <div id="about" style={{ marginBottom: '80px', scrollMarginTop: '100px' }} className="grid-cards">
+      <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '80px 24px' }}>
+        
+        {/* Services Showcase */}
+        <div id="about" style={{ marginBottom: '90px', scrollMarginTop: '100px' }} className="grid-cards">
           
-          {/* Web development card */}
-          <div className="glass-card reveal" style={{ padding: '36px', borderTop: '2px solid rgba(255, 255, 255, 0.05)' }}>
+          {/* Card 1: Web Development */}
+          <div 
+            className="glass-card reveal active" 
+            style={{ 
+              padding: '36px', 
+              borderTop: '2px solid rgba(59, 130, 246, 0.2)' 
+            }}
+          >
             <div style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: '14px',
-              background: 'rgba(59, 130, 246, 0.1)',
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: 'rgba(59, 130, 246, 0.08)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--accent-blue)',
-              marginBottom: '24px'
+              marginBottom: '20px'
             }}>
-              <Globe size={26} />
+              <Globe size={24} />
             </div>
-            <h3 style={{ fontSize: '1.3rem', marginBottom: '14px', fontWeight: 'bold', color: 'white' }}>تطوير مواقع وأنظمة الويب</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.7 }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontWeight: 700, color: 'white' }}>
+              تطوير مواقع وأنظمة الويب
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.7 }}>
               برمجة مواقع الكترونية فائقة السرعة ومتجاوبة تماماً مع مختلف الشاشات، بالإضافة إلى أنظمة الويب المعقدة وبوابات الإدارة المخصصة لرفع كفاءة أعمالك.
             </p>
           </div>
 
-          {/* Mobile development card */}
-          <div className="glass-card reveal reveal-delay-1" style={{ padding: '36px', borderTop: '2px solid rgba(241, 196, 15, 0.15)' }}>
+          {/* Card 2: Mobile App Development */}
+          <div 
+            className="glass-card reveal reveal-delay-1 active" 
+            style={{ 
+              padding: '36px', 
+              borderTop: '2px solid rgba(241, 196, 15, 0.3)' 
+            }}
+          >
             <div style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: '14px',
-              background: 'rgba(241, 196, 15, 0.1)',
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: 'rgba(241, 196, 15, 0.08)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--accent-gold)',
-              marginBottom: '24px'
+              marginBottom: '20px'
             }}>
-              <Smartphone size={26} />
+              <Smartphone size={24} />
             </div>
-            <h3 style={{ fontSize: '1.3rem', marginBottom: '14px', fontWeight: 'bold', color: 'white' }}>تطوير تطبيقات الهاتف</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.7 }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontWeight: 700, color: 'white' }}>
+              تطوير تطبيقات الهاتف
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.7 }}>
               بناء وتطوير تطبيقات هواتف ذكية متكاملة لنظامي iOS & Android بتصاميم عصرية وتجربة مستخدم سلسة تحقق طموحاتك التجارية.
             </p>
           </div>
 
-          {/* Cloud & Integration card */}
-          <div className="glass-card reveal reveal-delay-2" style={{ padding: '36px', borderTop: '2px solid rgba(255, 255, 255, 0.05)' }}>
+          {/* Card 3: Cloud Systems */}
+          <div 
+            className="glass-card reveal reveal-delay-2 active" 
+            style={{ 
+              padding: '36px', 
+              borderTop: '2px solid rgba(6, 182, 212, 0.2)' 
+            }}
+          >
             <div style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: '14px',
-              background: 'rgba(6, 182, 212, 0.1)',
+              width: '48px',
+              height: '48px',
+              borderRadius: '12px',
+              background: 'rgba(6, 182, 212, 0.08)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--accent-cyan)',
-              marginBottom: '24px'
+              marginBottom: '20px'
             }}>
-              <Cloud size={26} />
+              <Cloud size={24} />
             </div>
-            <h3 style={{ fontSize: '1.3rem', marginBottom: '14px', fontWeight: 'bold', color: 'white' }}>الحلول السحابية وإدارة الملفات</h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: 1.7 }}>
+            <h3 style={{ fontSize: '1.2rem', marginBottom: '12px', fontWeight: 700, color: 'white' }}>
+              الحلول السحابية وإدارة الملفات
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', lineHeight: 1.7 }}>
               توفير بوابات رفع ومشاركة الملفات والتطبيقات للمستخدمين بشكل منظم مع شات تواصل فوري مخصص ومؤمن لإدارة التفاعل اللحظي بكفاءة.
             </p>
           </div>
@@ -293,140 +366,222 @@ export default function Home() {
 
         {/* Latest Content Showcase */}
         <div style={{ marginBottom: '40px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '28px' }} className="reveal-left">
+          <div 
+            style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'flex-end', 
+              marginBottom: '32px',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }} 
+            className="reveal-left active"
+          >
             <div>
-              <h2 style={{ fontSize: '1.7rem', fontWeight: 800 }}>أحدث الإضافات للمكتبة</h2>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>شاهد أحدث الفيديوهات والتطبيقات والملفات المرفوعة للجميع</p>
+              <h2 style={{ fontSize: '1.55rem', fontWeight: 800, color: '#fff', marginBottom: '4px' }}>
+                أحدث الإضافات للمكتبة
+              </h2>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem' }}>
+                شاهد أحدث الفيديوهات والتطبيقات والملفات المرفوعة للجميع
+              </p>
             </div>
-            <Link to="/content" style={{ color: 'var(--accent-gold)', textDecoration: 'none', fontSize: '0.85rem', fontWeight: 600 }}>
+            <Link 
+              to="/content" 
+              style={{ 
+                color: 'var(--accent-gold)', 
+                textDecoration: 'none', 
+                fontSize: '0.84rem', 
+                fontWeight: 600,
+                transition: 'opacity 0.2s',
+              }}
+              className="hover-opacity-btn"
+            >
               عرض كل المحتوى ←
             </Link>
           </div>
 
           {loading ? (
-            <div style={{ display: 'flex', justifyContent: 'center', padding: '40px' }}>
-              <span style={{ fontSize: '0.95rem', color: 'var(--text-secondary)' }}>جاري تحميل المكتبة...</span>
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>
+              <div 
+                className="animate-spin-fast" 
+                style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  border: '3px solid rgba(255,255,255,0.04)',
+                  borderTopColor: 'var(--accent-gold)'
+                }}
+              />
             </div>
           ) : latestItems.length === 0 ? (
-            <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-              لا يوجد محتوى متوفر حالياً في المكتبة. يرجى التواصل مع المدير للرفع.
+            <div 
+              className="glass-card" 
+              style={{ 
+                padding: '50px 20px', 
+                textAlign: 'center', 
+                color: 'var(--text-secondary)', 
+                fontSize: '0.9rem' 
+              }}
+            >
+              لا يوجد محتوى متوفر حالياً في المكتبة الرقمية.
             </div>
           ) : (
             <div className="grid-cards">
-              {latestItems.map((item, index) => (
-                <div 
-                  key={item.id} 
-                  className={`glass-card reveal reveal-delay-${(index % 3) + 1}`} 
-                  style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    height: '100%',
-                    borderTop: item.type === 'app' ? '2px solid rgba(241, 196, 15, 0.2)' : '1px solid rgba(255, 255, 255, 0.08)'
-                  }}
-                >
-                  {/* Visual Header */}
-                  <div style={{
-                    height: '160px',
-                    background: item.type === 'video' 
-                      ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(30, 58, 138, 0.3) 100%)'
-                      : item.type === 'app'
-                      ? 'linear-gradient(135deg, rgba(241, 196, 15, 0.12) 0%, rgba(180, 83, 9, 0.25) 100%)'
-                      : 'linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(8, 79, 96, 0.3) 100%)',
-                    borderRadius: '16px 16px 0 0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: 'white',
-                    position: 'relative'
-                  }}>
-                    {item.type === 'video' ? <Play size={40} style={{ opacity: 0.8 }} /> : <Download size={40} style={{ opacity: 0.8 }} />}
-                    <span style={{
-                      position: 'absolute',
-                      top: '12px',
-                      right: '12px',
-                      background: 'rgba(10, 15, 29, 0.85)',
-                      padding: '4px 10px',
-                      borderRadius: '8px',
-                      fontSize: '0.7rem',
-                      fontWeight: 'bold',
-                      border: '1px solid var(--border-color)',
-                      color: item.type === 'app' ? 'var(--accent-gold)' : 'white'
-                    }}>
-                      {item.type === 'video' ? 'فيديو 🎬' : item.type === 'app' ? 'تطبيق 📱' : 'ملف 📎'}
-                    </span>
-                  </div>
-
-                  {/* Content body */}
-                  <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '8px' }}>
-                    <h4 style={{ fontSize: '1.05rem', fontWeight: 'bold', color: 'white' }}>{item.title}</h4>
-                    <p style={{
-                      color: 'var(--text-secondary)',
-                      fontSize: '0.8rem',
-                      lineHeight: 1.5,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
+              {latestItems.map((item) => {
+                const accentColor = item.type === 'video' 
+                  ? 'rgba(59, 130, 246, 0.2)' 
+                  : item.type === 'app'
+                  ? 'rgba(241, 196, 15, 0.2)'
+                  : 'rgba(6, 182, 212, 0.2)';
+                
+                return (
+                  <div 
+                    key={item.id} 
+                    className="glass-card" 
+                    style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      height: '100%',
                       overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      flexGrow: 1
-                    }}>
-                      {item.description || 'لا يوجد وصف متاح.'}
-                    </p>
-
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      fontSize: '0.7rem',
-                      color: 'var(--text-muted)',
-                      borderTop: '1px solid var(--border-color)',
-                      paddingTop: '12px',
-                      marginTop: '10px'
-                    }}>
-                      <span>الحجم: {(item.fileSize / (1024 * 1024)).toFixed(1)} ميجا</span>
-                      <span>المشاهدات: {item.views || 0}</span>
-                    </div>
-
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                      {user ? (
-                        <a
-                          href={item.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn"
-                          style={{ ...goldBtnStyle, flexGrow: 1, padding: '8px 12px', fontSize: '0.85rem', boxShadow: 'none' }}
-                        >
-                          <Download size={14} />
-                          تحميل
-                        </a>
+                      borderTop: `2px solid ${accentColor}`
+                    }}
+                  >
+                    {/* Visual Banner Area */}
+                    <div 
+                      style={{
+                        height: '150px',
+                        background: item.type === 'video' 
+                          ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(30, 58, 138, 0.25) 100%)'
+                          : item.type === 'app'
+                          ? 'linear-gradient(135deg, rgba(241, 196, 15, 0.06) 0%, rgba(180, 83, 9, 0.2) 100%)'
+                          : 'linear-gradient(135deg, rgba(6, 182, 212, 0.08) 0%, rgba(8, 79, 96, 0.25) 100%)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'white',
+                        position: 'relative'
+                      }}
+                    >
+                      {item.type === 'video' ? (
+                        <div style={{
+                          width: '46px',
+                          height: '46px',
+                          borderRadius: '50%',
+                          background: 'rgba(255,255,255,0.06)',
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center'
+                        }}>
+                          <Play size={18} style={{ marginRight: '-2px' }} />
+                        </div>
                       ) : (
-                        <Link
-                          to="/login"
-                          className="btn"
-                          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', flexGrow: 1, padding: '8px 12px', fontSize: '0.85rem' }}
-                        >
-                          <Download size={14} />
-                          سجل دخول للتحميل
-                        </Link>
+                        <Download size={32} style={{ opacity: 0.7 }} />
                       )}
                       
-                      {/* Share Dropdowns */}
-                      <button
-                        onClick={() => handleShare(item, 'whatsapp')}
-                        title="مشاركة عبر واتساب"
-                        className="btn btn-secondary"
-                        style={{ padding: '8px' }}
+                      <span 
+                        style={{
+                          position: 'absolute',
+                          top: '12px',
+                          right: '12px',
+                          background: 'rgba(9, 13, 22, 0.85)',
+                          padding: '4px 10px',
+                          borderRadius: '8px',
+                          fontSize: '0.68rem',
+                          fontWeight: 'bold',
+                          border: '1px solid var(--border-color)',
+                          color: item.type === 'app' ? 'var(--accent-gold)' : 'white'
+                        }}
                       >
-                        <Share2 size={14} style={{ color: 'var(--accent-emerald)' }} />
-                      </button>
+                        {item.type === 'video' ? 'فيديو 🎬' : item.type === 'app' ? 'تطبيق 📱' : 'ملف 📎'}
+                      </span>
+                    </div>
+
+                    {/* Content Body */}
+                    <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', flexGrow: 1, gap: '8px' }}>
+                      <h4 style={{ fontSize: '0.96rem', fontWeight: 700, color: '#fff', marginBottom: '2px' }}>
+                        {item.title}
+                      </h4>
+                      <p style={{
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.8rem',
+                        lineHeight: 1.5,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        flexGrow: 1
+                      }}>
+                        {item.description || 'لا يوجد وصف متاح لهذا العنصر.'}
+                      </p>
+
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        fontSize: '0.7rem',
+                        color: 'var(--text-muted)',
+                        borderTop: '1px solid var(--border-color)',
+                        paddingTop: '12px',
+                        marginTop: '8px'
+                      }}>
+                        <span>الحجم: {(item.fileSize / (1024 * 1024)).toFixed(1)} ميجا</span>
+                        <span>المشاهدات: {item.views || 0}</span>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                        {user ? (
+                          <a
+                            href={item.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn"
+                            style={{ ...goldBtnStyle, flexGrow: 1, padding: '8px 12px', fontSize: '0.8rem', boxShadow: 'none' }}
+                          >
+                            <Download size={14} />
+                            تحميل مباشر
+                          </a>
+                        ) : (
+                          <Link
+                            to="/login"
+                            className="btn"
+                            style={{ 
+                              background: 'rgba(255,255,255,0.03)', 
+                              border: '1px solid var(--border-color)', 
+                              flexGrow: 1, 
+                              padding: '8px 12px', 
+                              fontSize: '0.8rem' 
+                            }}
+                          >
+                            <Download size={14} />
+                            سجل دخول للتحميل
+                          </Link>
+                        )}
+                        
+                        <button
+                          onClick={() => handleShare(item, 'whatsapp')}
+                          title="مشاركة عبر واتساب"
+                          className="btn btn-secondary"
+                          style={{ padding: '8px', borderRadius: '10px' }}
+                        >
+                          <Share2 size={13} style={{ color: 'var(--accent-emerald)' }} />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       </div>
+      
+      <style>{`
+        .hover-opacity-btn:hover {
+          opacity: 0.8;
+        }
+      `}</style>
     </div>
   );
 }

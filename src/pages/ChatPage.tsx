@@ -21,7 +21,7 @@ import {
 } from '../firebase/db/messages';
 import { sendMessage, markRead } from '../services/ChatService';
 import type { Conversation, UserProfile } from '../types';
-import { MessageSquare, ArrowRight, CheckCheck, Users, MessageCirclePlus, Settings } from 'lucide-react';
+import { MessageSquare, ArrowRight, CheckCheck, Users, MessageCirclePlus, Settings, Bot } from 'lucide-react';
 import ChatInput from '../components/chat/ChatInput';
 import ConversationList from '../components/chat/ConversationList';
 import CreateGroupModal from '../components/chat/CreateGroupModal';
@@ -238,53 +238,84 @@ export default function ChatPage() {
   if (!user || !isAdmin) return null;
 
   return (
-    <div style={{ width: '100%', height: 'calc(100vh - 70px)', display: 'flex', gap: '0', padding: '0', margin: '0', direction: 'rtl', background: 'var(--bg-primary)' }} className="animate-fade">
+    <div 
+      style={{ 
+        width: '100%', 
+        height: 'calc(100vh - var(--navbar-height) - 48px)', 
+        display: 'flex', 
+        borderRadius: '16px',
+        overflow: 'hidden',
+        border: '1px solid var(--border-color)',
+        padding: '0', 
+        margin: '0', 
+        direction: 'rtl', 
+        background: 'var(--bg-secondary)' 
+      }} 
+      className="animate-fade chat-workspace-container"
+    >
 
-      {/* ─── Sidebar ─── */}
-      <div className={`chat-sidebar ${activeConvId ? 'hide-mobile' : ''}`} style={{
-        width: sidebarCollapsed ? '0px' : '380px',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
-        background: 'var(--bg-secondary)', borderLeft: '1px solid var(--border-color)',
-        position: 'relative', transition: 'width 0.25s ease',
-      }}>
+      {/* ─── Sidebar Contacts Pane ─── */}
+      <div 
+        className={`chat-sidebar ${activeConvId ? 'hide-mobile' : ''}`} 
+        style={{
+          width: sidebarCollapsed ? '0px' : '360px',
+          display: 'flex', 
+          flexDirection: 'column', 
+          overflow: 'hidden', 
+          flexShrink: 0,
+          background: 'var(--bg-secondary)', 
+          borderLeft: '1px solid var(--border-color)',
+          position: 'relative', 
+          transition: 'width 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+        }}
+      >
 
-        {/* Tab switcher */}
-        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)' }}>
-          <button onClick={() => { setTab('admin'); setActiveConvId(null); }} style={{
-            flex: 1, padding: '14px', background: 'none', border: 'none',
-            color: tab === 'admin' ? 'var(--accent-blue)' : 'var(--text-muted)',
-            fontWeight: tab === 'admin' ? 'bold' : 'normal',
-            borderBottom: tab === 'admin' ? '2px solid var(--accent-blue)' : '2px solid transparent',
-            cursor: 'pointer', transition: 'all 0.15s', fontSize: '0.85rem'
-          }}>
+        {/* Custom Tab Switcher */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', background: 'rgba(0,0,0,0.1)' }}>
+          <button 
+            onClick={() => { setTab('admin'); setActiveConvId(null); }} 
+            style={{
+              flex: 1, padding: '14px 10px', background: 'none', border: 'none',
+              color: tab === 'admin' ? 'var(--accent-blue)' : 'var(--text-secondary)',
+              fontWeight: tab === 'admin' ? 700 : 500,
+              borderBottom: tab === 'admin' ? '2px solid var(--accent-blue)' : '2px solid transparent',
+              cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.8rem'
+            }}
+          >
             شات الإدارة
           </button>
-          <button onClick={() => { setTab('member'); setActiveConvId(null); }} style={{
-            flex: 1, padding: '14px', background: 'none', border: 'none',
-            color: tab === 'member' ? '#10b981' : 'var(--text-muted)',
-            fontWeight: tab === 'member' ? 'bold' : 'normal',
-            borderBottom: tab === 'member' ? '2px solid #10b981' : '2px solid transparent',
-            cursor: 'pointer', transition: 'all 0.15s', fontSize: '0.85rem'
-          }}>
+          <button 
+            onClick={() => { setTab('member'); setActiveConvId(null); }} 
+            style={{
+              flex: 1, padding: '14px 10px', background: 'none', border: 'none',
+              color: tab === 'member' ? 'var(--accent-emerald)' : 'var(--text-secondary)',
+              fontWeight: tab === 'member' ? 700 : 500,
+              borderBottom: tab === 'member' ? '2px solid var(--accent-emerald)' : '2px solid transparent',
+              cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.8rem'
+            }}
+          >
             شات الأعضاء
           </button>
-          <button onClick={() => { setTab('support'); setActiveConvId(null); }} style={{
-            flex: 1, padding: '14px', background: 'none', border: 'none',
-            color: tab === 'support' ? '#f59e0b' : 'var(--text-muted)',
-            fontWeight: tab === 'support' ? 'bold' : 'normal',
-            borderBottom: tab === 'support' ? '2px solid #f59e0b' : '2px solid transparent',
-            cursor: 'pointer', transition: 'all 0.15s', fontSize: '0.85rem'
-          }}>
-            طلبات الدعم
+          <button 
+            onClick={() => { setTab('support'); setActiveConvId(null); }} 
+            style={{
+              flex: 1, padding: '14px 10px', background: 'none', border: 'none',
+              color: tab === 'support' ? 'var(--accent-amber)' : 'var(--text-secondary)',
+              fontWeight: tab === 'support' ? 700 : 500,
+              borderBottom: tab === 'support' ? '2px solid var(--accent-amber)' : '2px solid transparent',
+              cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.8rem'
+            }}
+          >
+            <span>طلبات الدعم</span>
             {supportConvs.filter(c => (c.unreadCount?.[user.uid] || 0) > 0).length > 0 && (
               <span style={{
                 marginRight: '6px',
-                background: '#f59e0b',
+                background: 'var(--accent-amber)',
                 color: 'white',
                 borderRadius: '50%',
-                width: '18px',
-                height: '18px',
-                fontSize: '0.65rem',
+                width: '16px',
+                height: '16px',
+                fontSize: '0.62rem',
                 display: 'inline-flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -297,39 +328,70 @@ export default function ChatPage() {
           </button>
         </div>
 
-        {/* Scrollable container for list items */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        {/* Contacts List Scroll area */}
+        <div style={{ flex: 1, overflowY: 'auto' }} className="chat-contacts-scroll">
           {tab === 'admin' ? (
             <>
-              <div onClick={handleSelectGroup} style={{
-                padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.15s',
-                background: activeConvId === 'admin_group_chat' ? 'rgba(59,130,246,0.08)' : 'transparent'
-              }} className="chat-hover">
-                <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: 'var(--gradient-cyber)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-                  <Users size={20} />
+              {/* General admin group */}
+              <div 
+                onClick={handleSelectGroup} 
+                style={{
+                  padding: '14px 16px', 
+                  borderBottom: '1px solid rgba(255,255,255,0.02)', 
+                  cursor: 'pointer',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '12px', 
+                  transition: 'background 0.2s',
+                  background: activeConvId === 'admin_group_chat' ? 'rgba(59,130,246,0.08)' : 'transparent'
+                }} 
+                className="chat-list-hover-row"
+              >
+                <div style={{ 
+                  width: '42px', 
+                  height: '42px', 
+                  borderRadius: '12px', 
+                  background: 'var(--gradient-cyber)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  color: 'white',
+                  boxShadow: '0 4px 12px rgba(139,92,246,0.2)'
+                }}>
+                  <Users size={18} />
                 </div>
                 <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'white' }}>مجموعة الإدارة العامة 📢</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>تواصل جماعي مع كافة المدراء</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.84rem', color: 'white' }}>مجموعة الإدارة العامة 📢</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                    تواصل جماعي مع كافة المدراء
+                  </div>
                 </div>
               </div>
 
-              {/* Create group button */}
-              <div onClick={() => setShowCreateGroup(true)} style={{
-                padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer',
-                display: 'flex', alignItems: 'center', gap: '12px',
-              }} className="chat-hover">
+              {/* Create Custom Group button */}
+              <div 
+                onClick={() => setShowCreateGroup(true)} 
+                style={{
+                  padding: '12px 16px', 
+                  borderBottom: '1px solid rgba(255,255,255,0.02)', 
+                  cursor: 'pointer',
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '12px',
+                  transition: 'all 0.2s'
+                }} 
+                className="chat-list-hover-row"
+              >
                 <div style={{
                   width: '42px', height: '42px', borderRadius: '12px',
-                  background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981',
+                  background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-emerald)',
                 }}>
-                  <MessageCirclePlus size={20} />
+                  <MessageCirclePlus size={18} />
                 </div>
                 <div style={{ flex: 1, textAlign: 'right' }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '0.85rem' }}>إنشاء مجموعة جديدة</div>
-                  <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>مجموعة محادثة مع المشرفين</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.84rem', color: '#fff' }}>إنشاء مجموعة جديدة</div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '2px' }}>مجموعة محادثة مع المشرفين</div>
                 </div>
               </div>
 
@@ -350,7 +412,6 @@ export default function ChatPage() {
               emptyLabel="لا توجد محادثات مع أعضاء"
             />
           ) : (
-            /* Support Tab */
             <ConversationList
               conversations={supportConvs}
               activeId={activeConvId}
@@ -361,16 +422,16 @@ export default function ChatPage() {
           )}
         </div>
 
-        {/* FAB for New Chat (only in admin/member tabs) */}
+        {/* FAB for New Chat */}
         {tab !== 'support' && (
           <button 
             onClick={() => setShowNewChat(true)}
             style={{
               position: 'absolute',
-              bottom: '24px',
-              left: '24px',
-              width: '56px',
-              height: '56px',
+              bottom: '20px',
+              left: '20px',
+              width: '50px',
+              height: '50px',
               borderRadius: '50%',
               background: 'var(--accent-blue)',
               color: 'white',
@@ -379,66 +440,77 @@ export default function ChatPage() {
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(59,130,246,0.4)',
+              boxShadow: '0 8px 24px rgba(59,130,246,0.3)',
               transition: 'transform 0.2s',
               zIndex: 10
             }}
             className="hover-scale"
           >
-            <MessageCirclePlus size={28} />
+            <MessageCirclePlus size={22} />
           </button>
         )}
 
-        {/* New Chat Panel (Slide-over) */}
+        {/* New DM contacts drawer overlay */}
         <div style={{
           position: 'absolute',
           top: 0,
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'var(--bg-secondary)',
+          background: '#0d1325',
           transform: showNewChat ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           display: 'flex',
           flexDirection: 'column',
           zIndex: 20
         }}>
           {/* Header */}
-          <div style={{ padding: '20px 16px', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-primary)', borderBottom: '1px solid var(--border-color)' }}>
+          <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid var(--border-color)' }}>
             <button onClick={() => setShowNewChat(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}>
-              <ArrowRight size={24} />
+              <ArrowRight size={20} />
             </button>
-            <div style={{ fontWeight: 'bold', fontSize: '1.1rem', color: 'white' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.94rem', color: 'white' }}>
               {tab === 'admin' ? 'محادثة إدارية جديدة' : 'محادثة عضو جديدة'}
             </div>
           </div>
           {/* List */}
           <div style={{ flex: 1, overflowY: 'auto' }}>
             {(tab === 'admin' ? agents : members).length === 0 ? (
-              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              <div style={{ padding: '30px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
                 لا يوجد مستخدمين متاحين
               </div>
             ) : (
               (tab === 'admin' ? agents : members).map(m => {
                 const hasConv = (tab === 'admin' ? adminConvs : memberConvs).some(c => c.members.includes(m.uid) && !c.isGroup);
                 return (
-                  <div key={m.uid} onClick={() => handleSelectMember(m)} style={{
-                    padding: '12px 16px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '14px',
-                    transition: 'background 0.15s', borderBottom: '1px solid rgba(255,255,255,0.02)'
-                  }} className="chat-hover">
+                  <div 
+                    key={m.uid} 
+                    onClick={() => handleSelectMember(m)} 
+                    style={{
+                      padding: '12px 20px', 
+                      cursor: 'pointer', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '14px',
+                      transition: 'background 0.15s', 
+                      borderBottom: '1px solid rgba(255,255,255,0.01)'
+                    }} 
+                    className="chat-list-hover-row"
+                  >
                     <div style={{ 
-                      width: '46px', height: '46px', borderRadius: '50%', 
-                      background: tab === 'admin' ? 'rgba(59,130,246,0.1)' : 'rgba(16,185,129,0.1)', 
-                      border: tab === 'admin' ? '1px solid rgba(59,130,246,0.2)' : '1px solid rgba(16,185,129,0.2)', 
+                      width: '40px', height: '40px', borderRadius: '50%', 
+                      background: tab === 'admin' ? 'rgba(59,130,246,0.08)' : 'rgba(16,185,129,0.08)', 
+                      border: tab === 'admin' ? '1px solid rgba(59,130,246,0.15)' : '1px solid rgba(16,185,129,0.15)', 
                       display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                      fontWeight: 'bold', fontSize: '1rem', 
-                      color: tab === 'admin' ? 'var(--accent-blue)' : '#10b981', flexShrink: 0 
+                      fontWeight: 700, fontSize: '0.88rem', 
+                      color: tab === 'admin' ? 'var(--accent-blue)' : 'var(--accent-emerald)', 
+                      flexShrink: 0 
                     }}>
                       {m.name.substring(0, 2)}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.95rem', color: 'white', fontWeight: 'bold', marginBottom: '2px' }}>{m.name}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{hasConv ? 'محادثة موجودة' : 'انقر لبدء محادثة'}</div>
+                      <div style={{ fontSize: '0.88rem', color: 'white', fontWeight: 600, marginBottom: '2px' }}>{m.name}</div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>{hasConv ? 'محادثة موجودة بالفعل' : 'ابدأ محادثة جديدة'}</div>
                     </div>
                   </div>
                 );
@@ -448,21 +520,48 @@ export default function ChatPage() {
         </div>
       </div>
 
-      {/* ─── Chat Window ─── */}
-      <div className={`chat-window ${!activeConvId ? 'hide-mobile' : ''}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-primary)' }}>
+      {/* ─── Active Chat Window ─── */}
+      <div 
+        className={`chat-window ${!activeConvId ? 'hide-mobile' : ''}`} 
+        style={{ 
+          flex: 1, 
+          display: 'flex', 
+          flexDirection: 'column', 
+          overflow: 'hidden', 
+          background: 'var(--bg-primary)' 
+        }}
+      >
         {activeConvId && activeConv ? (
           <>
-            {/* Header */}
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '12px', background: 'var(--bg-secondary)' }}>
-              <button onClick={() => setSidebarCollapsed(s => !s)} style={{
-                background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-                padding: '4px', display: 'flex', alignItems: 'center', transition: '0.2s',
-              }} title={sidebarCollapsed ? 'إظهار القائمة' : 'إخفاء القائمة'}>
-                <ArrowRight size={18} style={{ transform: sidebarCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: '0.2s' }} />
+            {/* Window Header */}
+            <div 
+              style={{ 
+                padding: '14px 20px', 
+                borderBottom: '1px solid var(--border-color)', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '12px', 
+                background: 'var(--bg-secondary)' 
+              }}
+            >
+              {/* Desktop toggle sidebar button */}
+              <button 
+                onClick={() => setSidebarCollapsed(s => !s)} 
+                style={{
+                  background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer',
+                  padding: '4px', display: 'flex', alignItems: 'center', transition: '0.2s',
+                }} 
+                className="chat-toggle-sidebar-button"
+                title={sidebarCollapsed ? 'إظهار القائمة' : 'إخفاء القائمة'}
+              >
+                <ArrowRight size={16} style={{ transform: sidebarCollapsed ? 'rotate(0deg)' : 'rotate(180deg)', transition: '0.2s' }} />
               </button>
+              
+              {/* Mobile Back button */}
               <button onClick={() => setActiveConvId(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'none' }} className="mobile-back-chat">
-                <ArrowRight size={22} />
+                <ArrowRight size={20} />
               </button>
+
               {(() => {
                 const otherUid = activeConv.members.find(m => m !== user.uid);
                 const otherName = otherUid ? activeConv.memberNames?.[otherUid] || activeConv.name : activeConv.name;
@@ -470,27 +569,31 @@ export default function ChatPage() {
                 return (
                   <>
                     <div style={{
-                      width: '40px', height: '40px', borderRadius: isGroup ? '12px' : '50%', flexShrink: 0,
+                      width: '38px', height: '38px', borderRadius: isGroup ? '10px' : '50%', flexShrink: 0,
                       background: activeConv.type === 'agent_member' ? 'rgba(16,185,129,0.1)' : isGroup ? 'var(--gradient-cyber)' : 'rgba(59,130,246,0.1)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 'bold', fontSize: '0.8rem',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '0.8rem',
                       border: activeConv.type === 'agent_member' ? '1px solid rgba(16,185,129,0.2)' : 'none'
                     }}>
                       {isGroup ? '📢' : otherName?.substring(0, 2) || '??'}
                     </div>
                     <div style={{ flex: 1, textAlign: 'right' }}>
-                      <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: 'white' }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'white' }}>
                         {isGroup ? activeConv.groupName || 'المجموعة' : otherName}
                       </div>
-                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
-                        {isGroup ? `${activeConv.members.length} مشرف` : activeConv.type === 'agent_member' ? 'عضو في الموقع' : 'محادثة مباشرة'}
+                      <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        {isGroup ? `${activeConv.members.length} مشرف بالإدارة` : activeConv.type === 'agent_member' ? 'عضو مسجل' : 'محادثة مباشرة مؤمنة'}
                       </div>
                     </div>
                     {isGroup && (
-                      <button onClick={() => setShowGroupSettings(true)} style={{
-                        background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-                        padding: '8px', borderRadius: '8px',
-                      }} className="chat-hover">
-                        <Settings size={18} />
+                      <button 
+                        onClick={() => setShowGroupSettings(true)} 
+                        style={{
+                          background: 'rgba(255,255,255,0.02)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', cursor: 'pointer',
+                          padding: '8px', borderRadius: '10px', display: 'flex', transition: 'all 0.2s'
+                        }} 
+                        className="chat-toggle-sidebar-button"
+                      >
+                        <Settings size={14} />
                       </button>
                     )}
                   </>
@@ -498,60 +601,116 @@ export default function ChatPage() {
               })()}
             </div>
 
-            {/* Messages */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', background: '#0b141a' }}>
+            {/* Messaging Feed Scroll area */}
+            <div 
+              style={{ 
+                flex: 1, 
+                overflowY: 'auto', 
+                padding: '24px 20px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '14px', 
+                background: 'rgba(5, 8, 16, 0.2)' 
+              }}
+              className="chat-messages-scroll"
+            >
               {messages.length === 0 ? (
-                <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  لا توجد رسائل سابقة. أرسل رسالتك الأولى.
+                <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                  لا توجد رسائل سابقة. أرسل رسالتك الأولى للبدء.
                 </div>
               ) : messages.map(msg => {
                 const isSelf = msg.senderId === user.uid;
                 const isBot = msg.senderId === 'bot';
                 const isSystem = msg.type === 'system_event';
+
                 if (isSystem) {
                   return (
                     <div key={msg.id} style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
                       <div style={{
-                        background: 'rgba(255,255,255,0.04)', borderRadius: '8px',
-                        padding: '6px 16px', fontSize: '0.72rem', color: 'rgba(255,255,255,0.5)',
-                        textAlign: 'center', maxWidth: '80%',
+                        background: 'rgba(255,255,255,0.03)', 
+                        border: '1px solid var(--border-color)',
+                        borderRadius: '10px',
+                        padding: '6px 16px', 
+                        fontSize: '0.72rem', 
+                        color: 'var(--text-secondary)',
+                        textAlign: 'center', 
+                        maxWidth: '85%',
                       }}>
-                        {msg.content}
-                        <div style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
+                        <span>{msg.content}</span>
+                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '2px' }}>
                           {formatTime(msg.createdAt)}
                         </div>
                       </div>
                     </div>
                   );
                 }
+
                 return (
-                  <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignSelf: isSelf ? 'flex-start' : 'flex-end', maxWidth: isBot ? '80%' : '72%', gap: '4px' }}>
+                  <div 
+                    key={msg.id} 
+                    style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignSelf: isSelf ? 'flex-start' : 'flex-end', 
+                      maxWidth: isBot ? '80%' : '72%', 
+                      gap: '4px' 
+                    }}
+                  >
                     {activeConv.isGroup && !isSelf && !isBot && (
-                      <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: msg.senderRole === 'super_admin' ? '#c084fc' : '#60a5fa', marginRight: '6px' }}>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: msg.senderRole === 'super_admin' ? 'var(--accent-purple)' : 'var(--accent-blue)', marginRight: '6px' }}>
                         {msg.senderName}
                       </span>
                     )}
                     {isBot && !isSelf && (
-                      <span style={{ fontSize: '0.65rem', fontWeight: 'bold', color: 'var(--accent-emerald)', marginRight: '6px' }}>
-                        🤖 المساعد الذكي
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--accent-emerald)', marginRight: '6px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                        <Bot size={11} />
+                        <span>المساعد الذكي</span>
                       </span>
                     )}
+
+                    {/* Chat Bubble Container */}
                     <div style={{
-                      padding: isBot ? '12px 18px' : '10px 16px', borderRadius: '16px',
-                      background: isSelf ? '#005c4b' : isBot ? 'rgba(16, 185, 129, 0.06)' : '#202c33',
-                      border: '1px solid', borderColor: isSelf ? 'rgba(0,92,75,0.2)' : isBot ? 'rgba(16, 185, 129, 0.15)' : 'rgba(255,255,255,0.03)',
-                      color: 'white', wordBreak: 'break-word', display: 'flex', flexDirection: 'column', gap: '6px'
+                      padding: isBot ? '12px 18px' : '10px 16px', 
+                      borderRadius: isSelf ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
+                      background: isSelf 
+                        ? 'var(--accent-blue)' 
+                        : isBot 
+                        ? 'rgba(16, 185, 129, 0.05)' 
+                        : '#0d1325',
+                      border: '1px solid', 
+                      borderColor: isSelf 
+                        ? 'rgba(59,130,246,0.2)' 
+                        : isBot 
+                        ? 'rgba(16, 185, 129, 0.15)' 
+                        : 'var(--border-color)',
+                      color: 'white', 
+                      wordBreak: 'break-word', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      gap: '8px',
+                      boxShadow: isSelf ? '0 4px 12px rgba(59,130,246,0.15)' : 'none'
                     }}>
+                      {/* Image attachments */}
                       {msg.type === 'image' && msg.imageUrls?.map((url: string, i: number) => (
-                        <img key={i} src={url} alt="" style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '8px', cursor: 'pointer' }} onClick={() => window.open(url, '_blank')} />
+                        <img 
+                          key={i} 
+                          src={url} 
+                          alt="" 
+                          style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)' }} 
+                          onClick={() => window.open(url, '_blank')} 
+                        />
                       ))}
+                      {/* File attachments */}
                       {msg.type === 'file' && msg.fileUrl && (
-                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-cyan)', fontSize: '0.8rem', textDecoration: 'underline' }}>
+                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-cyan)', fontSize: '0.8rem', textDecoration: 'underline', fontWeight: 600 }}>
                           {msg.content}
                         </a>
                       )}
-                      {msg.type === 'text' && <span style={{ fontSize: isBot ? '0.88rem' : '0.85rem', lineHeight: 1.6 }}>{msg.content}</span>}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end', fontSize: '0.6rem', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>
+                      
+                      {msg.type === 'text' && <span style={{ fontSize: '0.84rem', lineHeight: 1.6 }}>{msg.content}</span>}
+                      
+                      {/* Bubble footer info */}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end', fontSize: '0.62rem', color: isSelf ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)', marginTop: '2px' }}>
                         <span>{formatTime(msg.createdAt)}</span>
                         {isSelf && <CheckCheck size={11} style={{ color: 'var(--accent-cyan)' }} />}
                       </div>
@@ -562,20 +721,21 @@ export default function ChatPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input */}
+            {/* Chat Input panel */}
             <ChatInput
               onSend={handleSend}
               placeholder={tab === 'member' ? 'اكتب ردك للعضو...' : 'اكتب رسالتك...'}
             />
           </>
         ) : (
+          /* Empty Active state banner */
           <div style={{ margin: 'auto', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-            <div style={{ width: '64px', height: '64px', borderRadius: '16px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
-              <MessageSquare size={32} />
+            <div style={{ width: '60px', height: '60px', borderRadius: '16px', background: 'rgba(59,130,246,0.05)', border: '1px solid rgba(59,130,246,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-blue)' }}>
+              <MessageSquare size={26} />
             </div>
             <div>
-              <h4 style={{ fontWeight: 'bold', fontSize: '1rem', color: 'white', marginBottom: '4px' }}>بوابة المحادثات</h4>
-              <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', maxWidth: '300px' }}>
+              <h4 style={{ fontWeight: 700, fontSize: '0.94rem', color: 'white', marginBottom: '4px' }}>بوابة المحادثات</h4>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', maxWidth: '300px', margin: '0 auto' }}>
                 اختر محادثة من القائمة الجانبية للبدء
               </p>
             </div>
@@ -606,15 +766,24 @@ export default function ChatPage() {
       )}
 
       <style>{`
-        .chat-hover:hover { background: rgba(255,255,255,0.03) !important; }
-        @media (max-width: 767px) {
+        .chat-list-hover-row:hover {
+          background: rgba(255, 255, 255, 0.02) !important;
+        }
+        .chat-contacts-scroll::-webkit-scrollbar,
+        .chat-messages-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        @media (max-width: 768px) {
           .chat-sidebar.hide-mobile { display: none !important; }
           .chat-window.hide-mobile { display: none !important; }
           .chat-sidebar { width: 100% !important; display: flex; }
           .chat-window { width: 100% !important; display: flex; }
           .mobile-back-chat { display: flex !important; }
+          .chat-toggle-sidebar-button { display: none !important; }
+          .chat-workspace-container {
+            height: calc(100vh - var(--navbar-height) - 24px) !important;
+          }
         }
-        @media (min-width: 768px) { .mobile-back-chat { display: none !important; } }
       `}</style>
     </div>
   );

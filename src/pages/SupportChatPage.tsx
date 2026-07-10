@@ -7,7 +7,7 @@ import { sendMessage, markRead } from '../services/ChatService';
 import { createSupportTicket } from '../services/TicketService';
 import { useChatBot } from '../hooks/useChatBot';
 import type { Conversation, ChatMessage } from '../types';
-import { MessageSquare, AlertCircle, CheckCheck, Users, Bot } from 'lucide-react';
+import { MessageSquare, AlertCircle, CheckCheck, Users, Bot, Loader2 } from 'lucide-react';
 import ChatInput from '../components/chat/ChatInput';
 import { showToast } from '../components/ui/Toast';
 
@@ -115,26 +115,19 @@ export default function SupportChatPage() {
   if (loading || initializing) {
     return (
       <div style={{ 
-        maxWidth: '900px', 
+        maxWidth: '850px', 
         margin: '60px auto', 
-        padding: '40px 24px', 
+        padding: '0 24px', 
         textAlign: 'center',
         direction: 'rtl' 
       }}>
         <div className="glass-card" style={{ padding: '60px 40px' }}>
-          <div className="animate-spin-fast" style={{ 
-            width: '40px', 
-            height: '40px', 
-            borderRadius: '50%',
-            border: '4px solid rgba(59, 130, 246, 0.1)',
-            borderTopColor: 'var(--accent-blue)',
-            margin: '0 auto 20px'
-          }} />
-          <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '8px' }}>
+          <Loader2 className="animate-spin-fast text-primary mb-3" size={32} style={{ margin: '0 auto' }} />
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '6px', color: '#fff' }}>
             {initializing ? 'جاري إنشاء محادثة الدعم...' : 'جاري التحميل...'}
           </h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-            يرجى الانتظار قليلاً
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+            يرجى الانتظار قليلاً لتأكيد التذكرة
           </p>
         </div>
       </div>
@@ -142,133 +135,152 @@ export default function SupportChatPage() {
   }
 
   return (
-    <div style={{ 
-      maxWidth: '900px', 
-      margin: '0 auto', 
-      height: 'calc(100vh - var(--navbar-height))', 
-      padding: '0 24px', 
-      direction: 'rtl' 
-    }} className="animate-fade">
+    <div 
+      style={{ 
+        maxWidth: '850px', 
+        margin: '0 auto', 
+        height: 'calc(100vh - var(--navbar-height) - 48px)', 
+        padding: '0 24px', 
+        direction: 'rtl' 
+      }} 
+      className="animate-fade support-chat-page-wrapper"
+    >
       
-      <div className="glass-card" style={{ 
-        height: '100%', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        overflow: 'hidden' 
-      }}>
+      <div 
+        className="glass-card" 
+        style={{ 
+          height: '100%', 
+          display: 'flex', 
+          flexDirection: 'column', 
+          overflow: 'hidden',
+          border: '1px solid var(--border-color)',
+          background: 'var(--bg-secondary)'
+        }}
+      >
         
-        {/* Header */}
+        {/* Header section */}
         <div style={{ 
-          padding: '20px 24px', 
+          padding: '16px 24px', 
           borderBottom: '1px solid var(--border-color)', 
-          background: 'rgba(15,22,42,0.2)' 
+          background: 'rgba(0,0,0,0.1)' 
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
             <div style={{
-              width: '52px',
-              height: '52px',
-              borderRadius: '16px',
-              background: 'var(--gradient-primary)',
+              width: '42px',
+              height: '42px',
+              borderRadius: '12px',
+              background: 'rgba(59, 130, 246, 0.08)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'white',
-              fontSize: '1.3rem'
+              color: 'var(--accent-blue)',
+              fontSize: '1.25rem',
+              border: '1px solid rgba(59, 130, 246, 0.15)'
             }}>
-              <Users size={26} />
+              <Users size={20} />
             </div>
             <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: '1.2rem', fontWeight: 'bold', marginBottom: '4px' }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px', color: '#fff' }}>
                 دعم فني EMF Group 💬
               </h2>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
-                تواصل مع فريق الدعم الفني - جميع المسؤولين يمكنهم رؤية رسائلك والرد عليها
+              <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', margin: 0 }}>
+                تواصل مع فريق الدعم الفني - المسؤولون متصلون لتسوية مشكلتك
               </p>
             </div>
           </div>
         </div>
 
-        {/* Welcome Message */}
+        {/* Welcome information banner */}
         {messages.length === 0 && (
           <div style={{ 
-            padding: '40px 24px', 
+            padding: '36px 24px', 
             textAlign: 'center',
-            borderBottom: '1px solid var(--border-color)'
+            borderBottom: '1px solid var(--border-color)',
+            background: 'rgba(5, 8, 16, 0.15)'
           }}>
             <div style={{
-              width: '80px',
-              height: '80px',
-              borderRadius: '20px',
-              background: 'rgba(59, 130, 246, 0.1)',
+              width: '64px',
+              height: '64px',
+              borderRadius: '18px',
+              background: 'rgba(59, 130, 246, 0.06)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: 'var(--accent-blue)',
-              margin: '0 auto 20px'
+              margin: '0 auto 16px',
+              border: '1px solid rgba(59, 130, 246, 0.12)'
             }}>
-              <MessageSquare size={36} />
+              <MessageSquare size={26} />
             </div>
-            <h3 style={{ fontSize: '1.1rem', fontWeight: 'bold', marginBottom: '12px' }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px', color: '#fff' }}>
               مرحباً بك في الدعم الفني! 👋
             </h3>
             <p style={{ 
               color: 'var(--text-secondary)', 
-              fontSize: '0.9rem', 
+              fontSize: '0.82rem', 
               lineHeight: 1.6,
-              maxWidth: '500px',
+              maxWidth: '480px',
               margin: '0 auto'
             }}>
               هذه محادثة خاصة بينك وبين فريق الدعم الفني لشركة EMF Group.
-              يمكنك طرح أي سؤال أو مشكلة، وسيتم الرد عليك من قبل أحد المسؤولين في أقرب وقت ممكن.
+              يمكنك طرح أي سؤال أو مشكلة، وسيتم الرد عليك من قبل المسؤول في أقرب وقت.
             </p>
             
-            {/* Tips */}
+            {/* Action Tips layout */}
             <div style={{ 
-              marginTop: '24px', 
+              marginTop: '20px', 
               display: 'flex', 
               flexDirection: 'column', 
               gap: '8px',
-              maxWidth: '400px',
-              margin: '24px auto 0'
+              maxWidth: '380px',
+              margin: '20px auto 0'
             }}>
-              <div className="glass-card" style={{ 
-                padding: '12px 16px', 
-                textAlign: 'right',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                <AlertCircle size={16} style={{ color: 'var(--accent-blue)', flexShrink: 0 }} />
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  جميع المسؤولين يمكنهم رؤية المحادثة
+              <div 
+                className="glass-card" 
+                style={{ 
+                  padding: '10px 14px', 
+                  textAlign: 'right',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(255,255,255,0.01)'
+                }}
+              >
+                <AlertCircle size={14} style={{ color: 'var(--accent-blue)', flexShrink: 0 }} />
+                <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                  جميع المسؤولين يمكنهم رؤية المحادثة والرد
                 </span>
               </div>
-              <div className="glass-card" style={{ 
-                padding: '12px 16px', 
-                textAlign: 'right',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-              }}>
-                <CheckCheck size={16} style={{ color: 'var(--accent-emerald)', flexShrink: 0 }} />
-                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                  يمكنك إرسال نصوص وصور
+              <div 
+                className="glass-card" 
+                style={{ 
+                  padding: '10px 14px', 
+                  textAlign: 'right',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  background: 'rgba(255,255,255,0.01)'
+                }}
+              >
+                <CheckCheck size={14} style={{ color: 'var(--accent-emerald)', flexShrink: 0 }} />
+                <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                  يمكنك إرسال رسائل نصية ومرفقات صور
                 </span>
               </div>
             </div>
           </div>
         )}
 
-        {/* Messages Area */}
+        {/* Message Feed grid */}
         <div style={{ 
           flex: 1, 
           overflowY: 'auto', 
           padding: '20px 24px', 
           display: 'flex', 
           flexDirection: 'column', 
-          gap: '16px',
-          background: 'rgba(5,8,16,0.3)' 
-        }}>
+          gap: '14px',
+          background: 'rgba(5,8,16,0.1)' 
+        }} className="support-chat-messages-scroll">
           {messages.map(msg => {
             const isSelf = msg.senderId === user.uid;
             const isAdmin = msg.senderRole === 'admin' || msg.senderRole === 'super_admin';
@@ -281,29 +293,29 @@ export default function SupportChatPage() {
                   display: 'flex', 
                   flexDirection: 'column',
                   alignSelf: isSelf ? 'flex-start' : 'flex-end',
-                  maxWidth: isBot ? '85%' : '75%',
-                  gap: '6px'
+                  maxWidth: isBot ? '80%' : '75%',
+                  gap: '4px'
                 }}
               >
-                {/* Sender name for admins and bot */}
+                {/* Sender Title Banner */}
                 {!isSelf && isAdmin && !isBot && (
                   <div style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: '6px',
-                    marginRight: '8px'
+                    marginRight: '6px'
                   }}>
                     <div style={{
-                      width: '24px',
-                      height: '24px',
+                      width: '22px',
+                      height: '22px',
                       borderRadius: '50%',
                       background: msg.senderRole === 'super_admin' 
-                        ? 'rgba(139, 92, 246, 0.2)' 
-                        : 'rgba(59, 130, 246, 0.2)',
+                        ? 'rgba(139, 92, 246, 0.15)' 
+                        : 'rgba(59, 130, 246, 0.15)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '0.65rem',
+                      fontSize: '0.62rem',
                       fontWeight: 'bold',
                       color: msg.senderRole === 'super_admin' 
                         ? 'var(--accent-purple)' 
@@ -312,7 +324,7 @@ export default function SupportChatPage() {
                       {msg.senderName.substring(0, 2)}
                     </div>
                     <span style={{ 
-                      fontSize: '0.75rem', 
+                      fontSize: '0.7rem', 
                       fontWeight: 'bold',
                       color: msg.senderRole === 'super_admin' 
                         ? 'var(--accent-purple)' 
@@ -324,19 +336,19 @@ export default function SupportChatPage() {
                   </div>
                 )}
 
-                {/* Bot sender name */}
+                {/* Bot indicator */}
                 {isBot && (
                   <div style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
                     gap: '6px',
-                    marginRight: '8px'
+                    marginRight: '6px'
                   }}>
                     <div style={{
-                      width: '24px',
-                      height: '24px',
+                      width: '22px',
+                      height: '22px',
                       borderRadius: '50%',
-                      background: 'rgba(16, 185, 129, 0.2)',
+                      background: 'rgba(16, 185, 129, 0.15)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -344,10 +356,10 @@ export default function SupportChatPage() {
                       fontWeight: 'bold',
                       color: 'var(--accent-emerald)'
                     }}>
-                      <Bot size={14} />
+                      <Bot size={12} />
                     </div>
                     <span style={{ 
-                      fontSize: '0.75rem', 
+                      fontSize: '0.7rem', 
                       fontWeight: 'bold',
                       color: 'var(--accent-emerald)'
                     }}>
@@ -356,55 +368,49 @@ export default function SupportChatPage() {
                   </div>
                 )}
                 
-                {/* Message bubble */}
+                {/* Bubble box */}
                 <div style={{
-                  padding: isBot ? '14px 20px' : '12px 18px',
-                  borderRadius: isBot ? '18px 18px 18px 6px' : '18px',
+                  padding: isBot ? '12px 16px' : '10px 16px',
+                  borderRadius: isSelf ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
                   background: isSelf 
                     ? 'var(--bg-chat-bubble-self)' 
                     : isBot
-                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(6, 95, 70, 0.15) 100%)'
+                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(6, 95, 70, 0.1) 100%)'
                     : 'var(--bg-chat-bubble-other)',
                   border: '1px solid',
                   borderColor: isSelf 
                     ? 'rgba(59,130,246,0.2)' 
                     : isBot
-                    ? 'rgba(16, 185, 129, 0.2)'
-                    : 'rgba(255,255,255,0.05)',
+                    ? 'rgba(16, 185, 129, 0.15)'
+                    : 'var(--border-color)',
                   color: 'white',
                   wordBreak: 'break-word',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '8px',
-                  boxShadow: isSelf 
-                    ? '0 2px 8px rgba(59, 130, 246, 0.15)' 
-                    : isBot
-                    ? '0 2px 12px rgba(16, 185, 129, 0.1)'
-                    : '0 2px 8px rgba(0, 0, 0, 0.1)'
+                  gap: '6px',
+                  boxShadow: isSelf ? '0 4px 12px rgba(59, 130, 246, 0.15)' : 'none'
                 }}>
-                  {/* Bot header indicator */}
                   {isBot && (
                     <div style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '6px',
-                      marginBottom: '4px',
-                      paddingBottom: '8px',
+                      gap: '5px',
+                      marginBottom: '2px',
+                      paddingBottom: '6px',
                       borderBottom: '1px solid rgba(16, 185, 129, 0.15)'
                     }}>
-                      <Bot size={14} style={{ color: 'var(--accent-emerald)' }} />
+                      <Bot size={12} style={{ color: 'var(--accent-emerald)' }} />
                       <span style={{
-                        fontSize: '0.7rem',
-                        fontWeight: 600,
-                        color: 'var(--accent-emerald)',
-                        letterSpacing: '0.3px'
+                        fontSize: '0.66rem',
+                        fontWeight: 700,
+                        color: 'var(--accent-emerald)'
                       }}>
                         رد تلقائي
                       </span>
                     </div>
                   )}
 
-                  {/* Images */}
+                  {/* Images content */}
                   {msg.type === 'image' && msg.imageUrls?.map((url: string, i: number) => (
                     <img 
                       key={i} 
@@ -412,37 +418,38 @@ export default function SupportChatPage() {
                       alt="" 
                       style={{ 
                         maxWidth: '100%', 
-                        maxHeight: '280px', 
-                        borderRadius: '12px', 
-                        cursor: 'pointer' 
+                        maxHeight: '260px', 
+                        borderRadius: '10px', 
+                        cursor: 'pointer',
+                        border: '1px solid rgba(255,255,255,0.05)'
                       }} 
                       onClick={() => window.open(url, '_blank')} 
                     />
                   ))}
                   
-                  {/* Text */}
+                  {/* Message texts */}
                   {(msg.type === 'text' || isBot) && (
                     <span style={{ 
-                      fontSize: isBot ? '0.9rem' : '0.95rem', 
-                      lineHeight: 1.7,
+                      fontSize: '0.84rem', 
+                      lineHeight: 1.65,
                       whiteSpace: 'pre-wrap'
                     }}>
                       {msg.content}
                     </span>
                   )}
                   
-                  {/* Timestamp */}
+                  {/* Timestamp specs */}
                   <div style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
-                    gap: '6px', 
+                    gap: '4px', 
                     justifyContent: 'flex-end',
-                    fontSize: '0.7rem',
-                    color: 'rgba(255,255,255,0.5)',
-                    marginTop: '4px'
+                    fontSize: '0.6rem',
+                    color: isSelf ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)',
+                    marginTop: '2px'
                   }}>
                     <span>{formatTime(msg.createdAt)}</span>
-                    {isSelf && <CheckCheck size={12} style={{ color: 'var(--accent-cyan)' }} />}
+                    {isSelf && <CheckCheck size={11} style={{ color: 'var(--accent-cyan)' }} />}
                   </div>
                 </div>
               </div>
@@ -451,12 +458,24 @@ export default function SupportChatPage() {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
+        {/* Input box */}
         <ChatInput
           onSend={handleSend}
           placeholder="اكتب رسالتك للدعم الفني..."
         />
       </div>
+
+      <style>{`
+        .support-chat-messages-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        @media(max-width: 768px) {
+          .support-chat-page-wrapper {
+            padding: 0px 4px !important;
+            height: calc(100vh - var(--navbar-height) - 16px) !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
