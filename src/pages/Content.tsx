@@ -255,13 +255,6 @@ export default function Content() {
           })}
         </div>
       )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
 
       {/* Video Lightbox */}
       {activeVideoUrl && createPortal(
