@@ -344,9 +344,10 @@ export function useAnalytics(): AnalyticsState {
 
   const timeline = useMemo((): ActivityEvent[] => {
     const events: ActivityEvent[] = [];
+    if (!auditLogs || !Array.isArray(auditLogs)) return events;
     for (const log of auditLogs) {
-      if (!log.createdAt) continue;
-      const desc = log.description || '';
+      if (!log || !log.createdAt) continue;
+      const desc = typeof log.description === 'string' ? log.description : '';
       let type: ActivityEvent['type'] = 'chat';
       let icon = 'MessageSquare';
       let color = 'var(--accent-blue)';
@@ -364,7 +365,7 @@ export function useAnalytics(): AnalyticsState {
         type = 'ticket'; icon = 'Ticket'; color = 'var(--accent-gold)';
       }
       events.push({
-        id: log.id, type, user: log.userName || '', description: desc, timestamp: log.createdAt, icon, color,
+        id: log.id || Math.random().toString(), type, user: log.userName || '', description: desc, timestamp: log.createdAt, icon, color,
       });
     }
     for (const u of users) {

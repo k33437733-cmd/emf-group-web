@@ -79,6 +79,7 @@ export const ROLE_PERMISSIONS: Readonly<Record<UserRole, ReadonlyArray<string>>>
 };
 
 export function hasPermission(role: UserRole, permission: string): boolean {
+  if (!role || !ROLE_PERMISSIONS[role]) return false;
   return (ROLE_PERMISSIONS[role] as string[]).includes(permission);
 }
 

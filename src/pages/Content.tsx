@@ -36,7 +36,7 @@ export default function Content() {
     if (search.trim()) {
       const term = search.toLowerCase().trim();
       result = result.filter(item =>
-        item.title.toLowerCase().includes(term) || item.description.toLowerCase().includes(term)
+        (item.title || '').toLowerCase().includes(term) || (item.description || '').toLowerCase().includes(term)
       );
     }
     setFilteredItems(result);

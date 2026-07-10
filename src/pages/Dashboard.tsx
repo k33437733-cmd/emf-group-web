@@ -19,13 +19,15 @@ import {
   Loader2, ShieldAlert, Inbox, ClipboardList
 } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
-import EmptyState from '../components/ui/EmptyState';
 import ErrorBoundary from '../components/ui/ErrorBoundary';
 import KpiCard from '../components/analytics/KpiCard';
 import DateFilter from '../components/analytics/DateFilter';
 import ChartWrapper from '../components/analytics/ChartWrapper';
 import ActivityTimeline from '../components/analytics/ActivityTimeline';
 import ExportButtons from '../components/analytics/ExportButtons';
+import {
+  PageHeader, Badge, EmptyState, SectionHeader, FieldGroup, ProgressBar
+} from '../components/ui/UIComponents';
 
 import {
   ResponsiveContainer,
@@ -48,11 +50,11 @@ function ChartTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: 'var(--bg-elevated)', border: '1px solid var(--border-color)',
-      borderRadius: 'var(--radius-md)', padding: 'var(--space-2) var(--space-3)',
-      boxShadow: 'var(--shadow-lg)', fontSize: 'var(--text-xs)',
+      background: 'var(--bg-card-2)', border: '1px solid var(--border-2)',
+      borderRadius: 'var(--radius-md)', padding: '8px 12px',
+      boxShadow: 'var(--shadow-lg)', fontSize: '0.72rem',
     }}>
-      <div style={{ color: 'var(--text-tertiary)', marginBottom: 'var(--space-1)' }}>{label}</div>
+      <div style={{ color: 'var(--text-3)', marginBottom: 4 }}>{label}</div>
       {payload.map((p, i) => (
         <div key={i} style={{ color: p.color, fontWeight: 600 }}>{p.name}: {p.value?.toLocaleString('ar-SA')}</div>
       ))}
@@ -158,7 +160,7 @@ export default function Dashboard() {
       await deleteFileFromStorage(item.url);
       await deleteContentItem(item.id, item.title, user!.uid, user!.name);
       showToast('تم حذف الملف بنجاح', 'success');
-    } catch {
+    } catch (e) {
       showToast('فشل حذف الملف', 'error');
     }
   };
@@ -167,19 +169,19 @@ export default function Dashboard() {
     if (!user) return;
     try {
       await updateUserRole(targetUser.uid, newRole, user.uid, user.name);
-      showToast(`تم تغيير صلاحية ${targetUser.name}`, 'success');
-    } catch {
+      showToast(`تم تغيير صلاحية ${targetUser.name} إلى ${newRole === 'admin' ? 'مدير' : newRole === 'super_admin' ? 'مدير عام' : 'مستخدم'}`, 'success');
+    } catch (e) {
       showToast('فشل تعديل الصلاحية', 'error');
     }
   };
 
   const handleToggleBlock = async (targetUser: UserProfile) => {
     if (!user) return;
-    const ns: UserStatus = targetUser.status === 'blocked' ? 'active' : 'blocked';
+    const newStatus: UserStatus = targetUser.status === 'blocked' ? 'active' : 'blocked';
     try {
-      await updateUserStatus(targetUser.uid, ns, user.uid, user.name);
-      showToast(`تم ${ns === 'blocked' ? 'حظر' : 'تفعيل'} حساب ${targetUser.name}`, 'success');
-    } catch {
+      await updateUserStatus(targetUser.uid, newStatus, user.uid, user.name);
+      showToast(`تم ${newStatus === 'blocked' ? 'حظر' : 'تفعيل'} حساب ${targetUser.name}`, 'success');
+    } catch (e) {
       showToast('فشل تعديل حالة الحساب', 'error');
     }
   };
@@ -200,54 +202,62 @@ export default function Dashboard() {
 
   if (authLoading || analytics.loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-secondary)' }}>
-        <Loader2 className="animate-spin-fast" size={24} style={{ marginLeft: 'var(--space-2)' }} />
-        جاري تحميل لوحة التحكم...
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', color: 'var(--text-2)' }}>
+        <Loader2 className="anim-spin" size={24} style={{ marginLeft: 10 }} />
+        <span>جاري تحميل لوحة التحكم...</span>
       </div>
     );
   }
 
+  const roleText = user?.role === 'super_admin' ? 'مدير عام' : user?.role === 'admin' ? 'مدير عادي' : 'عضو';
+
   return (
-    <div className="container-fluid px-4 page-enter" style={{ direction: 'rtl' }}>
-      <div className="mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
-        <div>
-          <h1 className="page-title">لوحة التحكم</h1>
-          <p className="body-text m-0" style={{ marginTop: 'var(--space-2)' }}>
-            أهلاً بك يا <strong style={{ color: 'var(--text-primary)' }}>{user?.name}</strong>، صلاحية حسابك:{' '}
-            <strong style={{ color: 'var(--accent-blue)' }}>
-              {user?.role === 'super_admin' ? 'مدير عام' : user?.role === 'admin' ? 'مدير عادي' : 'عضو'}
-            </strong>
-          </p>
-        </div>
-        {activeTab === 'stats' && isAdmin && (
-          <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center', flexWrap: 'wrap' }}>
+    <div className="anim-fade" style={{ direction: 'rtl' }}>
+      
+      {/* Page Header */}
+      <PageHeader
+        title="لوحة التحكم"
+        subtitle={`أهلاً بك يا ${user?.name} | صلاحية حسابك: ${roleText}`}
+        breadcrumb={[
+          { label: 'الرئيسية', href: '/' },
+          { label: 'لوحة التحكم' }
+        ]}
+        actions={activeTab === 'stats' && isAdmin && (
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             <DateFilter preset={analytics.dateRange.preset} onChange={analytics.setDateRange} />
             <ExportButtons />
           </div>
         )}
-      </div>
+      />
 
       <div className="row g-4">
+        {/* Tab Sidebar Selection */}
         <div className="col-lg-3 col-xl-2">
-          <div className="card-base dashboard-tab-nav" style={{ padding: 'var(--space-2)' }}>
-            <nav className="nav flex-column gap-1" role="tablist" aria-label="أقسام لوحة التحكم">
+          <div className="card-base dashboard-tab-nav" style={{ padding: '8px', background: 'var(--bg-card)' }}>
+            <nav className="nav flex-column gap-1" role="tablist">
               {visibleTabs.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   role="tab"
                   aria-selected={activeTab === tab.id}
-                  aria-controls={`tabpanel-${tab.id}`}
-                  id={`tab-${tab.id}`}
-                  className={`nav-link d-flex align-items-center gap-3 text-start border-0 w-100 ${activeTab === tab.id ? 'active' : ''}`}
+                  className={`sidebar-link ${activeTab === tab.id ? 'active' : ''}`}
                   style={{
-                    borderRadius: 'var(--radius-md)', fontSize: 'var(--text-sm)',
-                    padding: 'var(--space-3) var(--space-4)',
+                    border: '1px solid transparent',
+                    background: activeTab === tab.id ? 'var(--primary-bg)' : 'transparent',
+                    color: activeTab === tab.id ? 'var(--primary-light)' : 'var(--text-2)',
+                    borderColor: activeTab === tab.id ? 'var(--primary-border)' : 'transparent',
                     fontWeight: activeTab === tab.id ? 600 : 500,
-                    transition: 'all var(--transition-base)', cursor: 'pointer'
+                    width: '100%',
+                    textAlign: 'right',
+                    padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
                   }}
                 >
-                  <tab.icon size={17} style={{ flexShrink: 0 }} />
+                  <tab.icon size={16} style={{ flexShrink: 0 }} />
                   <span>{tab.label}</span>
                 </button>
               ))}
@@ -258,310 +268,428 @@ export default function Dashboard() {
         <style>{`
           @media (max-width: 991px) {
             .dashboard-tab-nav { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-            .dashboard-tab-nav .nav { flex-direction: row !important; white-space: nowrap; gap: var(--space-1) !important; padding-bottom: var(--space-1); }
-            .dashboard-tab-nav .nav .nav-link { flex-shrink: 0; }
+            .dashboard-tab-nav .nav { flex-direction: row !important; white-space: nowrap; gap: 8px !important; }
+            .dashboard-tab-nav .nav button { width: auto !important; flex-shrink: 0; }
           }
         `}</style>
 
+        {/* Dynamic Display Panel */}
         <div className="col-lg-9 col-xl-10" style={{ minWidth: 0 }}>
           <ErrorBoundary key={activeTab} fallback={
-            <div className="card-base text-center" style={{ padding: 'var(--space-16) var(--space-10)' }}>
-              <h4 className="section-title mb-3">تعذر تحميل المحتوى</h4>
-              <p className="body-text mb-4 mx-auto" style={{ maxWidth: '520px' }}>
-                حدث خطأ أثناء تحميل هذا القسم. يمكنك التبديل بين الأقسام أعلاه أو تحديث الصفحة.
+            <div className="card-base text-center" style={{ padding: '64px 32px' }}>
+              <h4 className="text-1 font-bold mb-3">تعذر تحميل هذا القسم</h4>
+              <p className="text-3 mb-4 mx-auto" style={{ maxWidth: '520px' }}>
+                حدث خطأ غير متوقع أثناء معالجة هذا القسم. يرجى التبديل بين الأقسام أو إعادة تحديث الصفحة.
               </p>
-              <button onClick={() => window.location.reload()} className="btn btn-primary">
+              <button onClick={() => window.location.reload()} className="btn-base btn-primary">
                 تحديث الصفحة
               </button>
             </div>
           }>
-          {activeTab === 'stats' && (
-            <div id="tabpanel-stats" role="tabpanel" aria-labelledby="tab-stats" className="d-flex flex-column gap-4 animate-scale">
-              {isAdmin ? (
-                <>
-                  {/* ═══ KPI CARDS ═══ */}
-                  <div className="grid-stats">
-                    {analytics.kpiCards.map((card, i) => (
-                      <KpiCard key={i} {...card} />
-                    ))}
-                  </div>
+            
+            {/* Tab 1: Stats & Overview */}
+            {activeTab === 'stats' && (
+              <div role="tabpanel" className="d-flex flex-col gap-5 anim-scale">
+                {isAdmin ? (
+                  <>
+                    {/* KPI Stats cards */}
+                    <div className="grid-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+                      {analytics.kpiCards.map((card, i) => (
+                        <KpiCard key={i} {...card} />
+                      ))}
+                    </div>
 
-                  {/* ═══ CHARTS GRID ═══ */}
-                  <div className="grid-cards-2">
-
-                    {/* 1. Members Growth - Line Chart */}
-                    <ChartWrapper title="نمو الأعضاء" subtitle={`إجمالي: ${stats.usersCount || analytics.kpiCards[0]?.value || 0}`}>
-                      <ResponsiveContainer width="100%" height={220}>
-                        <LineChart data={analytics.membersGrowth}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickFormatter={v => v.slice(5)} />
-                          <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Line type="monotone" dataKey="value" stroke="var(--accent-blue)" strokeWidth={2} dot={false} name="تسجيلات" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </ChartWrapper>
-
-                    {/* 2. Content Uploads - Stacked Bar */}
-                    <ChartWrapper title="المحتوى المرفوع" subtitle="فيديو / تطبيقات / ملفات">
-                      <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={analytics.contentUploads}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickFormatter={v => v.slice(5)} />
-                          <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Legend wrapperStyle={{ fontSize: 'var(--text-xs)' }} />
-                          <Bar dataKey="videos" stackId="a" fill="var(--accent-purple)" name="فيديو" />
-                          <Bar dataKey="apps" stackId="a" fill="var(--accent-cyan)" name="تطبيقات" />
-                          <Bar dataKey="files" stackId="a" fill="var(--accent-emerald)" name="ملفات" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ChartWrapper>
-
-                    {/* 3. Views Analytics - Area Chart */}
-                    <ChartWrapper title="تحليل المشاهدات" subtitle={`الإجمالي: ${analytics.viewsAnalytics.total.toLocaleString('ar-SA')} | النمو: ${analytics.viewsAnalytics.growth > 0 ? '+' : ''}${analytics.viewsAnalytics.growth}%`}>
-                      <ResponsiveContainer width="100%" height={220}>
-                        <AreaChart data={analytics.viewsAnalytics.daily}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickFormatter={v => v.slice(5)} />
-                          <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Area type="monotone" dataKey="value" stroke="var(--accent-amber)" fill="var(--accent-amber)" fillOpacity={0.15} strokeWidth={2} name="مشاهدات" />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </ChartWrapper>
-
-                    {/* 4. Downloads Analytics - Line Chart */}
-                    <ChartWrapper title="تحليل التنزيلات" subtitle={`الشهر الحالي: ${analytics.downloadsAnalytics.currentMonth.toLocaleString('ar-SA')} | السابق: ${analytics.downloadsAnalytics.previousMonth.toLocaleString('ar-SA')} | النمو: ${analytics.downloadsAnalytics.growth > 0 ? '+' : ''}${analytics.downloadsAnalytics.growth}%`}>
-                      <ResponsiveContainer width="100%" height={220}>
-                        <LineChart data={analytics.downloadsAnalytics.daily}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                          <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickFormatter={v => v.slice(5)} />
-                          <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Line type="monotone" dataKey="value" stroke="var(--accent-emerald)" strokeWidth={2} dot={false} name="تنزيلات" />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </ChartWrapper>
-
-                    {/* 5. User Activity Heatmap */}
-                    <ChartWrapper title="خريطة النشاط" subtitle="الساعات والأيام الأكثر نشاطاً">
-                      <ResponsiveContainer width="100%" height={220}>
-                        <BarChart data={analytics.userActivity.slice(0, 168)}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                          <XAxis dataKey="hour" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <YAxis tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Bar dataKey="count" fill="var(--accent-blue)" name="نشاط" radius={[2, 2, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ChartWrapper>
-
-                    {/* 6. Most Viewed Content - Horizontal Bar */}
-                    <ChartWrapper title="الأكثر مشاهدة" subtitle="أعلى 10 محتويات مشاهدة">
-                      <ResponsiveContainer width="100%" height={280}>
-                        <BarChart data={analytics.mostViewed.slice(0, 10)} layout="vertical" margin={{ left: 20, right: 10 }}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" />
-                          <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} />
-                          <YAxis type="category" dataKey="name" tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} width={120} tickFormatter={v => v.length > 12 ? v.slice(0, 12) + '…' : v} />
-                          <Tooltip content={<ChartTooltip />} />
-                          <Bar dataKey="views" fill="var(--accent-purple)" name="مشاهدات" radius={[0, 4, 4, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </ChartWrapper>
-
-                    {/* 7. Content Distribution - Donut */}
-                    <ChartWrapper title="توزيع المحتوى" subtitle="نسبة أنواع المحتوى">
-                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    {/* Chart grids */}
+                    <div className="grid-2 mt-2">
+                      
+                      {/* 1. Members growth */}
+                      <ChartWrapper title="نمو الأعضاء" subtitle={`الإجمالي: ${stats.usersCount || analytics.kpiCards[0]?.value || 0}`}>
                         <ResponsiveContainer width="100%" height={220}>
-                          <PieChart>
-                            <Pie data={analytics.contentDistribution} cx="50%" cy="50%" innerRadius={55} outerRadius={85} dataKey="value" nameKey="name" paddingAngle={3}>
-                              {analytics.contentDistribution.map((entry, i) => (
-                                <Cell key={i} fill={entry.color} />
-                              ))}
-                            </Pie>
+                          <LineChart data={analytics.membersGrowth}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-1)" />
+                            <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-3)' }} tickFormatter={v => v.slice(5)} />
+                            <YAxis tick={{ fontSize: 10, fill: 'var(--text-3)' }} />
                             <Tooltip content={<ChartTooltip />} />
-                            <Legend wrapperStyle={{ fontSize: 'var(--text-xs)' }} />
-                          </PieChart>
+                            <Line type="monotone" dataKey="value" stroke="var(--primary)" strokeWidth={2} dot={false} name="تسجيلات" />
+                          </LineChart>
                         </ResponsiveContainer>
-                      </div>
-                    </ChartWrapper>
+                      </ChartWrapper>
 
-                    {/* 8. User Roles Distribution - Pie */}
-                    <ChartWrapper title="توزيع الصلاحيات" subtitle="نسبة أدوار المستخدمين">
-                      <div style={{ display: 'flex', justifyContent: 'center' }}>
+                      {/* 2. Content Uploads */}
+                      <ChartWrapper title="المحتوى المرفوع" subtitle="فيديو / تطبيقات / ملفات">
                         <ResponsiveContainer width="100%" height={220}>
-                          <PieChart>
-                            <Pie data={analytics.roleDistribution} cx="50%" cy="50%" outerRadius={85} dataKey="value" nameKey="name" paddingAngle={3}>
-                              {analytics.roleDistribution.map((entry, i) => (
-                                <Cell key={i} fill={entry.color} />
-                              ))}
-                            </Pie>
+                          <BarChart data={analytics.contentUploads}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-1)" />
+                            <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-3)' }} tickFormatter={v => v.slice(5)} />
+                            <YAxis tick={{ fontSize: 10, fill: 'var(--text-3)' }} />
                             <Tooltip content={<ChartTooltip />} />
-                            <Legend wrapperStyle={{ fontSize: 'var(--text-xs)' }} />
-                          </PieChart>
+                            <Legend wrapperStyle={{ fontSize: '0.72rem' }} />
+                            <Bar dataKey="videos" stackId="a" fill="var(--purple)" name="فيديو" />
+                            <Bar dataKey="apps" stackId="a" fill="var(--info)" name="تطبيقات" />
+                            <Bar dataKey="files" stackId="a" fill="var(--success)" name="ملفات" />
+                          </BarChart>
                         </ResponsiveContainer>
+                      </ChartWrapper>
+
+                      {/* 3. Views Analytics */}
+                      <ChartWrapper title="تحليل المشاهدات" subtitle={`الإجمالي: ${analytics.viewsAnalytics.total.toLocaleString('ar-SA')} | النمو: ${analytics.viewsAnalytics.growth > 0 ? '+' : ''}${analytics.viewsAnalytics.growth}%`}>
+                        <ResponsiveContainer width="100%" height={220}>
+                          <AreaChart data={analytics.viewsAnalytics.daily}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-1)" />
+                            <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-3)' }} tickFormatter={v => v.slice(5)} />
+                            <YAxis tick={{ fontSize: 10, fill: 'var(--text-3)' }} />
+                            <Tooltip content={<ChartTooltip />} />
+                            <Area type="monotone" dataKey="value" stroke="var(--warning)" fill="var(--warning)" fillOpacity={0.12} strokeWidth={2} name="مشاهدات" />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </ChartWrapper>
+
+                      {/* 4. Downloads Analytics */}
+                      <ChartWrapper title="تحليل التنزيلات" subtitle={`الشهر الحالي: ${analytics.downloadsAnalytics.currentMonth.toLocaleString('ar-SA')} | السابق: ${analytics.downloadsAnalytics.previousMonth.toLocaleString('ar-SA')} | النمو: ${analytics.downloadsAnalytics.growth > 0 ? '+' : ''}${analytics.downloadsAnalytics.growth}%`}>
+                        <ResponsiveContainer width="100%" height={220}>
+                          <LineChart data={analytics.downloadsAnalytics.daily}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-1)" />
+                            <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-3)' }} tickFormatter={v => v.slice(5)} />
+                            <YAxis tick={{ fontSize: 10, fill: 'var(--text-3)' }} />
+                            <Tooltip content={<ChartTooltip />} />
+                            <Line type="monotone" dataKey="value" stroke="var(--success)" strokeWidth={2} dot={false} name="تنزيلات" />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </ChartWrapper>
+
+                      {/* 5. User Activity bar */}
+                      <ChartWrapper title="خريطة النشاط" subtitle="الساعات الأكثر نشاطاً">
+                        <ResponsiveContainer width="100%" height={220}>
+                          <BarChart data={analytics.userActivity.slice(0, 24)}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-1)" />
+                            <XAxis dataKey="hour" tick={{ fontSize: 10, fill: 'var(--text-3)' }} />
+                            <YAxis tick={{ fontSize: 10, fill: 'var(--text-3)' }} />
+                            <Tooltip content={<ChartTooltip />} />
+                            <Bar dataKey="count" fill="var(--primary)" name="نشاط" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </ChartWrapper>
+
+                      {/* 6. Most Viewed content */}
+                      <ChartWrapper title="الأكثر مشاهدة" subtitle="أعلى 10 محتويات مشاهدة">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <BarChart data={analytics.mostViewed.slice(0, 10)} layout="vertical" margin={{ left: 10, right: 10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--border-1)" />
+                            <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-3)' }} />
+                            <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: 'var(--text-3)' }} width={110} tickFormatter={v => v.length > 15 ? v.slice(0, 15) + '…' : v} />
+                            <Tooltip content={<ChartTooltip />} />
+                            <Bar dataKey="views" fill="var(--purple)" name="مشاهدات" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </ChartWrapper>
+
+                      {/* 7. Content distribution */}
+                      <ChartWrapper title="توزيع المحتوى" subtitle="نسبة أنواع المحتوى بالمكتبة">
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                          <ResponsiveContainer width="100%" height={220}>
+                            <PieChart>
+                              <Pie data={analytics.contentDistribution} cx="50%" cy="50%" innerRadius={55} outerRadius={80} dataKey="value" nameKey="name" paddingAngle={4}>
+                                {analytics.contentDistribution.map((entry, i) => (
+                                  <Cell key={i} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip content={<ChartTooltip />} />
+                              <Legend wrapperStyle={{ fontSize: '0.72rem' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </ChartWrapper>
+
+                      {/* 8. User roles distribution */}
+                      <ChartWrapper title="توزيع الصلاحيات" subtitle="نسبة أدوار الأعضاء">
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                          <ResponsiveContainer width="100%" height={220}>
+                            <PieChart>
+                              <Pie data={analytics.roleDistribution} cx="50%" cy="50%" outerRadius={80} dataKey="value" nameKey="name" paddingAngle={4}>
+                                {analytics.roleDistribution.map((entry, i) => (
+                                  <Cell key={i} fill={entry.color} />
+                                ))}
+                              </Pie>
+                              <Tooltip content={<ChartTooltip />} />
+                              <Legend wrapperStyle={{ fontSize: '0.72rem' }} />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </ChartWrapper>
+                    </div>
+
+                    {/* 9. Storage Analysis */}
+                    <div style={{ marginTop: 20 }}>
+                      <ChartWrapper title="سعة التخزين" subtitle={`المستخدم: ${formatBytes(analytics.storage.used)} من ${formatBytes(analytics.storage.total)}`}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                          <ProgressBar value={Math.round((analytics.storage.used / analytics.storage.total) * 100)} color="gold" height={10} label="النسبة الإجمالية المستهلكة" />
+                          
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 14 }}>
+                            <div className="card-base p-4" style={{ background: 'var(--bg-card-2)' }}>
+                              <div style={{ fontSize: '0.74rem', color: 'var(--text-3)' }}>فيديو</div>
+                              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-1)', marginTop: 4 }}>{formatBytes(analytics.storage.videos)}</div>
+                            </div>
+                            <div className="card-base p-4" style={{ background: 'var(--bg-card-2)' }}>
+                              <div style={{ fontSize: '0.74rem', color: 'var(--text-3)' }}>تطبيقات</div>
+                              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-1)', marginTop: 4 }}>{formatBytes(analytics.storage.apps)}</div>
+                            </div>
+                            <div className="card-base p-4" style={{ background: 'var(--bg-card-2)' }}>
+                              <div style={{ fontSize: '0.74rem', color: 'var(--text-3)' }}>ملفات</div>
+                              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-1)', marginTop: 4 }}>{formatBytes(analytics.storage.files)}</div>
+                            </div>
+                            <div className="card-base p-4" style={{ background: 'var(--bg-card-2)', borderRight: '2px solid var(--success)' }}>
+                              <div style={{ fontSize: '0.74rem', color: 'var(--text-3)' }}>السعة المتبقية</div>
+                              <div style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--success)', marginTop: 4 }}>{formatBytes(analytics.storage.total - analytics.storage.used)}</div>
+                            </div>
+                          </div>
+                        </div>
+                      </ChartWrapper>
+                    </div>
+
+                    {/* 10. Live Timeline */}
+                    <div style={{ marginTop: 20 }}>
+                      <ChartWrapper title="سجل الأحداث الفوري" subtitle="مراقبة العمليات في الوقت الحقيقي">
+                        <ActivityTimeline events={analytics.timeline} />
+                      </ChartWrapper>
+                    </div>
+
+                    {/* Guidelines Card */}
+                    <div className="card-base p-5" style={{ borderRight: '4px solid var(--primary)', background: 'var(--bg-card)', marginTop: 20 }}>
+                      <div className="text-1 font-bold mb-3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <ShieldAlert size={18} style={{ color: 'var(--primary)' }} />
+                        <span>سياسات رفع المحتوى والأمان</span>
                       </div>
-                    </ChartWrapper>
-                  </div>
-
-                  {/* 9. Storage Analytics - Progress Card */}
-                  <ChartWrapper title="سعة التخزين" subtitle={`المستخدم: ${formatBytes(analytics.storage.used)} من ${formatBytes(analytics.storage.total)}`}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                      <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: 'var(--space-2)' }}>
-                          <span>الإجمالي</span>
-                          <span>{Math.round((analytics.storage.used / analytics.storage.total) * 100)}%</span>
-                        </div>
-                        <div style={{ height: 8, background: 'var(--badge-bg)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
-                          <div style={{ width: `${(analytics.storage.used / analytics.storage.total) * 100}%`, height: '100%', background: 'var(--gradient-cyber)', borderRadius: 'var(--radius-full)', transition: 'width 0.5s ease' }} />
-                        </div>
-                      </div>
-                      <div className="grid-cards-2">
-                        <div className="card-base" style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                          <div className="small-label">فيديو</div>
-                          <div className="card-title" style={{ fontSize: 'var(--text-sm)' }}>{formatBytes(analytics.storage.videos)}</div>
-                        </div>
-                        <div className="card-base" style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                          <div className="small-label">تطبيقات</div>
-                          <div className="card-title" style={{ fontSize: 'var(--text-sm)' }}>{formatBytes(analytics.storage.apps)}</div>
-                        </div>
-                        <div className="card-base" style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                          <div className="small-label">ملفات</div>
-                          <div className="card-title" style={{ fontSize: 'var(--text-sm)' }}>{formatBytes(analytics.storage.files)}</div>
-                        </div>
-                        <div className="card-base" style={{ padding: 'var(--space-3) var(--space-4)' }}>
-                          <div className="small-label">المتبقي</div>
-                          <div className="card-title" style={{ fontSize: 'var(--text-sm)', color: 'var(--accent-emerald)' }}>{formatBytes(analytics.storage.total - analytics.storage.used)}</div>
-                        </div>
-                      </div>
+                      <ul style={{ paddingRight: 20, color: 'var(--text-2)', fontSize: '0.84rem', lineHeight: 1.7 }}>
+                        <li>الحد الأقصى لرفع ملفات الفيديو هو <strong>50 ميجابايت</strong>.</li>
+                        <li>الحد الأقصى لرفع ملفات التطبيقات والبرمجيات هو <strong>100 ميجابايت</strong>.</li>
+                        <li>يرجى التأكد من ملء العناوين والأوصاف باللغة العربية الواضحة لتسهيل القراءة للعملاء.</li>
+                        <li>جميع الإجراءات الإدارية تسجل فوراً في سجل النظام لأغراض الحماية والمتابعة.</li>
+                      </ul>
                     </div>
-                  </ChartWrapper>
-
-                  {/* 10. Activity Timeline */}
-                  <ChartWrapper title="النشاط المباشر" subtitle="آخر الأحداث في الوقت الحقيقي" className="mb-4">
-                    <ActivityTimeline events={analytics.timeline} />
-                  </ChartWrapper>
-
-                  {/* Guidelines Alert Card */}
-                  <div className="card-base" style={{ padding: 'var(--space-6)', borderRight: '4px solid var(--accent-blue)' }}>
-                    <h5 className="card-title" style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-                      <ShieldAlert size={18} style={{ color: 'var(--accent-blue)' }} />
-                      ملاحظات الرفع والأمان للمسؤولين
-                    </h5>
-                    <ul className="body-text mb-0" style={{ lineHeight: 'var(--lh-relaxed)', paddingRight: 'var(--space-5)' }}>
-                      <li>أقصى حجم مسموح به لرفع مقاطع الفيديو هو <strong>50 ميجابايت</strong>.</li>
-                      <li>أقصى حجم مسموح به لرفع التطبيقات والملفات التنفيذية هو <strong>100 ميجابايت</strong>.</li>
-                      <li>تأكد من اختيار القسم الصحيح للمحتوى (فيديوهات / تطبيقات / ملفات) لتسهيل الفلترة.</li>
-                      <li>جميع عمليات الرفع والحذف والتحكم تسجل تلقائياً في سجل نشاط الإدارة.</li>
-                    </ul>
+                  </>
+                ) : (
+                  <div className="card-base text-center" style={{ padding: '64px 32px' }}>
+                    <h4 className="text-1 font-bold mb-3">بوابة الأعضاء EMF Group</h4>
+                    <p className="text-3 mb-4 mx-auto" style={{ maxWidth: '520px', fontSize: '0.9rem' }}>
+                      تتيح لك البوابة تصفح الفيديوهات وتنزيل تطبيقات كاميرات المراقبة المخصصة. يرجى زيارة المكتبة الرقمية للبدء في الاستخدام.
+                    </p>
+                    <button onClick={() => navigate('/content')} className="btn-base btn-primary">
+                      زيارة المكتبة الرقمية
+                    </button>
                   </div>
-                </>
-              ) : (
-                <div className="card-base text-center" style={{ padding: 'var(--space-16) var(--space-10)' }}>
-                  <h4 className="section-title mb-3">بوابة الأعضاء EMF Group</h4>
-                  <p className="body-text mb-4 mx-auto" style={{ maxWidth: '520px' }}>
-                    تتيح لك بوابتنا تصفح الفيديوهات وتنزيل التطبيقات المخصصة لمسجلات كاميرات المراقبة والفيديو المسجلة. يمكنك زيارة المكتبة للبدء.
-                  </p>
-                  <button onClick={() => navigate('/content')} className="btn btn-primary">
-                    اذهب للمكتبة الرقمية
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+                )}
+              </div>
+            )}
 
-          {activeTab === 'upload' && isAdmin && (
-            <div id="tabpanel-upload" role="tabpanel" aria-labelledby="tab-upload" className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
-              <h4 className="section-title mb-4 pb-3" style={{ borderBottom: '1px solid var(--border-color)' }}>
-                رفع محتوى وملف جديد للمكتبة
-              </h4>
-              <form onSubmit={handleUploadSubmit} className="d-flex flex-column gap-3">
-                <div className="form-group">
-                  <label className="form-label">العنوان</label>
-                  <input type="text" className="form-input" placeholder="مثال: فيديو شرح إعداد الكاميرات" value={uploadTitle} onChange={e => setUploadTitle(e.target.value)} required disabled={uploading} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">الوصف التفصيلي</label>
-                  <textarea className="form-input" style={{ minHeight: '100px', resize: 'vertical' }} placeholder="اكتب وصفاً مختصراً للملف..." value={uploadDesc} onChange={e => setUploadDesc(e.target.value)} disabled={uploading} />
-                </div>
-                <div className="row g-3">
-                  <div className="col-md-4">
-                    <div className="form-group">
-                      <label className="form-label">قسم المحتوى</label>
-                      <select className="form-input" value={uploadType} onChange={e => setUploadType(e.target.value as 'video' | 'app' | 'other')} disabled={uploading}>
-                        <option value="video">فيديو</option>
-                        <option value="app">تطبيق تسجيل</option>
-                        <option value="other">ملفات أخرى</option>
-                      </select>
+            {/* Tab 2: Upload new content */}
+            {activeTab === 'upload' && isAdmin && (
+              <div className="card-base p-5 anim-scale" style={{ background: 'var(--bg-card)' }}>
+                <SectionHeader title="رفع محتوى جديد" subtitle="أضف مقاطع فيديو أو تطبيقات أو ملفات إرشادية للمكتبة" icon={FolderPlus} />
+                <hr className="divider" />
+                
+                <form onSubmit={handleUploadSubmit}>
+                  <FieldGroup label="عنوان المحتوى" required htmlFor="upload-title">
+                    <input
+                      id="upload-title"
+                      type="text"
+                      className="field-input"
+                      placeholder="مثال: شرح إعدادات مسجل كاميرات المراقبة DVR"
+                      value={uploadTitle}
+                      onChange={e => setUploadTitle(e.target.value)}
+                      required
+                      disabled={uploading}
+                    />
+                  </FieldGroup>
+
+                  <FieldGroup label="وصف المحتوى" htmlFor="upload-desc">
+                    <textarea
+                      id="upload-desc"
+                      className="field-input"
+                      style={{ minHeight: 100, resize: 'vertical' }}
+                      placeholder="اكتب تفاصيل أو معلومات هامة لمساعدة المستخدمين..."
+                      value={uploadDesc}
+                      onChange={e => setUploadDesc(e.target.value)}
+                      disabled={uploading}
+                    />
+                  </FieldGroup>
+
+                  <div className="row g-3">
+                    <div className="col-md-4">
+                      <FieldGroup label="نوع المحتوى">
+                        <select
+                          className="field-input field-select"
+                          value={uploadType}
+                          onChange={e => setUploadType(e.target.value as 'video' | 'app' | 'other')}
+                          disabled={uploading}
+                        >
+                          <option value="video">🎥 فيديو تعليمي</option>
+                          <option value="app">📱 تطبيق مسجل</option>
+                          <option value="other">📎 ملفات أخرى</option>
+                        </select>
+                      </FieldGroup>
+                    </div>
+
+                    <div className="col-md-8">
+                      <FieldGroup label="ملف المحتوى (الفيديو حد أقصى 50MB، الملفات 100MB)" required htmlFor="upload-file">
+                        <input
+                          id="upload-file"
+                          type="file"
+                          className="field-input"
+                          onChange={e => setSelectedFile(e.target.files?.[0] || null)}
+                          required
+                          disabled={uploading}
+                          style={{ padding: '8px 12px' }}
+                        />
+                      </FieldGroup>
                     </div>
                   </div>
-                  <div className="col-md-8">
-                    <div className="form-group">
-                      <label className="form-label">الملف (الحدود: فيديو 50MB / تطبيق 100MB)</label>
-                      <input type="file" className="form-input" onChange={e => setSelectedFile(e.target.files?.[0] || null)} required disabled={uploading} />
+
+                  {uploading && (
+                    <div style={{ margin: '14px 0' }}>
+                      <ProgressBar value={uploadProgress} color="primary" label="جاري نقل الملف للخوادم..." />
                     </div>
+                  )}
+
+                  <div style={{ marginTop: 20 }}>
+                    <button type="submit" className="btn-base btn-primary" disabled={uploading}>
+                      {uploading ? (
+                        <>
+                          <Loader2 size={16} className="anim-spin" />
+                          <span>جاري الحفظ والنشر...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus size={16} />
+                          <span>نشر المحتوى الآن</span>
+                        </>
+                      )}
+                    </button>
                   </div>
-                </div>
-                {uploading && (
-                  <div className="my-2">
-                    <div className="d-flex justify-content-between small text-secondary mb-1">
-                      <span>جاري رفع الملف للمخدم...</span>
-                      <span className="fw-bold">{uploadProgress}%</span>
-                    </div>
-                    <div className="progress" style={{ height: '6px', background: 'var(--badge-bg)', borderRadius: 'var(--radius-full)' }}>
-                      <div className="progress-bar progress-bar-striped progress-bar-animated" style={{ width: `${uploadProgress}%`, background: 'var(--gradient-cyber)', borderRadius: 'var(--radius-full)' }} />
+                </form>
+              </div>
+            )}
+
+            {/* Tab 3: Content List Manager */}
+            {activeTab === 'content' && isAdmin && (
+              <div className="card-base p-5 anim-scale" style={{ background: 'var(--bg-card)' }}>
+                <SectionHeader title="إدارة ملفات المكتبة" subtitle="إدارة وحذف المحتويات المنشورة على البوابة" icon={Video} />
+                <hr className="divider" />
+
+                {contents.length === 0 ? (
+                  <EmptyState icon={Inbox} title="المكتبة فارغة" desc="لم يتم نشر أي محتوى في المكتبة الرقمية حتى الآن." />
+                ) : (
+                  <div className="data-table-wrapper">
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="data-table">
+                        <thead>
+                          <tr>
+                            <th>الملف</th>
+                            <th>القسم</th>
+                            <th>الحجم</th>
+                            <th>الناشر</th>
+                            <th>المشاهدات</th>
+                            <th>التنزيلات</th>
+                            <th style={{ textAlign: 'center' }}>التحكم</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {contents.map(item => (
+                            <tr key={item.id}>
+                              <td className="font-semibold text-1">{item.title}</td>
+                              <td>
+                                <Badge variant={item.type === 'video' ? 'purple' : item.type === 'app' ? 'info' : 'green'}>
+                                  {item.type === 'video' ? 'فيديو' : item.type === 'app' ? 'تطبيق' : 'ملف'}
+                                </Badge>
+                              </td>
+                              <td className="text-3">{(item.fileSize / (1024 * 1024)).toFixed(1)} MB</td>
+                              <td className="text-3">{item.uploadedByName}</td>
+                              <td className="text-2 font-medium">{item.views || 0}</td>
+                              <td className="text-2 font-medium">{item.downloads || 0}</td>
+                              <td style={{ textAlign: 'center' }}>
+                                <button
+                                  onClick={() => handleDeleteContent(item)}
+                                  className="btn-base btn-danger btn-icon-sm"
+                                  title="حذف المحتوى نهائياً"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
                     </div>
                   </div>
                 )}
-                <div className="mt-2">
-                  <button type="submit" className="btn btn-primary" disabled={uploading}>
-                    {uploading ? (
-                      <><Loader2 size={16} className="animate-spin-fast me-1" /><span>جاري النشر...</span></>
-                    ) : (
-                      <><Plus size={16} /><span>نشر الملف الآن</span></>
-                    )}
-                  </button>
-                </div>
-              </form>
-            </div>
-          )}
+              </div>
+            )}
 
-          {activeTab === 'content' && isAdmin && (
-            <div id="tabpanel-content" role="tabpanel" aria-labelledby="tab-content" className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
-              <h4 className="section-title mb-4">إدارة محتويات المكتبة</h4>
-              {contents.length === 0 ? (
-                <EmptyState icon={<Inbox size={48} />} title="لا توجد ملفات" message="لم يتم رفع أي ملفات إلى المكتبة بعد." />
-              ) : (
-                <div className="table-container">
-                  <div className="table-responsive">
-                    <table className="table align-middle mb-0">
+            {/* Tab 4: Users Administration */}
+            {activeTab === 'users' && isSuperAdmin && (
+              <div className="card-base p-5 anim-scale" style={{ background: 'var(--bg-card)' }}>
+                <SectionHeader title="إدارة صلاحيات الأعضاء" subtitle="تعديل صلاحيات الأدوار وحظر أو تفعيل الحسابات" icon={Users} />
+                <hr className="divider" />
+
+                <div className="data-table-wrapper">
+                  <div style={{ overflowX: 'auto' }}>
+                    <table className="data-table">
                       <thead>
                         <tr>
-                          <th>الملف</th>
-                          <th>القسم</th>
-                          <th>الحجم</th>
-                          <th>بواسطة</th>
-                          <th>المشاهدات</th>
-                          <th>التنزيلات</th>
-                          <th className="text-center">التحكم</th>
+                          <th>العضو</th>
+                          <th>البريد الإلكتروني</th>
+                          <th>الصلاحية الحاليّة</th>
+                          <th>حالة الحساب</th>
+                          <th>تعديل الدور</th>
+                          <th style={{ textAlign: 'center' }}>الحالة</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {contents.map(item => (
-                          <tr key={item.id}>
-                            <td className="fw-semibold">{item.title}</td>
-                            <td>                            <span className="badge" style={{ background: 'var(--badge-bg)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '5px 10px', borderRadius: 'var(--radius-sm)' }}>
-                              {item.type === 'video' ? 'فيديو' : item.type === 'app' ? 'تطبيق' : 'ملف'}
-                            </span></td>
-                            <td className="text-secondary">{(item.fileSize / (1024 * 1024)).toFixed(1)} MB</td>
-                            <td className="text-secondary">{item.uploadedByName}</td>
-                            <td>{item.views || 0}</td>
-                            <td>{item.downloads || 0}</td>
-                            <td className="text-center">
-                              <button onClick={() => handleDeleteContent(item)} className="btn btn-sm btn-icon btn-ghost" style={{ color: 'var(--accent-red)' }} title="حذف المحتوى">
-                                <Trash2 size={14} />
-                              </button>
+                        {usersList.map(targetUser => (
+                          <tr key={targetUser.uid}>
+                            <td className="font-semibold text-1">{targetUser.name}</td>
+                            <td className="text-3">{targetUser.email}</td>
+                            <td>
+                              <Badge variant={targetUser.role === 'super_admin' ? 'gold' : targetUser.role === 'admin' ? 'info' : 'ghost'} dot>
+                                {targetUser.role === 'super_admin' ? 'مدير عام' : targetUser.role === 'admin' ? 'مدير' : 'عضو'}
+                              </Badge>
+                            </td>
+                            <td>
+                              <Badge variant={targetUser.status === 'blocked' ? 'red' : 'green'}>
+                                {targetUser.status === 'blocked' ? '🚫 محظور' : '✓ نشط'}
+                              </Badge>
+                            </td>
+                            <td>
+                              {targetUser.role !== 'super_admin' && (
+                                <div style={{ display: 'flex', gap: 6 }}>
+                                  <button
+                                    onClick={() => handleChangeRole(targetUser, 'admin')}
+                                    className={`btn-base btn-sm ${targetUser.role === 'admin' ? 'btn-primary' : 'btn-ghost'}`}
+                                    disabled={targetUser.role === 'admin'}
+                                    style={{ padding: '4px 8px' }}
+                                  >
+                                    مدير
+                                  </button>
+                                  <button
+                                    onClick={() => handleChangeRole(targetUser, 'user')}
+                                    className={`btn-base btn-sm ${targetUser.role === 'user' ? 'btn-primary' : 'btn-ghost'}`}
+                                    disabled={targetUser.role === 'user'}
+                                    style={{ padding: '4px 8px' }}
+                                  >
+                                    عضو
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                            <td style={{ textAlign: 'center' }}>
+                              {targetUser.role !== 'super_admin' && (
+                                <button
+                                  onClick={() => handleToggleBlock(targetUser)}
+                                  className={`btn-base btn-sm ${targetUser.status === 'blocked' ? 'btn-success' : 'btn-danger'}`}
+                                  style={{ padding: '5px 10px', fontSize: '0.76rem' }}
+                                >
+                                  {targetUser.status === 'blocked' ? 'تفعيل الحساب' : 'حظر الحساب'}
+                                </button>
+                              )}
                             </td>
                           </tr>
                         ))}
@@ -569,105 +697,49 @@ export default function Dashboard() {
                     </table>
                   </div>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
 
-          {activeTab === 'users' && isSuperAdmin && (
-            <div id="tabpanel-users" role="tabpanel" aria-labelledby="tab-users" className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
-              <h4 className="section-title mb-4">إدارة صلاحيات وحالة الأعضاء</h4>
-              <div className="table-container">
-                <div className="table-responsive">
-                  <table className="table align-middle mb-0">
-                    <thead>
-                      <tr>
-                        <th>العضو</th>
-                        <th>البريد الإلكتروني</th>
-                        <th>الصلاحية</th>
-                        <th>الحالة</th>
-                        <th>تغيير الدور</th>
-                        <th className="text-center">تعديل الحالة</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {usersList.map(targetUser => (
-                        <tr key={targetUser.uid}>
-                          <td className="fw-semibold">{targetUser.name}</td>
-                          <td className="text-secondary">{targetUser.email}</td>
-                          <td>
-                            <span className="badge" style={{
-                              background: targetUser.role === 'super_admin' ? 'rgba(245,158,11,0.12)' : targetUser.role === 'admin' ? 'rgba(6,182,212,0.12)' : 'var(--badge-bg)',
-                              border: targetUser.role === 'super_admin' ? '1px solid rgba(245,158,11,0.25)' : targetUser.role === 'admin' ? '1px solid rgba(6,182,212,0.25)' : '1px solid var(--border-color)',
-                              color: targetUser.role === 'super_admin' ? 'var(--accent-amber)' : targetUser.role === 'admin' ? 'var(--accent-cyan)' : 'var(--text-secondary)',
-                              padding: '5px 10px', borderRadius: 'var(--radius-sm)'
-                            }}>
-                              {targetUser.role === 'super_admin' ? 'مدير عام' : targetUser.role === 'admin' ? 'مدير' : 'عضو'}
-                            </span>
-                          </td>
-                          <td>
-                            <span className="badge" style={{
-                              background: targetUser.status === 'blocked' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
-                              border: targetUser.status === 'blocked' ? '1px solid rgba(239,68,68,0.25)' : '1px solid rgba(16,185,129,0.25)',
-                              color: targetUser.status === 'blocked' ? 'var(--accent-red)' : 'var(--accent-emerald)',
-                              padding: '5px 10px', borderRadius: 'var(--radius-sm)'
-                            }}>
-                              {targetUser.status === 'blocked' ? 'محظور' : 'نشط'}
-                            </span>
-                          </td>
-                          <td>
-                            {targetUser.role !== 'super_admin' && (
-                              <div className="d-flex gap-1">
-                                <button onClick={() => handleChangeRole(targetUser, 'admin')} className={`btn btn-sm ${targetUser.role === 'admin' ? 'btn-ghost' : 'btn-secondary'}`} style={targetUser.role === 'admin' ? { color: 'var(--accent-cyan)' } : {}} disabled={targetUser.role === 'admin'}>مدير</button>
-                                <button onClick={() => handleChangeRole(targetUser, 'user')} className={`btn btn-sm ${targetUser.role === 'user' ? 'btn-ghost' : 'btn-secondary'}`} disabled={targetUser.role === 'user'}>عضو</button>
-                              </div>
-                            )}
-                          </td>
-                          <td className="text-center">
-                            {targetUser.role !== 'super_admin' && (
-                              <button onClick={() => handleToggleBlock(targetUser)} className="btn btn-sm btn-ghost" style={{ color: targetUser.status === 'blocked' ? 'var(--accent-emerald)' : 'var(--accent-red)' }}>
-                                {targetUser.status === 'blocked' ? 'تفعيل' : 'حظر'}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            {/* Tab 5: Audit logs */}
+            {activeTab === 'logs' && isSuperAdmin && (
+              <div className="card-base p-5 anim-scale" style={{ background: 'var(--bg-card)' }}>
+                <SectionHeader title="سجل الأحداث التاريخي" subtitle="متابعة جميع العمليات الحساسة التي قام بها المدراء" icon={FileText} />
+                <hr className="divider" />
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 480, overflowY: 'auto', paddingLeft: 6 }}>
+                  {auditLogs.length === 0 ? (
+                    <EmptyState icon={ClipboardList} title="السجل فارغ" desc="لا توجد أي عمليات مسجلة في سجل النشاط." />
+                  ) : (
+                    auditLogs.map(log => (
+                      <div
+                        key={log.id}
+                        className="hover-lift"
+                        style={{
+                          display:       'flex',
+                          justifyContent: 'space-between',
+                          alignItems:    'center',
+                          padding:       '14px 18px',
+                          background:    'var(--bg-input)',
+                          border:        '1px solid var(--border-1)',
+                          borderRadius:  'var(--radius-md)',
+                        }}
+                      >
+                        <div style={{ textAlign: 'right' }}>
+                          <span className="font-semibold text-1" style={{ fontSize: '0.84rem' }}>{log.userName}</span>
+                          <span style={{ margin: '0 8px' }}>
+                            <Badge variant="blue" size="sm">{log.action}</Badge>
+                          </span>
+                          <div style={{ color: 'var(--text-3)', fontSize: '0.78rem', marginTop: 5 }}>{log.description}</div>
+                        </div>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-4)', direction: 'ltr', whiteSpace: 'nowrap' }}>
+                          {new Date(log.createdAt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
+                        </span>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
-            </div>
-          )}
-
-          {activeTab === 'logs' && isSuperAdmin && (
-            <div id="tabpanel-logs" role="tabpanel" aria-labelledby="tab-logs" className="card-base animate-scale" style={{ padding: 'var(--space-8)' }}>
-              <h4 className="section-title mb-4">سجل نشاط مديري النظام</h4>
-              <div className="d-flex flex-column gap-2" style={{ maxHeight: '480px', overflowY: 'auto', paddingLeft: 'var(--space-2)' }}>
-                {auditLogs.length === 0 ? (
-                  <EmptyState icon={<ClipboardList size={48} />} title="لا توجد سجلات" message="لم يتم تسجيل أي أحداث نشاط بعد." />
-                ) : (
-                  auditLogs.map(log => (
-                    <div key={log.id} className="d-flex justify-content-between align-items-center p-3" style={{
-                      background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)',
-                      borderRadius: 'var(--radius-md)', transition: 'all var(--transition-base)',
-                    }}>
-                      <div className="text-end">
-                        <span className="fw-semibold" style={{ fontSize: 'var(--text-sm)' }}>{log.userName}</span>
-                        <span className="badge mx-2" style={{
-                          background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)',
-                          color: 'var(--accent-blue)', fontSize: 'var(--text-xs)', padding: '3px 8px',
-                          borderRadius: 'var(--radius-sm)'
-                        }}>{log.action}</span>
-                        <div style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-xs)', marginTop: '4px' }}>{log.description}</div>
-                      </div>
-                      <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', direction: 'ltr', whiteSpace: 'nowrap' }}>
-                        {new Date(log.createdAt).toLocaleString('ar-EG', { dateStyle: 'short', timeStyle: 'short' })}
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-          )}
+            )}
           </ErrorBoundary>
         </div>
       </div>
