@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
 import EmptyState from '../components/ui/EmptyState';
+import ErrorBoundary from '../components/ui/ErrorBoundary';
 import KpiCard from '../components/analytics/KpiCard';
 import DateFilter from '../components/analytics/DateFilter';
 import ChartWrapper from '../components/analytics/ChartWrapper';
@@ -263,6 +264,17 @@ export default function Dashboard() {
         `}</style>
 
         <div className="col-lg-9 col-xl-10" style={{ minWidth: 0 }}>
+          <ErrorBoundary key={activeTab} fallback={
+            <div className="card-base text-center" style={{ padding: 'var(--space-16) var(--space-10)' }}>
+              <h4 className="section-title mb-3">تعذر تحميل المحتوى</h4>
+              <p className="body-text mb-4 mx-auto" style={{ maxWidth: '520px' }}>
+                حدث خطأ أثناء تحميل هذا القسم. يمكنك التبديل بين الأقسام أعلاه أو تحديث الصفحة.
+              </p>
+              <button onClick={() => window.location.reload()} className="btn btn-primary">
+                تحديث الصفحة
+              </button>
+            </div>
+          }>
           {activeTab === 'stats' && (
             <div id="tabpanel-stats" role="tabpanel" aria-labelledby="tab-stats" className="d-flex flex-column gap-4 animate-scale">
               {isAdmin ? (
@@ -656,6 +668,7 @@ export default function Dashboard() {
               </div>
             </div>
           )}
+          </ErrorBoundary>
         </div>
       </div>
     </div>
