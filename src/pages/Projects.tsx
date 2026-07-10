@@ -101,7 +101,7 @@ export default function Projects() {
           <h1 className="page-title">المشاريع</h1>
           <p className="body-text" style={{ marginTop: 'var(--space-2)' }}>متابعة حالة المشاريع وتقدم العمل فيها</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="btn btn-primary" style={{ height: '40px', borderRadius: 'var(--radius-md)', padding: '0 var(--space-5)' }}>
+        <button onClick={() => setShowModal(true)} className="btn btn-primary">
           <Plus size={16} /> مشروع جديد
         </button>
       </div>
@@ -113,7 +113,7 @@ export default function Projects() {
           title="لا توجد مشاريع حالياً"
           message="قم بإضافة مشروع جديد للبدء بمتابعته وإدارة مراحل تنفيذه."
           action={
-            <button onClick={() => setShowModal(true)} className="btn btn-primary" style={{ padding: 'var(--space-3) var(--space-6)' }}>
+            <button onClick={() => setShowModal(true)} className="btn btn-primary">
               <Plus size={16} /> إضافة مشروع
             </button>
           }
@@ -155,8 +155,8 @@ export default function Projects() {
                 </div>
               </div>
 
-              <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, marginBottom: 'var(--space-2)', color: 'var(--text-primary)' }}>{project.title}</h3>
-              <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.6, marginBottom: 'var(--space-6)', flexGrow: 1 }}>
+              <h3 className="card-title" style={{ marginBottom: 'var(--space-2)' }}>{project.title}</h3>
+              <p style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 'var(--lh-relaxed)', marginBottom: 'var(--space-6)', flexGrow: 1 }}>
                 {project.description}
               </p>
 

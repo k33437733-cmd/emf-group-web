@@ -126,6 +126,10 @@
   --input-focus:      rgba(59,130,246,0.25);
 
   --badge-bg:         rgba(255,255,255,0.06);
+  --text-muted:       #64748B;
+
+  --bg-chat-bubble-self:  var(--accent-blue);
+  --bg-chat-bubble-other: #1E293B;
 
   --scrollbar-bg:     #0B1120;
   --scrollbar-thumb:  rgba(255,255,255,0.08);
@@ -172,6 +176,10 @@
   --input-focus:      rgba(59,130,246,0.2);
 
   --badge-bg:         rgba(0,0,0,0.04);
+  --text-muted:       #9CA3AF;
+
+  --bg-chat-bubble-self:  var(--accent-blue);
+  --bg-chat-bubble-other: #F1F5F9;
 
   --scrollbar-bg:     #F8FAFC;
   --scrollbar-thumb:  rgba(0,0,0,0.08);
@@ -571,6 +579,20 @@ textarea:focus-visible {
 
 .table-container tbody tr:last-child td {
   border-bottom: none;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CONTENT PAGE EXTRA
+   ═══════════════════════════════════════════════════════════════ */
+
+.content-play-btn:hover {
+  transform: scale(1.08);
+  background: rgba(9,13,22,0.85);
+  border-color: rgba(255,255,255,0.25);
+}
+
+.lightbox-close-btn:hover {
+  background: rgba(255,255,255,0.12);
 }
 
 /* ═══════════════════════════════════════════════════════════════

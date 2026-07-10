@@ -23,13 +23,15 @@ export function Skeleton({ width = '100%', height = '16px', borderRadius = 'var(
   );
 }
 
+const SKELETON_WIDTHS = ['70%', '85%', '60%', '75%', '90%'];
+
 export function SkeletonCard({ lines = 3 }: { lines?: number }) {
   return (
     <div className="card-base" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
       <Skeleton width="48px" height="48px" borderRadius="var(--radius-lg)" />
       <Skeleton width="60%" height="20px" />
       {Array.from({ length: lines }).map((_, i) => (
-        <Skeleton key={i} width={`${70 + Math.random() * 30}%`} height="14px" />
+        <Skeleton key={i} width={SKELETON_WIDTHS[i % SKELETON_WIDTHS.length]} height="14px" />
       ))}
       <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
         <Skeleton width="80px" height="36px" borderRadius="var(--radius-md)" />

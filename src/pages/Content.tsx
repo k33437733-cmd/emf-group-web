@@ -211,8 +211,8 @@ export default function Content() {
                   }}>
                     <span>{(item.fileSize / (1024 * 1024)).toFixed(1)} MB</span>
                     <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Eye size={12} />{item.views || 0}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Download size={12} />{item.downloads || 0}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}><Eye size={12} />{item.views || 0}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}><Download size={12} />{item.downloads || 0}</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)' }}>
@@ -267,11 +267,7 @@ export default function Content() {
         document.body
       )}
 
-      <style>{`
-        .content-play-btn:hover { transform: scale(1.08); background: rgba(9,13,22,0.85) !important; border-color: rgba(255,255,255,0.25) !important; }
-        .lightbox-close-btn:hover { background: rgba(255,255,255,0.12) !important; }
-        .filter-btn:hover { opacity: 0.85; }
-      `}</style>
+
     </div>
   );
 }

@@ -123,7 +123,7 @@ export default function SupportChatPage() {
       }}>
         <div className="glass-card" style={{ padding: '60px 40px' }}>
           <Loader2 className="animate-spin-fast text-primary mb-3" size={32} style={{ margin: '0 auto' }} />
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '6px', color: '#fff' }}>
+          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>
             {initializing ? 'جاري إنشاء محادثة الدعم...' : 'جاري التحميل...'}
           </h3>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
@@ -180,7 +180,7 @@ export default function SupportChatPage() {
               <Users size={20} />
             </div>
             <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px', color: '#fff' }}>
+              <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px', color: 'var(--text-primary)' }}>
                 دعم فني EMF Group 💬
               </h2>
               <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', margin: 0 }}>
@@ -212,7 +212,7 @@ export default function SupportChatPage() {
             }}>
               <MessageSquare size={26} />
             </div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px', color: '#fff' }}>
+            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px', color: 'var(--text-primary)' }}>
               مرحباً بك في الدعم الفني! 👋
             </h3>
             <p style={{ 

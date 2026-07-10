@@ -378,7 +378,7 @@ export default function ChatPage() {
                   <Users size={18} />
                 </div>
                 <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: '0.84rem', color: 'white' }}>مجموعة الإدارة العامة 📢</div>
+                  <div style={{ fontWeight: 700, fontSize: '0.84rem', color: 'var(--text-primary)' }}>مجموعة الإدارة العامة 📢</div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
                     تواصل جماعي مع كافة المدراء
                   </div>
@@ -450,10 +450,10 @@ export default function ChatPage() {
                     )}
                   </div>
                   <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
-                    <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontWeight: 600, fontSize: '0.82rem', color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {group.groupName || 'مجموعة'}
                     </div>
-                    <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 'var(--space-1)' }}>
                       {group.members.length} عضو
                     </div>
                   </div>
@@ -492,7 +492,7 @@ export default function ChatPage() {
                     <div style={{ fontWeight: 500, fontSize: '0.82rem', color: 'rgba(255,255,255,0.55)', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {group.groupName || 'مجموعة'}
                     </div>
-                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: '2px' }}>
+                    <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', marginTop: 'var(--space-1)' }}>
                       غير مضاف
                     </div>
                   </div>
@@ -549,7 +549,6 @@ export default function ChatPage() {
               transition: 'transform 0.2s',
               zIndex: 10
             }}
-            className="hover-scale"
           >
             <MessageCirclePlus size={22} />
           </button>
@@ -562,7 +561,7 @@ export default function ChatPage() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: '#0d1325',
+          background: 'var(--bg-elevated)',
           transform: showNewChat ? 'translateX(0)' : 'translateX(100%)',
           transition: 'transform 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
           display: 'flex',
@@ -570,11 +569,11 @@ export default function ChatPage() {
           zIndex: 20
         }}>
           {/* Header */}
-          <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', background: 'rgba(0,0,0,0.1)', borderBottom: '1px solid var(--border-color)' }}>
-            <button onClick={() => setShowNewChat(false)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex' }}>
+          <div style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '16px', background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)' }}>
+            <button onClick={() => setShowNewChat(false)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'flex' }}>
               <ArrowRight size={20} />
             </button>
-            <div style={{ fontWeight: 700, fontSize: '0.94rem', color: 'white' }}>
+            <div style={{ fontWeight: 700, fontSize: '0.94rem', color: 'var(--text-primary)' }}>
               {tab === 'admin' ? 'محادثة إدارية جديدة' : 'محادثة عضو جديدة'}
             </div>
           </div>
@@ -727,7 +726,7 @@ export default function ChatPage() {
               </button>
               
               {/* Mobile Back button */}
-              <button onClick={() => setActiveConvId(null)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'none' }} className="mobile-back-chat">
+                <button onClick={() => setActiveConvId(null)} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', display: 'none' }} className="mobile-back-chat">
                 <ArrowRight size={20} />
               </button>
 
@@ -845,14 +844,14 @@ export default function ChatPage() {
                         ? 'var(--accent-blue)' 
                         : isBot 
                         ? 'rgba(16, 185, 129, 0.05)' 
-                        : '#0d1325',
+                        : 'var(--bg-card)',
                       border: '1px solid', 
                       borderColor: isSelf 
                         ? 'rgba(59,130,246,0.2)' 
                         : isBot 
                         ? 'rgba(16, 185, 129, 0.15)' 
                         : 'var(--border-color)',
-                      color: 'white', 
+                      color: isSelf ? 'white' : 'var(--text-primary)', 
                       wordBreak: 'break-word', 
                       display: 'flex', 
                       flexDirection: 'column', 
@@ -879,7 +878,7 @@ export default function ChatPage() {
                       {msg.type === 'text' && <span style={{ fontSize: '0.84rem', lineHeight: 1.6 }}>{msg.content}</span>}
                       
                       {/* Bubble footer info */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end', fontSize: '0.62rem', color: isSelf ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)', marginTop: '2px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', justifyContent: 'flex-end', fontSize: '0.62rem', color: isSelf ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)', marginTop: 'var(--space-1)' }}>
                         <span>{formatTime(msg.createdAt)}</span>
                         {isSelf && <CheckCheck size={11} style={{ color: 'var(--accent-cyan)' }} />}
                       </div>
@@ -904,7 +903,7 @@ export default function ChatPage() {
             <MessageSquare size={26} />
           </div>
           <div>
-            <h4 style={{ fontWeight: 700, fontSize: '0.94rem', color: 'white', marginBottom: '4px' }}>بوابة المحادثات</h4>
+            <h4 style={{ fontWeight: 700, fontSize: '0.94rem', color: 'var(--text-primary)', marginBottom: '4px' }}>بوابة المحادثات</h4>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', maxWidth: '300px', margin: '0 auto' }}>
               اختر محادثة من القائمة الجانبية للبدء
             </p>
