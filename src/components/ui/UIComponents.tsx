@@ -85,27 +85,28 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, breadcrumb, actions }: PageHeaderProps) {
   return (
-    <div style={{ marginBottom: 'var(--space-8)' }}>
+    <div className="page-header">
       {breadcrumb && breadcrumb.length > 0 && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', marginBottom: 'var(--space-2)' }}>
+        <div className="page-header-breadcrumb">
           {breadcrumb.map((item, i) => (
-            <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
-              {i > 0 && <span style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)' }}>/</span>}
+            <span key={i} className="page-header-breadcrumb-item">
+              {i > 0 && <span className="page-header-breadcrumb-separator">/</span>}
               {item.href ? (
-                <a href={item.href} style={{ color: 'var(--text-tertiary)', fontSize: 'var(--text-xs)', textDecoration: 'none' }}>{item.label}</a>
+                <a href={item.href}>{item.label}</a>
               ) : (
-                <span style={{ color: 'var(--text-secondary)', fontSize: 'var(--text-xs)' }}>{item.label}</span>
+                <span>{item.label}</span>
               )}
             </span>
           ))}
         </div>
       )}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+      <div className="page-header-content">
         <div>
+          <div className="page-header-chip">لوحة تحكم EMF Group</div>
           <h1 className="page-title" style={{ margin: 0 }}>{title}</h1>
-          {subtitle && <p className="body-text" style={{ marginTop: 'var(--space-1)' }}>{subtitle}</p>}
+          {subtitle && <p className="body-text page-header-subtitle">{subtitle}</p>}
         </div>
-        {actions && <div style={{ display: 'flex', gap: 'var(--space-2)', flexShrink: 0, flexWrap: 'wrap' }}>{actions}</div>}
+        {actions && <div className="page-header-actions">{actions}</div>}
       </div>
     </div>
   );

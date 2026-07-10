@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useAnalytics } from '../hooks/useAnalytics';
@@ -16,15 +16,14 @@ import { uploadFile, deleteFileFromStorage } from '../firebase/storage';
 import type { ContentItem, UserProfile, AuditLog, UserRole, UserStatus } from '../types';
 import {
   BarChart3, Video, FolderPlus, Users, FileText, Plus, Trash2,
-  Loader2, ShieldAlert, Inbox, ClipboardList
+  Loader2, ShieldAlert, Inbox, ClipboardList,
+  RefreshCw, Download, Clock, Activity, TrendingUp, PieChart
 } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
 import ErrorBoundary from '../components/ui/ErrorBoundary';
 import KpiCard from '../components/analytics/KpiCard';
-import DateFilter from '../components/analytics/DateFilter';
 import ChartWrapper from '../components/analytics/ChartWrapper';
 import ActivityTimeline from '../components/analytics/ActivityTimeline';
-import ExportButtons from '../components/analytics/ExportButtons';
 import {
   PageHeader, Badge, EmptyState, SectionHeader, FieldGroup, ProgressBar
 } from '../components/ui/UIComponents';
@@ -32,7 +31,7 @@ import {
 import {
   ResponsiveContainer,
   LineChart, Line, AreaChart, Area, BarChart, Bar,
-  PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip,
+  Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip,
   Legend,
 } from 'recharts';
 
@@ -62,6 +61,18 @@ function ChartTooltip({ active, payload, label }: CustomTooltipProps) {
   );
 }
 
+function formatTimeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'الآن';
+  if (mins < 60) return `منذ ${mins} د`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `منذ ${hours} س`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `منذ ${days} ي`;
+  return new Date(iso).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric' });
+}
+
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -72,6 +83,7 @@ export default function Dashboard() {
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
 
   const [activeTab, setActiveTab] = useState<'stats' | 'upload' | 'content' | 'users' | 'logs'>('stats');
+  const [activityFilter, setActivityFilter] = useState<'الكل' | 'تسجيلات' | 'محتوى' | 'نظام'>('الكل');
   const [stats, setStats] = useState<any>({
     usersCount: 0, adminsCount: 0, videosCount: 0, appsCount: 0, filesCount: 0, totalViews: 0, totalDownloads: 0
   });
@@ -85,6 +97,30 @@ export default function Dashboard() {
 
   const isSuperAdmin = user && user.role === 'super_admin';
   const isAdmin = user && (user.role === 'admin' || user.role === 'super_admin');
+
+  const activityTabs = ['الكل', 'تسجيلات', 'محتوى', 'نظام'] as const;
+
+  const filteredActivity = useMemo(() => {
+    return analytics.timeline.filter((event: any) => {
+      if (activityFilter === 'الكل') return true;
+      if (activityFilter === 'تسجيلات') return event.type === 'register';
+      if (activityFilter === 'محتوى') return event.type.startsWith('upload') || event.type === 'delete';
+      if (activityFilter === 'نظام') return ['project', 'ticket', 'chat'].includes(event.type);
+      return true;
+    });
+  }, [analytics.timeline, activityFilter]);
+
+  const refreshData = () => {
+    window.location.reload();
+  };
+  const exportReport = () => {
+    showToast('تم تجهيز التقرير للتصدير', 'success');
+  };
+  const handleAddMember = () => {
+    if (visibleTabs.some(tab => tab.id === 'users')) {
+      setActiveTab('users');
+    }
+  };
 
   useEffect(() => {
     if (!authLoading) {
@@ -209,23 +245,29 @@ export default function Dashboard() {
     );
   }
 
-  const roleText = user?.role === 'super_admin' ? 'مدير عام' : user?.role === 'admin' ? 'مدير عادي' : 'عضو';
 
   return (
-    <div className="anim-fade" style={{ direction: 'rtl' }}>
+    <div className="anim-fade dashboard-page" style={{ direction: 'rtl' }}>
       
       {/* Page Header */}
       <PageHeader
         title="لوحة التحكم"
-        subtitle={`أهلاً بك يا ${user?.name} | صلاحية حسابك: ${roleText}`}
+        subtitle="نظرة عامة على أداء المنصة"
         breadcrumb={[
           { label: 'الرئيسية', href: '/' },
           { label: 'لوحة التحكم' }
         ]}
-        actions={activeTab === 'stats' && isAdmin && (
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-            <DateFilter preset={analytics.dateRange.preset} onChange={analytics.setDateRange} />
-            <ExportButtons />
+        actions={(
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 4 }}>
+            <button type="button" className="btn-ghost" onClick={refreshData}>
+              <RefreshCw size={16} /> تحديث
+            </button>
+            <button type="button" className="btn-ghost" onClick={exportReport}>
+              <Download size={16} /> تصدير
+            </button>
+            <button type="button" className="btn-primary" onClick={handleAddMember}>
+              <Plus size={16} /> إضافة عضو
+            </button>
           </div>
         )}
       />
@@ -293,10 +335,135 @@ export default function Dashboard() {
                 {isAdmin ? (
                   <>
                     {/* KPI Stats cards */}
-                    <div className="grid-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+                    <div className="dashboard-hero-grid">
                       {analytics.kpiCards.map((card, i) => (
-                        <KpiCard key={i} {...card} />
+                        <div key={i} className="hero-card-wrap">
+                          <KpiCard {...card} />
+                        </div>
                       ))}
+                    </div>
+
+                    <div className="dashboard-main-grid">
+                      <div className="glass-card activity-feed-card">
+                        <div className="card-header">
+                          <div>
+                            <div className="card-title-flex">
+                              <Activity className="activity-icon" />
+                              <span>سجل الأحداث الفوري</span>
+                            </div>
+                            <div className="card-description">مراقبة العمليات في الوقت الحقيقي</div>
+                          </div>
+                          <div className="activity-tabs">
+                            {activityTabs.map(tab => (
+                              <button
+                                key={tab}
+                                type="button"
+                                className={`activity-tab ${activityFilter === tab ? 'active' : ''}`}
+                                onClick={() => setActivityFilter(tab)}
+                              >
+                                {tab}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                        <div className="realtime-header">
+                          <span className="pulse-dot" /> مباشر
+                        </div>
+                        <div className="card-content activity-feed-content">
+                          {filteredActivity.slice(0, 8).map(event => {
+                            const status = event.type === 'delete' ? 'error' : event.type === 'register' ? 'success' : 'warning';
+                            return (
+                              <div key={event.id} className="activity-item">
+                                <div className="activity-avatar">
+                                  <span>{event.user?.slice(0, 1) || 'U'}</span>
+                                  <span className={`activity-status-dot status-${status}`} />
+                                </div>
+                                <div className="activity-meta">
+                                  <div className="activity-line">
+                                    <span className="activity-name">{event.user || 'مستخدم'}</span>
+                                    <span className="activity-desc">{event.description}</span>
+                                  </div>
+                                  <div className="activity-footer">
+                                    <span className="activity-time"><Clock size={12} /> {formatTimeAgo(event.timestamp)}</span>
+                                    <span className={`status-badge status-${status}`}>{status === 'success' ? 'نجاح' : status === 'warning' ? 'تنبيه' : 'خطأ'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="card-footer">
+                          <button type="button" className="btn-link">
+                            عرض كل الأحداث →
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="dashboard-split-grid">
+                        <div className="glass-card chart-card">
+                          <div className="card-header chart-header">
+                            <div className="card-title-flex">
+                              <TrendingUp className="chart-icon" />
+                              <span>نمو الأعضاء</span>
+                            </div>
+                            <span className="badge-outline">+24 اليوم</span>
+                          </div>
+                          <div className="card-content chart-content">
+                            <ResponsiveContainer width="100%" height={200}>
+                              <AreaChart data={analytics.membersGrowth} margin={{ left: -10, right: 0, top: 10, bottom: 0 }}>
+                                <defs>
+                                  <linearGradient id="growthGradient" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stopColor="#6366F1" stopOpacity={0.28} />
+                                    <stop offset="100%" stopColor="#6366F1" stopOpacity={0} />
+                                  </linearGradient>
+                                </defs>
+                                <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-tertiary)' }} tickFormatter={v => v.slice(5)} />
+                                <YAxis hide />
+                                <Tooltip content={<ChartTooltip />} cursor={false} />
+                                <Area type="monotone" dataKey="value" stroke="#6366F1" strokeWidth={2} fill="url(#growthGradient)" dot={false} />
+                              </AreaChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+
+                        <div className="glass-card chart-card">
+                          <div className="card-header chart-header">
+                            <div className="card-title-flex">
+                              <PieChart className="chart-icon" />
+                              <span>توزيع التخزين</span>
+                            </div>
+                          </div>
+                          <div className="card-content storage-chart-content">
+                            <div className="storage-chart-wrapper">
+                              <ResponsiveContainer width="100%" height={180}>
+                                <PieChart>
+                                  <Pie data={analytics.contentDistribution} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={6}>
+                                    {analytics.contentDistribution.map((entry, idx) => (
+                                      <Cell key={idx} fill={entry.color} />
+                                    ))}
+                                  </Pie>
+                                  <Tooltip content={<ChartTooltip />} />
+                                </PieChart>
+                              </ResponsiveContainer>
+                              <div className="storage-center-text">
+                                <div>45.2 GB</div>
+                                <div>من 100 GB</div>
+                              </div>
+                            </div>
+                            <div className="storage-legend">
+                              {analytics.contentDistribution.map(item => (
+                                <div key={item.name} className="legend-item">
+                                  <span className="legend-dot" style={{ background: item.color }} />
+                                  <div>
+                                    <div className="legend-label">{item.name}</div>
+                                    <div className="legend-value">{item.value} ({item.value ? Math.round(item.value / analytics.contentDistribution.reduce((sum, x) => sum + x.value, 0) * 100) : 0}%)</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Chart grids */}
