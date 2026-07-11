@@ -1,9 +1,9 @@
 import {
-  collection, doc, getDoc, getDocs, setDoc, updateDoc, deleteDoc,
+  collection, doc, getDoc, getDocs, setDoc, updateDoc,
   query, where, orderBy, limit, onSnapshot, writeBatch, increment,
   serverTimestamp,
 } from 'firebase/firestore';
-import { ref as storageRef, getStorage, uploadBytesResumable, getDownloadURL, deleteObject } from 'firebase/storage';
+import { ref as storageRef, getStorage, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, app } from './config';
 import type { Conversation, ChatMessage, UserProfile } from '../types';
 
@@ -111,7 +111,7 @@ export async function markConversationRead(conversationId: string, userUid: stri
   await updateDoc(ref, { unreadCount: counts });
 }
 
-export async function updateMessageStatus(conversationId: string, messageId: string, status: ChatMessage['deliveryStatus'], userUid: string) {
+export async function updateMessageStatus(_conversationId: string, messageId: string, status: ChatMessage['deliveryStatus'], userUid: string) {
   const ref = doc(db, MESSAGES, messageId);
   const update: any = { deliveryStatus: status };
   if (status === 'read') update[`readBy.${userUid}`] = nowISO();
@@ -149,14 +149,14 @@ export async function editSupportMessage(messageId: string, senderId: string, ne
 }
 
 export function uploadAttachment(file: File, onProgress: (pct: number) => void): Promise<string> {
-  return new Promise((resolve, reject) => {
+  return new Promise<string>((resolve, reject) => {
     const storage = getStorage(app);
     const ext = file.name.split('.').pop() || 'bin';
     const path = `support_attachments/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
     const storageReference = storageRef(storage, path);
     const task = uploadBytesResumable(storageReference, file);
     task.on('state_changed', snap => onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)));
-    task.then(() => getDownloadURL(storageReference)).then(resolve).catch(reject);
+    task.then(() => getDownloadURL(storageReference)).then(url => resolve(url)).catch(reject);
   });
 }
 

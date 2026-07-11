@@ -4,9 +4,9 @@ import {
   getOrCreateSupportConversation, subscribeToSupportConversations,
   subscribeToMessages, sendSupportMessage, markConversationRead,
   setTypingStatus, deleteSupportMessage, editSupportMessage,
-  uploadAttachment, markAllMessagesRead, subscribeTypingStatus,
+  uploadAttachment, subscribeTypingStatus,
 } from '../firebase/support';
-import type { Conversation, ChatMessage, UserProfile } from '../types';
+import type { Conversation, ChatMessage } from '../types';
 
 interface UseSupportChatReturn {
   conversations: Conversation[];

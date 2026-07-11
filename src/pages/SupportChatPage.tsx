@@ -8,9 +8,8 @@ import MessageInput from '../components/support/MessageInput';
 import TypingIndicator from '../components/support/TypingIndicator';
 import ConversationList from '../components/support/ConversationList';
 import SkeletonChat from '../components/support/SkeletonChat';
-import { subscribeToSupportConversations, markAllMessagesRead } from '../firebase/support';
-import type { Conversation } from '../types';
-import { MessageSquare, ArrowLeft, Loader2, Search, X, Filter, Inbox, CheckCheck } from 'lucide-react';
+import { markAllMessagesRead } from '../firebase/support';
+import { MessageSquare, CheckCheck } from 'lucide-react';
 
 type AdminTab = 'all' | 'unread' | 'waiting';
 

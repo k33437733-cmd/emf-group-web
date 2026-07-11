@@ -1,4 +1,4 @@
-import { Search, MessageSquare, Inbox } from 'lucide-react';
+import { Search, Inbox } from 'lucide-react';
 import type { Conversation } from '../../types';
 import { useState, useMemo } from 'react';
 

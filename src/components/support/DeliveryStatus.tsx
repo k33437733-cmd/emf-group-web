@@ -1,4 +1,4 @@
-import { Check, CheckCheck, Clock, Loader2 } from 'lucide-react';
+import { Check, CheckCheck, Clock } from 'lucide-react';
 import type { DeliveryStatus as DeliveryStatusType } from '../../types';
 
 interface Props {

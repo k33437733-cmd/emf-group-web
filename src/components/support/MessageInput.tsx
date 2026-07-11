@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Paperclip, Image, X } from 'lucide-react';
+import { Send, Paperclip, X } from 'lucide-react';
 
 interface Props {
   onSend: (text: string, file?: File) => void;
@@ -9,8 +9,6 @@ interface Props {
   disabled?: boolean;
   rtl?: boolean;
 }
-
-const ACCEPTED_TYPES = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.pdf', '.zip', '.doc', '.docx', '.xls', '.xlsx'];
 
 export default function MessageInput({ onSend, onTyping, sending, uploadProgress, disabled, rtl = true }: Props) {
   const [text, setText] = useState('');
