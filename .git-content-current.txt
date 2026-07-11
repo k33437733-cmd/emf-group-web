@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../hooks/useAuth';
 import { subscribeToContents, incrementContentViews, incrementContentDownloads, updateContentItem, deleteContentItem } from '../firebase/db';
@@ -46,7 +46,13 @@ export default function Content() {
   }, []);
 
   useEffect(() => {
-    let result = [...items];
+    let result = items.filter(item => {
+      const level = item.accessLevel || 'all';
+      if (level === 'all') return true;
+      if (level === 'agent') return canViewRestricted;
+      if (level === 'admin') return canUseAdminDownload;
+      return false;
+    });
     if (selectedType !== 'all') result = result.filter(item => item.type === selectedType);
     if (search.trim()) {
       const term = search.toLowerCase().trim();
@@ -55,20 +61,20 @@ export default function Content() {
       );
     }
     setFilteredItems(result);
-  }, [items, search, selectedType]);
+  }, [items, search, selectedType, canViewRestricted, canUseAdminDownload]);
 
   const handleDownload = async (item: ContentItem) => {
     if (item.downloadProtected && !canUseAdminDownload) {
-      showToast('هذا المحتوى محمي من التنزيل.', 'warning');
+      showToast('┘ç╪░╪د ╪د┘┘à╪ص╪ز┘ê┘ë ┘à╪ص┘à┘è ┘à┘ ╪د┘╪ز┘╪▓┘è┘.', 'warning');
       return;
     }
 
     try {
       await incrementContentDownloads(item.id);
       window.open(item.url, '_blank');
-      showToast('بدأ تحميل الملف المختار...', 'success');
+      showToast('╪ذ╪»╪ث ╪ز╪ص┘à┘è┘ ╪د┘┘à┘┘ ╪د┘┘à╪«╪ز╪د╪▒...', 'success');
     } catch (e) {
-      showToast('فشل بدء التحميل', 'error');
+      showToast('┘╪┤┘ ╪ذ╪»╪ة ╪د┘╪ز╪ص┘à┘è┘', 'error');
     }
   };
 
@@ -117,11 +123,11 @@ export default function Content() {
       }
 
       await updateContentItem(editContentItem.id, updates, user.uid, user.name);
-      showToast('تم حفظ التغييرات بنجاح', 'success');
+      showToast('╪ز┘à ╪ص┘╪╕ ╪د┘╪ز╪║┘è┘è╪▒╪د╪ز ╪ذ┘╪ش╪د╪ص', 'success');
       setEditContentItem(null);
     } catch (err) {
       console.error(err);
-      showToast('حدث خطأ أثناء حفظ المحتوى', 'error');
+      showToast('╪ص╪»╪س ╪«╪╖╪ث ╪ث╪س┘╪د╪ة ╪ص┘╪╕ ╪د┘┘à╪ص╪ز┘ê┘ë', 'error');
     } finally {
       setEditUploading(false);
       setEditUploadProgress(0);
@@ -132,9 +138,9 @@ export default function Content() {
     if (!user) return;
     try {
       await updateContentItem(item.id, { accessLevel: item.accessLevel === 'all' ? 'admin' : 'all' }, user.uid, user.name);
-      showToast(item.accessLevel === 'all' ? 'تم إخفاء المحتوى عن المستخدمين العاديين' : 'تم إظهار المحتوى مرة أخرى', 'success');
+      showToast(item.accessLevel === 'all' ? '╪ز┘à ╪ح╪«┘╪د╪ة ╪د┘┘à╪ص╪ز┘ê┘ë ╪╣┘ ╪د┘┘à╪│╪ز╪«╪»┘à┘è┘ ╪د┘╪╣╪د╪»┘è┘è┘' : '╪ز┘à ╪ح╪╕┘ç╪د╪▒ ╪د┘┘à╪ص╪ز┘ê┘ë ┘à╪▒╪ر ╪ث╪«╪▒┘ë', 'success');
     } catch (err) {
-      showToast('فشل تحديث حالة الرؤية', 'error');
+      showToast('┘╪┤┘ ╪ز╪ص╪»┘è╪س ╪ص╪د┘╪ر ╪د┘╪▒╪ج┘è╪ر', 'error');
     }
   };
 
@@ -142,32 +148,32 @@ export default function Content() {
     if (!user) return;
     try {
       await updateContentItem(item.id, { downloadProtected: !item.downloadProtected }, user.uid, user.name);
-      showToast(item.downloadProtected ? 'تم إزالة حماية التنزيل' : 'تم تفعيل حماية التنزيل', 'success');
+      showToast(item.downloadProtected ? '╪ز┘à ╪ح╪▓╪د┘╪ر ╪ص┘à╪د┘è╪ر ╪د┘╪ز┘╪▓┘è┘' : '╪ز┘à ╪ز┘╪╣┘è┘ ╪ص┘à╪د┘è╪ر ╪د┘╪ز┘╪▓┘è┘', 'success');
     } catch (err) {
-      showToast('فشل تحديث حماية التنزيل', 'error');
+      showToast('┘╪┤┘ ╪ز╪ص╪»┘è╪س ╪ص┘à╪د┘è╪ر ╪د┘╪ز┘╪▓┘è┘', 'error');
     }
   };
 
   const handleDeleteContent = async (item: ContentItem) => {
-    if (!user || !window.confirm('هل أنت متأكد من حذف هذا المحتوى؟')) return;
+    if (!user || !window.confirm('┘ç┘ ╪ث┘╪ز ┘à╪ز╪ث┘â╪» ┘à┘ ╪ص╪░┘ ┘ç╪░╪د ╪د┘┘à╪ص╪ز┘ê┘ë╪ا')) return;
     try {
       await deleteFileFromStorage(item.url);
       await deleteContentItem(item.id, item.title, user.uid, user.name);
-      showToast('تم حذف المحتوى بنجاح', 'success');
+      showToast('╪ز┘à ╪ص╪░┘ ╪د┘┘à╪ص╪ز┘ê┘ë ╪ذ┘╪ش╪د╪ص', 'success');
     } catch (err) {
       console.error(err);
-      showToast('فشل حذف المحتوى', 'error');
+      showToast('┘╪┤┘ ╪ص╪░┘ ╪د┘┘à╪ص╪ز┘ê┘ë', 'error');
     }
   };
 
   const handleShare = (item: ContentItem, platform: 'whatsapp' | 'facebook') => {
-    const text = `تفضل بمشاهدة وتحميل "${item.title}" من EMF Group:`;
+    const text = `╪ز┘╪╢┘ ╪ذ┘à╪┤╪د┘ç╪»╪ر ┘ê╪ز╪ص┘à┘è┘ "${item.title}" ┘à┘ EMF Group:`;
     const url = window.location.origin + `/content#${item.id}`;
     const shareUrl = platform === 'whatsapp'
       ? `https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`
       : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
     window.open(shareUrl, '_blank');
-    showToast('تم فتح نافذة المشاركة', 'info');
+    showToast('╪ز┘à ┘╪ز╪ص ┘╪د┘╪░╪ر ╪د┘┘à╪┤╪د╪▒┘â╪ر', 'info');
   };
 
   useEffect(() => {
@@ -178,34 +184,34 @@ export default function Content() {
   }, [activeVideoUrl]);
 
   const filterButtons = [
-    { id: 'all' as const, label: 'الكل', icon: Filter },
-    { id: 'video' as const, label: 'الفيديوهات', icon: Video },
-    { id: 'app' as const, label: 'التطبيقات', icon: Monitor },
-    { id: 'other' as const, label: 'ملفات أخرى', icon: FileText },
+    { id: 'all' as const, label: '╪د┘┘â┘', icon: Filter },
+    { id: 'video' as const, label: '╪د┘┘┘è╪»┘è┘ê┘ç╪د╪ز', icon: Video },
+    { id: 'app' as const, label: '╪د┘╪ز╪╖╪ذ┘è┘é╪د╪ز', icon: Monitor },
+    { id: 'other' as const, label: '┘à┘┘╪د╪ز ╪ث╪«╪▒┘ë', icon: FileText },
   ];
 
   return (
     <div className="page-wrapper page-enter" style={{ direction: 'rtl' }}>
       {/* Page Header */}
       <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h1 className="page-title">المكتبة الرقمية</h1>
+        <h1 className="page-title">╪د┘┘à┘â╪ز╪ذ╪ر ╪د┘╪▒┘é┘à┘è╪ر</h1>
         <p className="body-text" style={{ marginTop: 'var(--space-2)' }}>
-          مستودع الفيديوهات، التطبيقات والملفات الرسمية الخاصة بالعمل
+          ┘à╪│╪ز┘ê╪»╪╣ ╪د┘┘┘è╪»┘è┘ê┘ç╪د╪ز╪î ╪د┘╪ز╪╖╪ذ┘è┘é╪د╪ز ┘ê╪د┘┘à┘┘╪د╪ز ╪د┘╪▒╪│┘à┘è╪ر ╪د┘╪«╪د╪╡╪ر ╪ذ╪د┘╪╣┘à┘
         </p>
       </div>
 
       {/* Search & Filters */}
-      <div className="card-base" role="search" aria-label="بحث في المحتوى" style={{ padding: 'var(--space-4) var(--space-5)', marginBottom: 'var(--space-8)' }}>
+      <div className="card-base" role="search" aria-label="╪ذ╪ص╪س ┘┘è ╪د┘┘à╪ص╪ز┘ê┘ë" style={{ padding: 'var(--space-4) var(--space-5)', marginBottom: 'var(--space-8)' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ position: 'relative', width: '100%', maxWidth: '360px' }}>
             <input
               type="text"
               className="form-input"
               style={{ paddingRight: '40px', fontSize: 'var(--text-sm)' }}
-              placeholder="بحث باسم الملف..."
+              placeholder="╪ذ╪ص╪س ╪ذ╪د╪│┘à ╪د┘┘à┘┘..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              aria-label="بحث باسم الملف"
+              aria-label="╪ذ╪ص╪س ╪ذ╪د╪│┘à ╪د┘┘à┘┘"
             />
             <Search size={16} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
             {search && (
@@ -247,8 +253,8 @@ export default function Content() {
       ) : filteredItems.length === 0 ? (
         <EmptyState
           icon={<Inbox size={48} />}
-          title={search || selectedType !== 'all' ? 'لا توجد نتائج' : 'المكتبة فارغة'}
-          message={search || selectedType !== 'all' ? 'لم يتم العثور على ملفات تطابق معايير البحث.' : 'لم يتم رفع أي ملفات بعد، تحقق لاحقاً.'}
+          title={search || selectedType !== 'all' ? '┘╪د ╪ز┘ê╪ش╪» ┘╪ز╪د╪خ╪ش' : '╪د┘┘à┘â╪ز╪ذ╪ر ┘╪د╪▒╪║╪ر'}
+          message={search || selectedType !== 'all' ? '┘┘à ┘è╪ز┘à ╪د┘╪╣╪س┘ê╪▒ ╪╣┘┘ë ┘à┘┘╪د╪ز ╪ز╪╖╪د╪ذ┘é ┘à╪╣╪د┘è┘è╪▒ ╪د┘╪ذ╪ص╪س.' : '┘┘à ┘è╪ز┘à ╪▒┘╪╣ ╪ث┘è ┘à┘┘╪د╪ز ╪ذ╪╣╪»╪î ╪ز╪ص┘é┘é ┘╪د╪ص┘é╪د┘ï.'}
         />
       ) : (
         <div className="grid-cards">
@@ -292,7 +298,7 @@ export default function Content() {
                     borderRadius: 'var(--radius-sm)', fontSize: '10px', fontWeight: 700,
                     border: '1px solid rgba(255,255,255,0.06)', color: c.icon, zIndex: 2,
                   }}>
-                    {item.type === 'video' ? 'فيديو' : item.type === 'app' ? 'تطبيق' : 'ملف'}
+                    {item.type === 'video' ? '┘┘è╪»┘è┘ê' : item.type === 'app' ? '╪ز╪╖╪ذ┘è┘é' : '┘à┘┘'}
                   </span>
                 </div>
 
@@ -304,7 +310,7 @@ export default function Content() {
                     display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
                     overflow: 'hidden', flexGrow: 1,
                   }}>
-                    {item.description || 'لا يوجد وصف متاح.'}
+                    {item.description || '┘╪د ┘è┘ê╪ش╪» ┘ê╪╡┘ ┘à╪ز╪د╪ص.'}
                   </p>
                   <div style={{
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -320,38 +326,38 @@ export default function Content() {
                   <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)', flexWrap: 'wrap' }}>
                     {isVideo ? (
                       <button onClick={() => handlePlayVideo(item)} className="btn btn-primary" style={{ flex: 1, minWidth: '140px', height: '36px', fontSize: 'var(--text-sm)' }}>
-                        <Play size={14} style={{ fill: '#fff' }} /> عرض الفيديو
+                        <Play size={14} style={{ fill: '#fff' }} /> ╪╣╪▒╪╢ ╪د┘┘┘è╪»┘è┘ê
                       </button>
                     ) : (
                       <button onClick={() => handleDownload(item)} className="btn btn-primary" disabled={item.downloadProtected && !canUseAdminDownload} style={{ flex: 1, minWidth: '140px', height: '36px', fontSize: 'var(--text-sm)', opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1, cursor: item.downloadProtected && !canUseAdminDownload ? 'not-allowed' : 'pointer' }}>
-                        <Download size={14} /> تنزيل
+                        <Download size={14} /> ╪ز┘╪▓┘è┘
                       </button>
                     )}
-                    <button onClick={() => handleDownload(item)} title={item.downloadProtected ? 'محتوى محمي من التنزيل' : 'تحميل مباشر'} className="btn btn-secondary" disabled={item.downloadProtected && !canUseAdminDownload} style={{ width: '36px', height: '36px', padding: 0, borderRadius: 'var(--radius-md)', opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1, cursor: item.downloadProtected && !canUseAdminDownload ? 'not-allowed' : 'pointer' }}>
+                    <button onClick={() => handleDownload(item)} title={item.downloadProtected ? '┘à╪ص╪ز┘ê┘ë ┘à╪ص┘à┘è ┘à┘ ╪د┘╪ز┘╪▓┘è┘' : '╪ز╪ص┘à┘è┘ ┘à╪ذ╪د╪┤╪▒'} className="btn btn-secondary" disabled={item.downloadProtected && !canUseAdminDownload} style={{ width: '36px', height: '36px', padding: 0, borderRadius: 'var(--radius-md)', opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1, cursor: item.downloadProtected && !canUseAdminDownload ? 'not-allowed' : 'pointer' }}>
                       <Download size={14} />
                     </button>
-                    <button onClick={() => handleShare(item, 'whatsapp')} title="مشاركة واتساب" className="btn btn-icon btn-sm btn-ghost" style={{ color: 'var(--accent-emerald)' }}>
+                    <button onClick={() => handleShare(item, 'whatsapp')} title="┘à╪┤╪د╪▒┘â╪ر ┘ê╪د╪ز╪│╪د╪ذ" className="btn btn-icon btn-sm btn-ghost" style={{ color: 'var(--accent-emerald)' }}>
                       <Share2 size={14} />
                     </button>
                   </div>
                   {isAdmin && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
                       <button onClick={() => openEditContentModal(item)} style={{ background: 'var(--accent-indigo)', color: 'white', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                        <Edit3 size={14} /> تعديل
+                        <Edit3 size={14} /> ╪ز╪╣╪»┘è┘
                       </button>
                       <button onClick={() => handleToggleHideContent(item)} style={{ background: item.accessLevel === 'all' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: item.accessLevel === 'all' ? 'var(--accent-amber)' : 'var(--accent-red)', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                        {item.accessLevel === 'all' ? <EyeOff size={14} /> : <Eye size={14} />} {item.accessLevel === 'all' ? 'إخفاء' : 'إظهار'}
+                        {item.accessLevel === 'all' ? <EyeOff size={14} /> : <Eye size={14} />} {item.accessLevel === 'all' ? '╪ح╪«┘╪د╪ة' : '╪ح╪╕┘ç╪د╪▒'}
                       </button>
                       <button onClick={() => handleToggleDownloadProtection(item)} style={{ background: item.downloadProtected ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)', color: item.downloadProtected ? 'var(--accent-red)' : 'var(--accent-emerald)', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                        <Shield size={14} /> {item.downloadProtected ? 'إلغاء حماية' : 'حماية تنزيل'}
+                        <Shield size={14} /> {item.downloadProtected ? '╪ح┘╪║╪د╪ة ╪ص┘à╪د┘è╪ر' : '╪ص┘à╪د┘è╪ر ╪ز┘╪▓┘è┘'}
                       </button>
                       <button onClick={() => handleDeleteContent(item)} style={{ background: 'rgba(244,63,94,0.12)', color: 'var(--accent-red)', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
-                        <Trash2 size={14} /> حذف
+                        <Trash2 size={14} /> ╪ص╪░┘
                       </button>
                     </div>
                   )}
                   {item.downloadProtected && (
-                    <div style={{ marginTop: '8px', fontSize: '0.78rem', color: 'var(--accent-red)' }}>{'هذا المحتوى محمي من التنزيل'}</div>
+                    <div style={{ marginTop: '8px', fontSize: '0.78rem', color: 'var(--accent-red)' }}>{'┘ç╪░╪د ╪د┘┘à╪ص╪ز┘ê┘ë ┘à╪ص┘à┘è ┘à┘ ╪د┘╪ز┘╪▓┘è┘'}</div>
                   )}
                 </div>
               </div>
@@ -362,7 +368,7 @@ export default function Content() {
 
       {/* Video Lightbox */}
       {activeVideoUrl && createPortal(
-        <div role="dialog" aria-modal="true" aria-label="مشغل الفيديو" style={{
+        <div role="dialog" aria-modal="true" aria-label="┘à╪┤╪║┘ ╪د┘┘┘è╪»┘è┘ê" style={{
           position: 'fixed', inset: 0, background: 'var(--bg-overlay)',
           backdropFilter: 'blur(8px)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -409,8 +415,8 @@ export default function Content() {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', gap: '12px', flexWrap: 'wrap' }}>
                 <div>
-                  <h2 id="edit-content-title" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>تعديل المحتوى</h2>
-                  <p style={{ margin: '8px 0 0', color: 'var(--text-secondary)', fontSize: '0.92rem' }}>قم بتحديث بيانات المحتوى أو استبدال الملف.</p>
+                  <h2 id="edit-content-title" style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>╪ز╪╣╪»┘è┘ ╪د┘┘à╪ص╪ز┘ê┘ë</h2>
+                  <p style={{ margin: '8px 0 0', color: 'var(--text-secondary)', fontSize: '0.92rem' }}>┘é┘à ╪ذ╪ز╪ص╪»┘è╪س ╪ذ┘è╪د┘╪د╪ز ╪د┘┘à╪ص╪ز┘ê┘ë ╪ث┘ê ╪د╪│╪ز╪ذ╪»╪د┘ ╪د┘┘à┘┘.</p>
                 </div>
                 <button
                   onClick={() => setEditContentItem(null)}
@@ -424,7 +430,7 @@ export default function Content() {
               <form onSubmit={handleEditContentSubmit} style={{ display: 'grid', gap: '18px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label htmlFor="edit-title" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>العنوان</label>
+                    <label htmlFor="edit-title" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>╪د┘╪╣┘┘ê╪د┘</label>
                     <input
                       id="edit-title"
                       type="text"
@@ -435,22 +441,22 @@ export default function Content() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="edit-type" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>النوع</label>
+                    <label htmlFor="edit-type" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>╪د┘┘┘ê╪╣</label>
                     <select
                       id="edit-type"
                       value={editContentForm.type}
                       onChange={(e) => setEditContentForm(prev => ({ ...prev, type: e.target.value as ContentItem['type'] }))}
                       style={{ width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none' }}
                     >
-                      <option value="video">فيديو</option>
-                      <option value="app">تطبيق</option>
-                      <option value="other">ملف</option>
+                      <option value="video">┘┘è╪»┘è┘ê</option>
+                      <option value="app">╪ز╪╖╪ذ┘è┘é</option>
+                      <option value="other">┘à┘┘</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="edit-description" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>الوصف</label>
+                  <label htmlFor="edit-description" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>╪د┘┘ê╪╡┘</label>
                   <textarea
                     id="edit-description"
                     rows={4}
@@ -462,20 +468,20 @@ export default function Content() {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div>
-                    <label htmlFor="edit-access-level" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>رؤية المحتوى</label>
+                    <label htmlFor="edit-access-level" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>╪▒╪ج┘è╪ر ╪د┘┘à╪ص╪ز┘ê┘ë</label>
                     <select
                       id="edit-access-level"
                       value={editContentForm.accessLevel}
                       onChange={(e) => setEditContentForm(prev => ({ ...prev, accessLevel: e.target.value as ContentItem['accessLevel'] }))}
                       style={{ width: '100%', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', outline: 'none' }}
                     >
-                      <option value="all">مرئي للجميع</option>
-                      <option value="agent">الوكلاء والمدراء</option>
-                      <option value="admin">المدراء فقط</option>
+                      <option value="all">┘à╪▒╪خ┘è ┘┘╪ش┘à┘è╪╣</option>
+                      <option value="agent">╪د┘┘ê┘â┘╪د╪ة ┘ê╪د┘┘à╪»╪▒╪د╪ة</option>
+                      <option value="admin">╪د┘┘à╪»╪▒╪د╪ة ┘┘é╪╖</option>
                     </select>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                    <label htmlFor="edit-download-protection" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>حماية التنزيل</label>
+                    <label htmlFor="edit-download-protection" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>╪ص┘à╪د┘è╪ر ╪د┘╪ز┘╪▓┘è┘</label>
                     <label style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderRadius: 'var(--radius-sm)', border: '1px solid var(--input-border)', background: 'var(--input-bg)', cursor: 'pointer' }}>
                       <input
                         id="edit-download-protection"
@@ -483,13 +489,13 @@ export default function Content() {
                         checked={editContentForm.downloadProtected}
                         onChange={(e) => setEditContentForm(prev => ({ ...prev, downloadProtected: e.target.checked }))}
                       />
-                      <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>منع التنزيل</span>
+                      <span style={{ color: 'var(--text-primary)', fontSize: '0.9rem' }}>┘à┘╪╣ ╪د┘╪ز┘╪▓┘è┘</span>
                     </label>
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="edit-file" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>استبدال الملف</label>
+                  <label htmlFor="edit-file" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>╪د╪│╪ز╪ذ╪»╪د┘ ╪د┘┘à┘┘</label>
                   <input
                     id="edit-file"
                     type="file"
@@ -501,7 +507,7 @@ export default function Content() {
                 {editUploading && (
                   <div style={{ marginTop: '8px' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-                      <span>جاري رفع الملف...</span>
+                      <span>╪ش╪د╪▒┘è ╪▒┘╪╣ ╪د┘┘à┘┘...</span>
                       <span>{editUploadProgress}%</span>
                     </div>
                     <div style={{ width: '100%', height: '6px', background: 'var(--border-light)', borderRadius: '3px', overflow: 'hidden' }}>
@@ -516,14 +522,14 @@ export default function Content() {
                     onClick={() => setEditContentItem(null)}
                     style={{ background: 'transparent', border: '1px solid var(--border-color)', padding: '10px 18px', borderRadius: 'var(--radius-sm)', color: 'var(--text-secondary)', cursor: 'pointer' }}
                   >
-                    إلغاء
+                    ╪ح┘╪║╪د╪ة
                   </button>
                   <button
                     type="submit"
                     disabled={editUploading}
                     style={{ background: 'var(--gradient-primary)', border: 'none', color: 'white', padding: '10px 18px', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
                   >
-                    {editUploading ? 'جاري الحفظ...' : 'حفظ التعديلات'}
+                    {editUploading ? '╪ش╪د╪▒┘è ╪د┘╪ص┘╪╕...' : '╪ص┘╪╕ ╪د┘╪ز╪╣╪»┘è┘╪د╪ز'}
                   </button>
                 </div>
               </form>
