@@ -1687,3 +1687,194 @@ p {
     font-size: var(--text-base);
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE LAYOUT SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── 3-panel admin layout ── */
+.support-panel-convlist { width: 320px; flex-shrink: 0; }
+.support-panel-info   { width: 260px; flex-shrink: 0; }
+.support-panel-chat   { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+@media (max-width: 1200px) {
+  .support-panel-convlist { width: 280px; }
+  .support-panel-info   { width: 220px; }
+}
+
+@media (max-width: 1024px) {
+  .support-panel-info { display: none; }
+  .support-panel-convlist { width: 260px; }
+}
+
+@media (max-width: 768px) {
+  .support-panel-convlist { width: 100%; }
+  .support-panel-convlist.support-active { display: none; }
+  .support-panel-chat { width: 100%; }
+}
+
+/* ── Chat page 2-panel layout ── */
+.chat-panel-sidebar { width: 360px; flex-shrink: 0; }
+.chat-panel-main   { flex: 1; min-width: 0; }
+
+@media (max-width: 1024px) {
+  .chat-panel-sidebar { width: 300px; }
+}
+
+@media (max-width: 768px) {
+  .chat-panel-sidebar { width: 100%; }
+}
+
+/* ── Main layout container margins ── */
+@media (min-width: 1024px) {
+  .main-layout-container.with-sidebar {
+    margin-right: var(--sidebar-width);
+  }
+  .main-layout-container.with-sidebar.collapsed {
+    margin-right: var(--sidebar-collapsed-width);
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .main-layout-container.with-sidebar {
+    margin-right: var(--sidebar-collapsed-width);
+  }
+  .main-layout-container.with-sidebar-overlay {
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .main-layout-container {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+}
+
+/* ── Typography responsive refinements ── */
+@media (max-width: 768px) {
+  .page-title { font-size: clamp(1.5rem, 4vw, 2.1rem) !important; }
+  .section-title { font-size: var(--text-2xl) !important; }
+  .stat-number { font-size: clamp(1.5rem, 5vw, 2.25rem) !important; }
+  .dashboard-page { padding: var(--space-4) !important; }
+  .page-header { padding: var(--space-3) !important; margin-bottom: var(--space-4) !important; }
+}
+
+@media (max-width: 480px) {
+  .page-title { font-size: clamp(1.25rem, 5vw, 1.5rem) !important; }
+  .dashboard-page { padding: var(--space-3) !important; }
+  .page-header-content { flex-direction: column !important; }
+  .page-header-actions { width: 100%; }
+  .page-header-actions .btn { flex: 1; }
+}
+
+/* ── Login page responsive ── */
+@media (max-width: 768px) {
+  .login-container { padding: var(--space-4) !important; }
+  .login-card { max-width: 100% !important; border-radius: var(--radius-xl) !important; }
+}
+
+@media (max-width: 480px) {
+  .login-container { padding: var(--space-3) !important; }
+  .login-card { padding: var(--space-5) !important; }
+  .login-card h1 { font-size: var(--text-2xl) !important; }
+}
+
+/* ── Home page hero responsive ── */
+@media (max-width: 768px) {
+  .home-hero { padding: 60px var(--space-5) 40px !important; min-height: auto !important; }
+  .home-hero h1 { font-size: clamp(2rem, 6vw, 2.8rem) !important; }
+  .home-hero p { font-size: clamp(0.95rem, 2vw, 1.1rem) !important; }
+  .home-stats { gap: var(--space-4) !important; }
+  .home-footer { padding: var(--space-6) var(--space-5) !important; }
+}
+
+@media (max-width: 480px) {
+  .home-hero { padding: 40px var(--space-4) 30px !important; }
+  .home-hero-badge { margin-bottom: var(--space-3) !important; }
+  .home-video { border-radius: var(--radius-lg) !important; }
+}
+
+/* ── Sidebar responsive refinements ── */
+@media (max-width: 1023px) {
+  .sidebar-toggle-btn { display: flex !important; }
+}
+
+@media (min-width: 1024px) {
+  .sidebar-overlay { display: none !important; }
+}
+
+/* ── Responsive table ── */
+@media (max-width: 768px) {
+  .table-responsive-cards table,
+  .table-responsive-cards thead,
+  .table-responsive-cards tbody,
+  .table-responsive-cards th,
+  .table-responsive-cards td,
+  .table-responsive-cards tr {
+    display: block;
+  }
+  .table-responsive-cards thead { display: none; }
+  .table-responsive-cards tbody tr {
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-card);
+  }
+  .table-responsive-cards tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) 0;
+    border: none;
+    font-size: var(--text-sm);
+  }
+  .table-responsive-cards tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-tertiary);
+    font-size: var(--text-xs);
+  }
+}
+
+/* ── Settings page responsive ── */
+@media (max-width: 768px) {
+  .settings-grid { grid-template-columns: 1fr !important; }
+}
+
+/* ── Improved touch targets on mobile ── */
+@media (hover: none) and (pointer: coarse) {
+  .btn, button, a, input, select, textarea {
+    min-height: 44px;
+  }
+  .btn-sm { min-height: 36px; }
+  .btn-icon { min-height: 44px; min-width: 44px; }
+  .filter-chip { min-height: 40px; }
+  .sidebar-link { min-height: 48px; }
+}
+
+/* ── Prevent layout shifts on ultra-wide ── */
+@media (min-width: 1920px) {
+  .dashboard-page { max-width: 1600px; }
+  .content-library-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* ── Consistent spacing for page content areas ── */
+.page-content {
+  padding: clamp(16px, 2.5vw, 32px);
+  max-width: 100%;
+  width: 100%;
+}
+
+/* ── Navbar responsive refinements - add to existing navbar module ── */
+@media (max-width: 480px) {
+  .navbar-user-name { display: none; }
+  .navbar-breadcrumb { display: none; }
+}
+
+/* ── Project cards responsive ── */
+@media (max-width: 640px) {
+  .project-card-actions { flex-direction: column; align-items: stretch; }
+  .project-card-actions .btn { width: 100%; }
+}

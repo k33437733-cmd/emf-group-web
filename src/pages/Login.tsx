@@ -70,9 +70,9 @@ export default function Login() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center'
-    }} className="animate-fade">
+    }} className="animate-fade login-container">
       <div 
-        className="glass-card" 
+        className="glass-card login-card" 
         style={{ 
           padding: '44px 36px', 
           width: '100%', 

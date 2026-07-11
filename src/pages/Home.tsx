@@ -67,7 +67,7 @@ export default function Home() {
     <div className="animate-fade" style={{ direction: 'rtl', width: '100%', background: 'var(--bg-primary)' }}>
       
       {/* Hero Section - Compact */}
-      <div style={{
+      <div className="home-hero" style={{
         position: 'relative',
         width: '100%',
         minHeight: '55vh',

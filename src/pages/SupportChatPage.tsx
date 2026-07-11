@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSupportChat } from '../hooks/useSupportChat';
@@ -48,6 +49,8 @@ export default function SupportChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [adminTab, setAdminTab] = useState<AdminTab>('all');
+  const mq = useMediaQuery();
+  const [showMobileConvList, setShowMobileConvList] = useState(true);
 
   // Auto-select conversation from URL param
   useEffect(() => {
@@ -77,6 +80,12 @@ export default function SupportChatPage() {
     if (!text.trim() && !file) return;
     sendMessage(text, 'text', file);
   }, [sendMessage]);
+
+  // On mobile, selecting a conversation shows the chat panel
+  const handleSelectConv = useCallback((id: string) => {
+    setActiveConv(id);
+    setShowMobileConvList(false);
+  }, [setActiveConv]);
 
   const filteredConversations = useMemo(() => {
     if (!isAdmin) return conversations;
@@ -237,13 +246,28 @@ export default function SupportChatPage() {
   ];
 
   return (
-    <div style={{
+    <div className="support-admin-container" style={{
       height: 'calc(100vh - var(--navbar-height))', display: 'flex',
       direction: rtl ? 'rtl' : 'ltr', background: 'var(--bg-primary)',
     }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .chat-back-btn { display: flex !important; }
+          .support-panel-info { display: none !important; }
+          .support-panel-convlist { width: 100% !important; }
+          .support-panel-convlist.mobile-hidden { display: none !important; }
+          .support-panel-chat { width: 100% !important; min-width: 0 !important; }
+        }
+        @media (min-width: 769px) and (max-width: 1024px) {
+          .support-panel-convlist { width: 260px !important; }
+          .support-panel-info { display: none !important; }
+        }
+        @media (min-width: 1025px) {
+          .chat-back-btn { display: none !important; }
+        }
+      `}</style>
       {/* ── Left Panel: Conversations List ── */}
-      <div style={{
-        width: '320px',
+      <div className={'support-panel-convlist' + (showMobileConvList ? '' : ' mobile-hidden')} style={{
         borderLeft: rtl ? '1px solid var(--color-border)' : 'none',
         borderRight: !rtl ? '1px solid var(--color-border)' : 'none',
         display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', flexShrink: 0,
@@ -271,7 +295,7 @@ export default function SupportChatPage() {
           <ConversationList
             conversations={filteredConversations}
             activeId={activeConvId}
-            onSelect={setActiveConv}
+            onSelect={handleSelectConv}
             loading={loading}
             rtl={rtl}
           />
@@ -279,7 +303,7 @@ export default function SupportChatPage() {
       </div>
 
       {/* ── Center Panel: Chat ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <div className="support-panel-chat" style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
         {activeConversation ? (
           <>
             {/* Chat Header */}
@@ -289,6 +313,10 @@ export default function SupportChatPage() {
               background: 'var(--bg-secondary)', flexShrink: 0,
               boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
             }}>
+              <button className="chat-back-btn" onClick={() => setShowMobileConvList(true)}
+                style={{ display: 'none', background: 'none', border: 'none', color: 'var(--text-primary)', cursor: 'pointer', padding: '4px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={rtl ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'} /></svg>
+              </button>
               <div style={{
                 width: '34px', height: '34px', borderRadius: '50%',
                 background: 'var(--gradient-primary)',
@@ -374,8 +402,7 @@ export default function SupportChatPage() {
 
       {/* ── Right Panel: Customer Info ── */}
       {activeConversation && (
-        <div style={{
-          width: '260px',
+        <div className="support-panel-info" style={{
           borderRight: rtl ? '1px solid var(--color-border)' : 'none',
           borderLeft: !rtl ? '1px solid var(--color-border)' : 'none',
           padding: '16px', background: 'var(--bg-secondary)', flexShrink: 0,

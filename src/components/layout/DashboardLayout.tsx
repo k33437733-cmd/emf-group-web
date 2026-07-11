@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useI18n } from '../../context/I18nContext';
@@ -22,9 +22,15 @@ export default function DashboardLayout() {
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
   const { rtl } = useI18n();
+  const location = useLocation();
   const prevRef = useRef<Map<string, string>>(new Map());
   const isAdmin = !!(user && (user.role === 'admin' || user.role === 'super_admin'));
+
+  const useOverlay = isMobile || (isTablet && mobileOpen);
+  const sidebarMargin = !isMobile ? (collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)') : '0';
+  const marginProp = rtl ? 'marginRight' : 'marginLeft';
 
   // Global notification listener for support messages
   useEffect(() => {
@@ -49,39 +55,43 @@ export default function DashboardLayout() {
   }, [isAdmin, user]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed));
-    } catch {}
+    try { localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed)); } catch {}
   }, [collapsed]);
 
   useEffect(() => {
     const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768 && mobileOpen) setMobileOpen(false);
+      const w = window.innerWidth;
+      setIsMobile(w < 768);
+      setIsTablet(w >= 768 && w < 1024);
+      if (w >= 768 && mobileOpen) setMobileOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [mobileOpen]);
 
-  const toggleSidebar = useCallback(() => {
-    if (isMobile) setMobileOpen(s => !s);
-    else setCollapsed(s => !s);
-  }, [isMobile]);
+  // Close mobile sidebar on navigation
+  useEffect(() => {
+    if (mobileOpen) setMobileOpen(false);
+  }, [location.pathname]);
 
-  const closeMobile = useCallback(() => setMobileOpen(false), []);
+  const toggleSidebar = useCallback(() => {
+    if (isMobile || isTablet) setMobileOpen(s => !s);
+    else setCollapsed(s => !s);
+  }, [isMobile, isTablet]);
+
+  const closeSidebar = useCallback(() => setMobileOpen(false), []);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', direction: rtl ? 'rtl' : 'ltr' }}>
       <Sidebar
-        collapsed={collapsed}
+        collapsed={isTablet ? true : collapsed}
         onToggle={() => setCollapsed(s => !s)}
-        mobileOpen={isMobile ? mobileOpen : undefined}
-        onMobileClose={closeMobile}
+        mobileOpen={useOverlay ? mobileOpen : undefined}
+        onMobileClose={closeSidebar}
       />
       <div className="main-layout-container" style={{
         flex: 1, minWidth: 0,
-        marginRight: rtl ? (collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)') : 0,
-        marginLeft: !rtl ? (collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)') : 0,
+        [marginProp]: sidebarMargin,
         transition: 'margin-right 250ms cubic-bezier(0.16, 1, 0.3, 1), margin-left 250ms cubic-bezier(0.16, 1, 0.3, 1)',
         display: 'flex', flexDirection: 'column', minHeight: '100vh',
       }}>
@@ -96,6 +106,10 @@ export default function DashboardLayout() {
       <style>{`
         @media (max-width: 767px) {
           .main-layout-container { margin-right: 0 !important; margin-left: 0 !important; }
+        }
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .main-layout-container { margin-right: var(--sidebar-collapsed-width) !important; margin-left: 0 !important; }
+          [dir="ltr"] .main-layout-container { margin-left: var(--sidebar-collapsed-width) !important; margin-right: 0 !important; }
         }
       `}</style>
     </div>
