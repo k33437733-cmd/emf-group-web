@@ -6,7 +6,6 @@ import { uploadFile, deleteFileFromStorage } from '../firebase/storage';
 import type { ContentItem } from '../types';
 import { Search, Video, Download, Play, Monitor, FileText, Share2, Eye, X, Filter, Inbox, Edit3, EyeOff, Shield, Trash2 } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
-import LazyVideo from '../components/ui/LazyVideo';
 import { SkeletonGrid } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
@@ -33,14 +32,8 @@ export default function Content() {
   const [editUploading, setEditUploading] = useState(false);
   const [editUploadProgress, setEditUploadProgress] = useState(0);
 
-  const canViewRestricted = !!user && ['agent', 'admin', 'super_admin'].includes(user.role);
   const canUseAdminDownload = !!user && ['admin', 'super_admin'].includes(user.role);
   const isAdmin = !!user && (user.role === 'admin' || user.role === 'super_admin');
-
-  // Debug helpers: show counts and sample items when videos seem missing
-  const totalItems = items.length;
-  const totalVideos = items.filter(i => i.type === 'video').length;
-  const sampleItems = items.slice(0, 8);
 
   useEffect(() => {
     const unsub = subscribeToContents((list) => {
@@ -190,40 +183,17 @@ export default function Content() {
   ];
 
   return (
-    <div className="page-wrapper page-enter" style={{ direction: 'rtl' }}>
-      {/* Page Header */}
-      <div style={{ marginBottom: 'var(--space-8)' }}>
+    <div className="page-wrapper page-enter content-library-shell" style={{ direction: 'rtl' }}>
+      <div className="content-library-header">
         <h1 className="page-title">المكتبة الرقمية</h1>
-        <p className="body-text" style={{ marginTop: 'var(--space-2)' }}>
-          مستودع الفيديوهات، التطبيقات والملفات الرسمية الخاصة بالعمل
+        <p className="body-text" style={{ marginTop: 'var(--space-2)', maxWidth: '720px' }}>
+          مستودع الفيديوهات، التطبيقات والملفات الرسمية الخاصة بالعمل مع تجربة تصفح حديثة وسريعة
         </p>
       </div>
 
-      {/* Search & Filters */}
-      {/* Debug panel (temporary) */}
-      <div className="card-base" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={{ fontWeight: 700 }}>Debug:</div>
-          <div>Loaded items: <strong>{totalItems}</strong></div>
-          <div>Video items: <strong>{totalVideos}</strong></div>
-        </div>
-        <div style={{ marginTop: '10px', fontSize: '0.95rem' }}>
-          {sampleItems.length === 0 ? (
-            <div style={{ color: 'var(--text-secondary)' }}>No items loaded yet.</div>
-          ) : (
-            <div style={{ display: 'grid', gap: '6px' }}>
-              {sampleItems.map(it => (
-                <div key={it.id} style={{ fontSize: '0.9rem' }}>
-                  {it.title || '(no title)'} — {it.type} — {it.accessLevel ?? 'no accessLevel'}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="card-base" role="search" aria-label="بحث في المحتوى" style={{ padding: 'var(--space-4) var(--space-5)', marginBottom: 'var(--space-8)' }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ position: 'relative', width: '100%', maxWidth: '360px' }}>
+      <div className="content-library-toolbar" role="search" aria-label="بحث في المحتوى">
+        <div className="content-library-toolbar__row">
+          <div className="content-library-toolbar__search">
             <input
               type="text"
               className="form-input"
@@ -235,39 +205,33 @@ export default function Content() {
             />
             <Search size={16} style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }} />
             {search && (
-              <button onClick={() => setSearch('')} className="btn btn-icon btn-sm btn-ghost" style={{
-                position: 'absolute', left: '6px', top: '50%', transform: 'translateY(-50%)',
-              }}>
+              <button onClick={() => setSearch('')} className="btn btn-icon btn-sm btn-ghost" style={{ position: 'absolute', left: '6px', top: '50%', transform: 'translateY(-50%)' }}>
                 <X size={14} />
               </button>
             )}
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-            {filterButtons.map(btn => (
+
+          <div className="content-library-toolbar__filters">
+            {filterButtons.map(btn => {
+              const Icon = btn.icon;
+              const active = selectedType === btn.id;
+              return (
                 <button
                   key={btn.id}
                   onClick={() => setSelectedType(btn.id)}
-                  aria-pressed={selectedType === btn.id}
-                  style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 'var(--space-1)',
-                  padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--text-xs)', fontWeight: 600,
-                  height: '36px', borderRadius: 'var(--radius-md)',
-                  border: selectedType === btn.id ? 'none' : '1px solid var(--border-color)',
-                  background: selectedType === btn.id ? 'var(--accent-blue)' : 'transparent',
-                  color: selectedType === btn.id ? '#fff' : 'var(--text-secondary)',
-                  cursor: 'pointer', transition: 'all var(--transition-base)',
-                }}
-
-              >
-                <btn.icon size={14} />
-                <span>{btn.label}</span>
-              </button>
-            ))}
+                  aria-pressed={active}
+                  className={`btn btn-sm ${active ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ minHeight: '40px' }}
+                >
+                  <Icon size={14} />
+                  <span>{btn.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Content Grid */}
       {loading ? (
         <SkeletonGrid count={6} />
       ) : filteredItems.length === 0 ? (
@@ -277,110 +241,107 @@ export default function Content() {
           message={search || selectedType !== 'all' ? 'لم يتم العثور على ملفات تطابق معايير البحث.' : 'لم يتم رفع أي ملفات بعد، تحقق لاحقاً.'}
         />
       ) : (
-        <div className="grid-cards">
+        <div className="content-library-grid">
           {filteredItems.map(item => {
             const isVideo = item.type === 'video';
             const colors: Record<string, { bg: string; icon: string; gradient: string }> = {
-              video: { bg: 'rgba(59,130,246,0.08)', icon: '#3b82f6', gradient: 'linear-gradient(135deg, rgba(59,130,246,0.05), rgba(30,64,175,0.15))' },
-              app: { bg: 'rgba(245,158,11,0.08)', icon: '#f59e0b', gradient: 'linear-gradient(135deg, rgba(139,92,246,0.05), rgba(76,29,149,0.15))' },
-              other: { bg: 'rgba(6,182,212,0.08)', icon: '#06b6d4', gradient: 'linear-gradient(135deg, rgba(6,182,212,0.05), rgba(8,79,96,0.15))' },
+              video: { bg: 'rgba(59,130,246,0.08)', icon: '#3b82f6', gradient: 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(30,64,175,0.24))' },
+              app: { bg: 'rgba(245,158,11,0.08)', icon: '#f59e0b', gradient: 'linear-gradient(135deg, rgba(139,92,246,0.12), rgba(76,29,149,0.24))' },
+              other: { bg: 'rgba(6,182,212,0.08)', icon: '#06b6d4', gradient: 'linear-gradient(135deg, rgba(6,182,212,0.12), rgba(8,79,96,0.24))' },
             };
             const c = colors[item.type] || colors.other;
 
             return (
-              <div key={item.id} id={item.id} className="card-base" style={{
-                display: 'flex', flexDirection: 'column', overflow: 'hidden', height: '100%',
-              }}>
-                {/* Banner */}
-                <div style={{
-                  height: '170px', background: c.gradient,
-                  borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  position: 'relative', overflow: 'hidden',
-                }}>
-                  {isVideo && <LazyVideo src={item.url} />}
+              <article key={item.id} id={item.id} className="card-base content-card">
+                <div className="content-card__media" style={{ background: c.gradient }}>
                   {isVideo ? (
-                    <button onClick={() => handlePlayVideo(item)} style={{
-                      background: 'rgba(9,13,22,0.65)', border: '1px solid rgba(255,255,255,0.12)',
-                      color: 'white', width: '50px', height: '50px', borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      cursor: 'pointer', backdropFilter: 'blur(6px)', zIndex: 2,
-                      transition: 'all var(--transition-base)',
-                    }} className="content-play-btn">
-                      <Play size={20} style={{ marginRight: '-2px', fill: '#fff' }} />
-                    </button>
+                    item.thumbnailUrl ? (
+                      <img src={item.thumbnailUrl} alt={item.title} className="content-card__media-image" loading="lazy" />
+                    ) : (
+                      <div className="content-card__media-placeholder">
+                        <div className="content-card__media-placeholder-icon">
+                          <Play size={20} />
+                        </div>
+                        <span>No Preview Available</span>
+                      </div>
+                    )
                   ) : (
-                    <Download size={40} style={{ opacity: 0.5, zIndex: 1 }} />
+                    <div className="content-card__media-placeholder">
+                      <div className="content-card__media-placeholder-icon">
+                        <Download size={20} />
+                      </div>
+                      <span>{item.type === 'app' ? 'Application' : 'File'}</span>
+                    </div>
                   )}
-                  <span style={{
-                    position: 'absolute', top: 'var(--space-3)', right: 'var(--space-3)',
-                    background: 'rgba(9,13,22,0.8)', padding: '3px 10px',
-                    borderRadius: 'var(--radius-sm)', fontSize: '10px', fontWeight: 700,
-                    border: '1px solid rgba(255,255,255,0.06)', color: c.icon, zIndex: 2,
-                  }}>
+
+                  {isVideo && (
+                    <div className="content-card__media-overlay">
+                      <button onClick={() => handlePlayVideo(item)} className="content-card__play-btn">
+                        <Play size={20} style={{ marginRight: '-2px', fill: '#fff' }} />
+                      </button>
+                    </div>
+                  )}
+
+                  <span className="content-card__type-badge" style={{ color: c.icon }}>
                     {item.type === 'video' ? 'فيديو' : item.type === 'app' ? 'تطبيق' : 'ملف'}
                   </span>
                 </div>
 
-                {/* Body */}
-                <div style={{ padding: 'var(--space-5)', display: 'flex', flexDirection: 'column', flexGrow: 1, gap: 'var(--space-3)' }}>
-                  <h4 style={{ fontSize: 'var(--text-lg)', fontWeight: 700, color: 'var(--text-primary)' }}>{item.title}</h4>
-                  <p style={{
-                    fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 1.6,
-                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden', flexGrow: 1,
-                  }}>
-                    {item.description || 'لا يوجد وصف متاح.'}
-                  </p>
-                  <div style={{
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                    fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)',
-                    borderTop: '1px solid var(--border-color)', paddingTop: 'var(--space-3)',
-                  }}>
+                <div className="content-card__body">
+                  <div className="content-card__header">
+                    <h4 className="content-card__title">{item.title}</h4>
+                    <p className="content-card__description">
+                      {item.description || 'لا يوجد وصف متاح.'}
+                    </p>
+                  </div>
+
+                  <div className="content-card__meta">
                     <span>{(item.fileSize / (1024 * 1024)).toFixed(1)} MB</span>
-                    <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}><Eye size={12} />{item.views || 0}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}><Download size={12} />{item.downloads || 0}</span>
+                    <div className="content-card__meta-stats">
+                      <span className="content-card__meta-pill"><Eye size={12} />{item.views || 0}</span>
+                      <span className="content-card__meta-pill"><Download size={12} />{item.downloads || 0}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', gap: 'var(--space-2)', marginTop: 'var(--space-2)', flexWrap: 'wrap' }}>
+
+                  <div className="content-card__actions">
                     {isVideo ? (
-                      <button onClick={() => handlePlayVideo(item)} className="btn btn-primary" style={{ flex: 1, minWidth: '140px', height: '36px', fontSize: 'var(--text-sm)' }}>
+                      <button onClick={() => handlePlayVideo(item)} className="btn btn-primary content-card__main-action">
                         <Play size={14} style={{ fill: '#fff' }} /> عرض الفيديو
                       </button>
                     ) : (
-                      <button onClick={() => handleDownload(item)} className="btn btn-primary" disabled={item.downloadProtected && !canUseAdminDownload} style={{ flex: 1, minWidth: '140px', height: '36px', fontSize: 'var(--text-sm)', opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1, cursor: item.downloadProtected && !canUseAdminDownload ? 'not-allowed' : 'pointer' }}>
+                      <button onClick={() => handleDownload(item)} className="btn btn-primary content-card__main-action" disabled={item.downloadProtected && !canUseAdminDownload} style={{ opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1 }}>
                         <Download size={14} /> تنزيل
                       </button>
                     )}
-                    <button onClick={() => handleDownload(item)} title={item.downloadProtected ? 'محتوى محمي من التنزيل' : 'تحميل مباشر'} className="btn btn-secondary" disabled={item.downloadProtected && !canUseAdminDownload} style={{ width: '36px', height: '36px', padding: 0, borderRadius: 'var(--radius-md)', opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1, cursor: item.downloadProtected && !canUseAdminDownload ? 'not-allowed' : 'pointer' }}>
+                    <button onClick={() => handleDownload(item)} title={item.downloadProtected ? 'محتوى محمي من التنزيل' : 'تحميل مباشر'} className="btn btn-secondary btn-icon content-card__icon-action" disabled={item.downloadProtected && !canUseAdminDownload} style={{ opacity: item.downloadProtected && !canUseAdminDownload ? 0.55 : 1 }}>
                       <Download size={14} />
                     </button>
-                    <button onClick={() => handleShare(item, 'whatsapp')} title="مشاركة واتساب" className="btn btn-icon btn-sm btn-ghost" style={{ color: 'var(--accent-emerald)' }}>
+                    <button onClick={() => handleShare(item, 'whatsapp')} title="مشاركة واتساب" className="btn btn-ghost btn-icon content-card__icon-action content-card__icon-action--share">
                       <Share2 size={14} />
                     </button>
                   </div>
+
                   {isAdmin && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px' }}>
-                      <button onClick={() => openEditContentModal(item)} style={{ background: 'var(--accent-indigo)', color: 'white', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                    <div className="content-card__admin-actions">
+                      <button onClick={() => openEditContentModal(item)} className="content-card__admin-btn content-card__admin-btn--edit">
                         <Edit3 size={14} /> تعديل
                       </button>
-                      <button onClick={() => handleToggleHideContent(item)} style={{ background: item.accessLevel === 'all' ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', color: item.accessLevel === 'all' ? 'var(--accent-amber)' : 'var(--accent-red)', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                      <button onClick={() => handleToggleHideContent(item)} className={`content-card__admin-btn ${item.accessLevel === 'all' ? 'content-card__admin-btn--warn' : 'content-card__admin-btn--danger'}`}>
                         {item.accessLevel === 'all' ? <EyeOff size={14} /> : <Eye size={14} />} {item.accessLevel === 'all' ? 'إخفاء' : 'إظهار'}
                       </button>
-                      <button onClick={() => handleToggleDownloadProtection(item)} style={{ background: item.downloadProtected ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)', color: item.downloadProtected ? 'var(--accent-red)' : 'var(--accent-emerald)', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                      <button onClick={() => handleToggleDownloadProtection(item)} className={`content-card__admin-btn ${item.downloadProtected ? 'content-card__admin-btn--danger' : 'content-card__admin-btn--success'}`}>
                         <Shield size={14} /> {item.downloadProtected ? 'إلغاء حماية' : 'حماية تنزيل'}
                       </button>
-                      <button onClick={() => handleDeleteContent(item)} style={{ background: 'rgba(244,63,94,0.12)', color: 'var(--accent-red)', border: 'none', borderRadius: '999px', padding: '8px 12px', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}>
+                      <button onClick={() => handleDeleteContent(item)} className="content-card__admin-btn content-card__admin-btn--delete">
                         <Trash2 size={14} /> حذف
                       </button>
                     </div>
                   )}
                   {item.downloadProtected && (
-                    <div style={{ marginTop: '8px', fontSize: '0.78rem', color: 'var(--accent-red)' }}>{'هذا المحتوى محمي من التنزيل'}</div>
+                    <div className="content-card__protected-badge">هذا المحتوى محمي من التنزيل</div>
                   )}
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
