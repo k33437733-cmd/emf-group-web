@@ -100,7 +100,7 @@ export default function Login() {
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '6px', marginBottom: '14px', direction: 'ltr' }}>
             <span style={{ color: 'var(--text-primary)', fontWeight: 900, fontSize: '1.5rem', letterSpacing: '0.5px' }}>EMF</span>
             <span style={{
-              background: 'var(--gradient-gold)',
+              background: 'var(--gradient-primary)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               fontWeight: 900, fontSize: '1.5rem',

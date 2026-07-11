@@ -5,6 +5,7 @@ import { useI18n } from '../../context/I18nContext';
 import {
   LayoutDashboard, FileText, MessageSquare, HeadphonesIcon,
   FolderKanban, ChevronLeft, LogOut, Sun, Moon, Megaphone,
+  User, Settings,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,21 +27,13 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
     {
       key: 'mainMenu',
       items: [
-        { path: '/dashboard', key: 'dashboard', icon: LayoutDashboard, adminOnly: false },
+        { path: '/dashboard', key: 'home', icon: LayoutDashboard, adminOnly: false },
       ],
     },
     {
-      key: 'content',
+      key: 'digitalLibrary',
       items: [
-        { path: '/content', key: 'content', icon: FileText, adminOnly: false },
-      ],
-    },
-    {
-      key: 'managementMenu',
-      adminOnly: true,
-      items: [
-        { path: '/chat', key: 'chat', icon: MessageSquare, adminOnly: true },
-        { path: '/support', key: 'support', icon: HeadphonesIcon, adminOnly: true },
+        { path: '/content', key: 'digitalLibrary', icon: FileText, adminOnly: false },
       ],
     },
     {
@@ -50,10 +43,31 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
       ],
     },
     {
+      key: 'supportServices',
+      items: [
+        { path: '/support', key: 'support', icon: HeadphonesIcon, adminOnly: false },
+      ],
+    },
+    {
+      key: 'managementMenu',
+      adminOnly: true,
+      items: [
+        { path: '/chat', key: 'chat', icon: MessageSquare, adminOnly: true },
+      ],
+    },
+    {
       key: 'systemMenu',
       adminOnly: true,
       items: [
         { path: '/admin/release-notes', key: 'releaseNotes', icon: Megaphone, adminOnly: true },
+      ],
+    },
+    {
+      key: 'accountSection',
+      adminOnly: false,
+      items: [
+        { path: '/settings', key: 'profile', icon: User, adminOnly: false },
+        { path: '/settings', key: 'settings', icon: Settings, adminOnly: false },
       ],
     },
   ];
@@ -64,7 +78,12 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
     return hasVisibleItems;
   });
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string, key: string) => {
+    if (key === 'profile' || key === 'settings') {
+      return location.pathname.startsWith('/settings');
+    }
+    return location.pathname === path;
+  };
 
   const handleNavClick = () => {
     if (window.innerWidth < 768 && onMobileClose) {
@@ -189,7 +208,7 @@ export default function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose
                 </div>
               )}
               {section.items.filter(i => !i.adminOnly || isAdmin).map(item => {
-                const active = isActive(item.path);
+                const active = isActive(item.path, item.key);
                 return (
                   <Link
                     key={item.path}
