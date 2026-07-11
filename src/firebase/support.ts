@@ -13,12 +13,16 @@ const NOTIFICATIONS = 'notifications';
 
 function nowISO() { return new Date().toISOString(); }
 
-export async function getOrCreateSupportConversation(customer: UserProfile): Promise<string> {
+/**
+ * Find existing support conversation for a customer, or create one.
+ * This does NOT use orderBy (avoids composite index requirement on getDocs).
+ */
+export async function ensureSupportConversation(customer: UserProfile): Promise<string> {
   const q = query(
     collection(db, CONVERSATIONS),
     where('members', 'array-contains', customer.uid),
     where('type', '==', 'support'),
-    orderBy('updatedAt', 'desc'), limit(1)
+    limit(1)
   );
   const snap = await getDocs(q);
   if (!snap.empty) return snap.docs[0].id;
@@ -30,7 +34,7 @@ export async function getOrCreateSupportConversation(customer: UserProfile): Pro
     memberNames: { [customer.uid]: customer.name || customer.email || 'Unknown' },
     memberRoles: { [customer.uid]: customer.role || 'user' },
     isGroup: false, name: customer.name,
-    lastMessage: 'بدء المحادثة', lastMessageTime: now,
+    lastMessage: '', lastMessageTime: now,
     lastMessageSenderId: customer.uid,
     unreadCount: { [customer.uid]: 0 },
     status: 'active', createdAt: now, createdBy: customer.uid, updatedAt: now,
@@ -38,22 +42,66 @@ export async function getOrCreateSupportConversation(customer: UserProfile): Pro
   return convRef.id;
 }
 
-export function subscribeToSupportConversations(userUid: string, isAdmin: boolean, callback: (list: Conversation[]) => void) {
-  const constraints: any[] = [where('type', '==', 'support')];
-  if (!isAdmin) constraints.push(where('members', 'array-contains', userUid));
-  constraints.push(orderBy('updatedAt', 'desc'));
-  return onSnapshot(query(collection(db, CONVERSATIONS), ...constraints), snap =>
-    callback(snap.docs.map(d => d.data() as Conversation))
-  );
+/**
+ * Subscribe to support conversations with proper error handling.
+ * onError callback ensures the loading state never hangs forever.
+ */
+export function subscribeToSupportConversations(
+  userUid: string,
+  isAdmin: boolean,
+  callback: (list: Conversation[]) => void,
+  onError?: (err: Error) => void
+) {
+  try {
+    const base = collection(db, CONVERSATIONS);
+    if (isAdmin) {
+      const q = query(base, where('type', '==', 'support'), orderBy('updatedAt', 'desc'));
+      return onSnapshot(q,
+        snap => callback(snap.docs.map(d => d.data() as Conversation)),
+        err => { console.error('Support conv snapshot error', err); onError?.(err); callback([]); }
+      );
+    }
+    const q = query(base, where('members', 'array-contains', userUid), where('type', '==', 'support'), orderBy('updatedAt', 'desc'));
+    return onSnapshot(q,
+      snap => callback(snap.docs.map(d => d.data() as Conversation)),
+      err => { console.error('Support conv snapshot error', err); onError?.(err); callback([]); }
+    );
+  } catch (err) {
+    console.error('Support conv query error', err);
+    onError?.(err as Error);
+    callback([]);
+    return () => {};
+  }
 }
 
-export function subscribeToMessages(conversationId: string, callback: (msgs: ChatMessage[]) => void) {
-  return onSnapshot(
-    query(collection(db, MESSAGES), where('conversationId', '==', conversationId), orderBy('createdAt', 'asc')),
-    snap => callback(snap.docs.map(d => ({ ...d.data(), id: d.id } as ChatMessage)))
-  );
+/**
+ * Subscribe to messages for a conversation with error handling.
+ */
+export function subscribeToMessages(
+  conversationId: string,
+  callback: (msgs: ChatMessage[]) => void,
+  onError?: (err: Error) => void
+) {
+  try {
+    const q = query(
+      collection(db, MESSAGES),
+      where('conversationId', '==', conversationId),
+      orderBy('createdAt', 'asc')
+    );
+    return onSnapshot(q,
+      snap => callback(snap.docs.map(d => ({ ...d.data(), id: d.id } as ChatMessage))),
+      err => { console.error('Messages snapshot error', err); onError?.(err); }
+    );
+  } catch (err) {
+    console.error('Messages query error', err);
+    onError?.(err as Error);
+    return () => {};
+  }
 }
 
+/**
+ * Send a message within a support conversation.
+ */
 export async function sendSupportMessage(
   conversationId: string, sender: UserProfile, content: string,
   type: ChatMessage['type'] = 'text',
@@ -119,11 +167,14 @@ export async function updateMessageStatus(_conversationId: string, messageId: st
 }
 
 export function subscribeTypingStatus(conversationId: string, callback: (data: { userId: string; userName: string; isTyping: boolean } | null) => void) {
-  return onSnapshot(doc(db, 'typing_status', conversationId), snap => {
-    if (!snap.exists()) { callback(null); return; }
-    const d = snap.data();
-    callback({ userId: d.userId, userName: d.userName || '', isTyping: d.isTyping });
-  });
+  return onSnapshot(doc(db, 'typing_status', conversationId),
+    snap => {
+      if (!snap.exists()) { callback(null); return; }
+      const d = snap.data();
+      callback({ userId: d.userId, userName: d.userName || '', isTyping: d.isTyping });
+    },
+    () => callback(null)
+  );
 }
 
 export async function setTypingStatus(conversationId: string, userId: string, userName: string, isTyping: boolean) {
@@ -162,26 +213,33 @@ export function uploadAttachment(file: File, onProgress: (pct: number) => void):
   });
 }
 
+/**
+ * Mark all unread messages in a conversation as read.
+ * Uses two simple queries instead of a compound one to avoid index requirements.
+ */
 export async function markAllMessagesRead(conversationId: string, userUid: string) {
   const q = query(
     collection(db, MESSAGES),
     where('conversationId', '==', conversationId),
-    where('senderId', '!=', userUid),
+    orderBy('createdAt', 'asc')
   );
   const snap = await getDocs(q);
   const batch = writeBatch(db);
+  let count = 0;
   snap.docs.forEach(d => {
     const msg = d.data() as ChatMessage;
-    if (msg.deliveryStatus === 'sent' || msg.deliveryStatus === 'delivered') {
+    if (msg.senderId !== userUid && (msg.deliveryStatus === 'sent' || msg.deliveryStatus === 'delivered')) {
       batch.update(d.ref, { deliveryStatus: 'read', [`readBy.${userUid}`]: nowISO() });
+      count++;
     }
   });
-  await batch.commit();
+  if (count > 0) await batch.commit();
 }
 
 export function subscribeUnreadSupportCount(userUid: string, callback: (count: number) => void) {
   return onSnapshot(
     query(collection(db, NOTIFICATIONS), where('recipientId', '==', userUid), where('read', '==', false), where('category', '==', 'support')),
-    snap => callback(snap.docs.length)
+    snap => callback(snap.docs.length),
+    () => callback(0)
   );
 }

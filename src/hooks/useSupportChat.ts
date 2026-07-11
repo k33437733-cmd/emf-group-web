@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './useAuth';
 import {
-  getOrCreateSupportConversation, subscribeToSupportConversations,
+  ensureSupportConversation, subscribeToSupportConversations,
   subscribeToMessages, sendSupportMessage, markConversationRead,
   setTypingStatus, deleteSupportMessage, editSupportMessage,
   uploadAttachment, subscribeTypingStatus,
@@ -13,6 +13,7 @@ interface UseSupportChatReturn {
   activeConvId: string | null;
   messages: ChatMessage[];
   loading: boolean;
+  error: string | null;
   sending: boolean;
   typingUsers: { userId: string; userName: string }[];
   activeConversation: Conversation | null;
@@ -33,6 +34,7 @@ export function useSupportChat(): UseSupportChatReturn {
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const [typingUsers, setTypingUsers] = useState<{ userId: string; userName: string }[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -42,30 +44,90 @@ export function useSupportChat(): UseSupportChatReturn {
 
   const activeConversation = conversations.find(c => c.id === activeConvId) || null;
 
+  // Subscribe to conversations list, with error fallback
   useEffect(() => {
-    if (!user) return;
-    const unsub = subscribeToSupportConversations(user.uid, isAdmin, (list) => {
-      setConversations(list);
-      setLoading(false);
-      if (!activeConvId && list.length > 0) setActiveConvId(list[0].id);
-    });
-    return () => unsub();
+    if (!user) { setLoading(false); return; }
+
+    let cancelled = false;
+
+    const unsub = subscribeToSupportConversations(
+      user.uid,
+      isAdmin,
+      (list) => {
+        if (cancelled) return;
+        setConversations(list);
+        setError(null);
+        setLoading(false);
+        if (!activeConvId && list.length > 0) {
+          setActiveConvId(list[0].id);
+        }
+      },
+      (err) => {
+        if (cancelled) return;
+        console.error('Failed to load conversations', err);
+        setError('فشل تحميل المحادثات. حاول مرة أخرى.');
+        setLoading(false);
+      }
+    );
+
+    return () => { cancelled = true; unsub(); };
   }, [user, isAdmin]);
 
+  // For non-admin users, auto-ensure a conversation exists
+  useEffect(() => {
+    if (!user || isAdmin) return;
+    if (loading) return;
+    if (conversations.length > 0) return;
+
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const id = await ensureSupportConversation(user);
+        if (!cancelled) setActiveConvId(id);
+      } catch (err) {
+        console.error('Failed to ensure support conversation', err);
+        if (!cancelled) setError('فشل إنشاء المحادثة. حاول مرة أخرى.');
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [user, isAdmin, loading, conversations.length]);
+
+  // Subscribe to messages for active conversation
   useEffect(() => {
     if (!activeConvId) { setMessages([]); return; }
-    const unsub = subscribeToMessages(activeConvId, setMessages);
+
+    let cancelled = false;
+
+    const unsub = subscribeToMessages(
+      activeConvId,
+      (msgs) => { if (!cancelled) setMessages(msgs); },
+      (err) => {
+        if (cancelled) return;
+        console.error('Failed to load messages', err);
+        setError('فشل تحميل الرسائل');
+      }
+    );
+
     markConversationRead(activeConvId, user?.uid || '');
-    return () => unsub();
+
+    return () => { cancelled = true; unsub(); };
   }, [activeConvId, user?.uid]);
 
+  // Subscribe to typing status
   useEffect(() => {
     if (!activeConvId) return;
+
+    let cancelled = false;
+
     const unsub = subscribeTypingStatus(activeConvId, (data) => {
+      if (cancelled) return;
       if (!data || data.userId === user?.uid) { setTypingUsers([]); return; }
       setTypingUsers(data.isTyping ? [{ userId: data.userId, userName: data.userName }] : []);
     });
-    return () => unsub();
+
+    return () => { cancelled = true; unsub(); };
   }, [activeConvId, user?.uid]);
 
   const sendMsg = useCallback(async (content: string, type: ChatMessage['type'] = 'text', file?: File) => {
@@ -93,9 +155,13 @@ export function useSupportChat(): UseSupportChatReturn {
   const startNewConv = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    setError(null);
     try {
-      const id = await getOrCreateSupportConversation(user);
+      const id = await ensureSupportConversation(user);
       setActiveConvId(id);
+    } catch (err) {
+      console.error('Failed to create conversation', err);
+      setError('فشل إنشاء المحادثة. حاول مرة أخرى.');
     } finally {
       setLoading(false);
     }
@@ -127,7 +193,7 @@ export function useSupportChat(): UseSupportChatReturn {
   }, []);
 
   return {
-    conversations, activeConvId, messages, loading, sending, typingUsers,
+    conversations, activeConvId, messages, loading, error, sending, typingUsers,
     activeConversation, uploadProgress,
     setActiveConv: setActiveConvId, sendMessage: sendMsg, startNewConversation: startNewConv,
     setTyping, deleteMessage: deleteMsg, editMessage: editMsg, loadMore, hasMore,

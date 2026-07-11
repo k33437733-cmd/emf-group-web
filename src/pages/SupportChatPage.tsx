@@ -20,7 +20,7 @@ export default function SupportChatPage() {
   const isAdmin = !!(user && (user.role === 'admin' || user.role === 'super_admin'));
 
   const {
-    conversations, activeConvId, messages, loading, sending, typingUsers,
+    conversations, activeConvId, messages, loading, error, sending, typingUsers,
     activeConversation, uploadProgress, setActiveConv, sendMessage,
     startNewConversation, setTyping, deleteMessage, editMessage,
   } = useSupportChat();
@@ -87,6 +87,17 @@ export default function SupportChatPage() {
 
         {loading ? (
           <SkeletonChat />
+        ) : error && !activeConvId ? (
+          /* Error state */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '32px' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(239,68,68,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ef4444' }}>
+              <MessageSquare size={22} />
+            </div>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', textAlign: 'center', maxWidth: '300px' }}>{error}</p>
+            <button onClick={startNewConversation} className="btn btn-primary" style={{ gap: '8px', padding: '0 20px', fontSize: '0.8rem' }}>
+              إعادة المحاولة
+            </button>
+          </div>
         ) : !activeConvId ? (
           /* No conversation yet - start new */
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '32px' }}>
