@@ -9,7 +9,7 @@ import TypingIndicator from '../components/support/TypingIndicator';
 import ConversationList from '../components/support/ConversationList';
 import SkeletonChat from '../components/support/SkeletonChat';
 import { markAllMessagesRead } from '../firebase/support';
-import { MessageSquare, CheckCheck, Search as SearchIcon } from 'lucide-react';
+import { MessageSquare, CheckCheck } from 'lucide-react';
 
 type AdminTab = 'all' | 'unread' | 'waiting';
 

@@ -143,7 +143,7 @@ export async function sendSupportMessage(
   return msgRef.id;
 }
 
-export async function markConversationRead(conversationId: string, userUid: string) {
+export async function markConversationRead(conversationId: string, _userUid: string) {
   const ref = doc(db, CONVERSATIONS, conversationId);
   await updateDoc(ref, { 'unreadCount.total': 0 });
 }
@@ -225,7 +225,7 @@ export async function markAllMessagesRead(conversationId: string, userUid: strin
   if (count > 0) await batch.commit();
 }
 
-export function subscribeUnreadSupportCount(userUid: string, callback: (count: number) => void) {
+export function subscribeUnreadSupportCount(_userUid: string, callback: (count: number) => void) {
   const q = query(
     collection(db, CONVERSATIONS),
     where('type', '==', 'support'),

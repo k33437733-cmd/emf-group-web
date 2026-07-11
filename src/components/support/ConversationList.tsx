@@ -1,4 +1,4 @@
-import { Search, Inbox, MessageSquare } from 'lucide-react';
+import { Search, Inbox } from 'lucide-react';
 import type { Conversation } from '../../types';
 import { useState, useMemo } from 'react';
 
@@ -19,11 +19,6 @@ function relativeTime(iso: string) {
   if (hours < 24) return `منذ ${hours} س`;
   const days = Math.floor(hours / 24);
   return days === 1 ? 'أمس' : `منذ ${days} ي`;
-}
-
-function isUnread(conv: Conversation): boolean {
-  const total = (conv.unreadCount as any)?.total || 0;
-  return total > 0;
 }
 
 function getUnreadCount(conv: Conversation): number {
