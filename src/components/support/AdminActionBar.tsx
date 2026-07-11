@@ -1,13 +1,11 @@
 import { useState } from 'react';
-import { Pin, PinOff, ArchiveIcon, Download, Bell, BellOff, Flag, Tag, Star, CheckCheck } from 'lucide-react';
-import { muteConversation, unmuteConversation, toggleImportant, archiveConversation, setConversationTags, pinMessage, unpinMessage } from '../../firebase/support';
+import { Pin, ArchiveIcon, Download, Bell, BellOff, Tag, Star, CheckCheck } from 'lucide-react';
+import { muteConversation, unmuteConversation, toggleImportant, archiveConversation, setConversationTags } from '../../firebase/support';
 import type { Conversation } from '../../types';
 
 interface Props {
   conversation: Conversation;
 }
-
-const RTL = true;
 
 export default function AdminActionBar({ conversation }: Props) {
   const [muted, setMuted] = useState(!!conversation.muted);
@@ -15,7 +13,6 @@ export default function AdminActionBar({ conversation }: Props) {
   const [showTagInput, setShowTagInput] = useState(false);
   const [tagText, setTagText] = useState('');
   const [tags, setTags] = useState<string[]>(conversation.tags || []);
-  const [saving, setSaving] = useState<string | null>(null);
 
   const doAction = async (action: string, fn: () => Promise<void>) => {
     setSaving(action);

@@ -36,7 +36,7 @@ export interface Conversation {
   projectId?: string;                      // set for type === 'project_room'
   customerAvatar?: string;                 // customer photo URL for support conversations
   isGroup: boolean;
-  isBroadcast: boolean;                    // true for broadcast channels (read-only for non-owners)
+  isBroadcast?: boolean;                   // true for broadcast channels (read-only for non-owners)
   name?: string;
   groupName?: string;
   avatar?: string;            // group avatar URL

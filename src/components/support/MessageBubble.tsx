@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect, memo, useCallback } from 'react';
-import { Pencil, Trash2, Download, X, Check, CornerUpLeft, Expand, Forward } from 'lucide-react';
+import { useState, useRef, useEffect, memo } from 'react';
+import { Pencil, Trash2, Download, X, Check, CornerUpLeft, Forward } from 'lucide-react';
 import type { ChatMessage } from '../../types';
 import DeliveryStatus from './DeliveryStatus';
 import { getFileIcon, getFileLabel } from '../../lib/fileTypeIcons';
@@ -28,12 +28,10 @@ const IMAGE_EXTS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', '
 function isAudio(name?: string) { const e = name?.split('.').pop()?.toLowerCase(); return e ? AUDIO_EXTS.has(e) : false; }
 function isVideo(name?: string) { const e = name?.split('.').pop()?.toLowerCase(); return e ? VIDEO_EXTS.has(e) : false; }
 
-function renderContent(content: string): (string | React.JSX.Element)[] {
+function renderContent(content: string, own: boolean): (string | React.JSX.Element)[] {
   const parts: (string | React.JSX.Element)[] = [];
-  let lastIdx = 0;
   let codeMatch: RegExpExecArray | null;
 
-  // First, extract code blocks
   const codeBlocks: { start: number; end: number; el: React.JSX.Element }[] = [];
   const codeRe = new RegExp(CODE_BLOCK_RE.source, 'g');
   while ((codeMatch = codeRe.exec(content)) !== null) {
@@ -56,16 +54,19 @@ function renderContent(content: string): (string | React.JSX.Element)[] {
     });
   }
 
+  function renderLink(seg: string, key: string) {
+    return <a key={key} href={seg} target="_blank" rel="noopener noreferrer"
+      style={{ color: own ? '#050816' : 'var(--color-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
+      {seg}
+    </a>;
+  }
+
   if (codeBlocks.length === 0) {
-    // Simple text with link detection
     const segments = content.split(URL_RE);
     segments.forEach((seg, i) => {
       if (URL_RE.test(seg)) {
         URL_RE.lastIndex = 0;
-        parts.push(<a key={i} href={seg} target="_blank" rel="noopener noreferrer"
-          style={{ color: isOwn ? '#050816' : 'var(--color-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
-          {seg}
-        </a>);
+        parts.push(renderLink(seg, `l-${i}`));
       } else {
         parts.push(seg);
       }
@@ -73,7 +74,6 @@ function renderContent(content: string): (string | React.JSX.Element)[] {
     return parts;
   }
 
-  // Mixed code blocks and text
   let ptr = 0;
   let key = 0;
   for (const cb of codeBlocks) {
@@ -83,10 +83,7 @@ function renderContent(content: string): (string | React.JSX.Element)[] {
       segments.forEach((seg, i) => {
         if (URL_RE.test(seg)) {
           URL_RE.lastIndex = 0;
-          parts.push(<a key={`${key}-${i}`} href={seg} target="_blank" rel="noopener noreferrer"
-            style={{ color: isOwn ? '#050816' : 'var(--color-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
-            {seg}
-          </a>);
+          parts.push(renderLink(seg, `${key}-${i}`));
         } else {
           parts.push(seg);
         }
@@ -102,10 +99,7 @@ function renderContent(content: string): (string | React.JSX.Element)[] {
     segments.forEach((seg, i) => {
       if (URL_RE.test(seg)) {
         URL_RE.lastIndex = 0;
-        parts.push(<a key={`end-${i}`} href={seg} target="_blank" rel="noopener noreferrer"
-          style={{ color: isOwn ? '#050816' : 'var(--color-primary)', textDecoration: 'underline', wordBreak: 'break-all' }}>
-          {seg}
-        </a>);
+        parts.push(renderLink(seg, `end-${i}`));
       } else {
         parts.push(seg);
       }
@@ -114,7 +108,7 @@ function renderContent(content: string): (string | React.JSX.Element)[] {
   return parts;
 }
 
-function MessageBubbleInner({ message, isOwn, onDelete, onEdit, showStatus }: Props) {
+function MessageBubbleInner({ message, isOwn, onDelete, onEdit, onForward, showStatus }: Props) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState(message.content);
   const [showActions, setShowActions] = useState(false);
@@ -256,7 +250,7 @@ function MessageBubbleInner({ message, isOwn, onDelete, onEdit, showStatus }: Pr
           </div>
         ) : (
           <div style={{ fontSize: '0.85rem', lineHeight: 1.55, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-            {renderContent(message.content)}
+            {renderContent(message.content, isOwn)}
           </div>
         )}
 

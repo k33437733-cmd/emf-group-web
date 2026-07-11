@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, X, MessageSquare, FileText, Image, Video, Mic, Link, User, Calendar, Clock, ArrowRight } from 'lucide-react';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { Search, X, MessageSquare, FileText, Image, Video, Mic, User, ArrowRight } from 'lucide-react';
+import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import type { ChatMessage, Conversation } from '../../types';
 
@@ -35,7 +35,7 @@ const tabs: { key: SearchTab; label: string; icon: any }[] = [
   { key: 'customers', label: 'عملاء', icon: User },
 ];
 
-export default function GlobalSearch({ conversations, onSelectConversation, onSelectMessage, onClose }: Props) {
+export default function GlobalSearch({ conversations, onSelectConversation, onClose }: Props) {
   const [query_text, setQueryText] = useState('');
   const [activeTab, setActiveTab] = useState<SearchTab>('all');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -77,7 +77,7 @@ export default function GlobalSearch({ conversations, onSelectConversation, onSe
         // Filter by tab
         if (activeTab === 'files' && msg.type !== 'file') return;
         if (activeTab === 'images' && msg.type !== 'image') return;
-        if (activeTab === 'videos' && msg.type !== 'video' && msg.fileType !== 'video') return;
+        if (activeTab === 'videos' && msg.type !== 'video') return;
         if (activeTab === 'voice' && msg.type !== 'voice') return;
         if (activeTab === 'messages' && msg.type !== 'text') return;
 

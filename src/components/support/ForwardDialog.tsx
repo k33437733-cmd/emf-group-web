@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { X, Send, Search, MessageSquare } from 'lucide-react';
 import type { ChatMessage, Conversation } from '../../types';
 import { forwardMessage } from '../../firebase/support';
@@ -6,12 +6,11 @@ import { forwardMessage } from '../../firebase/support';
 interface Props {
   message: ChatMessage;
   conversations: Conversation[];
-  currentUser: { uid: string; name: string };
+  currentUser?: { uid: string; name: string };
   onClose: () => void;
-  onDone: () => void;
 }
 
-export default function ForwardDialog({ message, conversations, currentUser, onClose, onDone }: Props) {
+export default function ForwardDialog({ message, conversations, currentUser, onClose }: Props) {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sending, setSending] = useState(false);

@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Mic, Square, Pause, Play, X, Trash2, Send, RotateCcw, Check } from 'lucide-react';
+import { Mic, Square, Pause, Play, X, Send, RotateCcw } from 'lucide-react';
 
 type RecorderState = 'idle' | 'recording' | 'paused' | 'preview';
 

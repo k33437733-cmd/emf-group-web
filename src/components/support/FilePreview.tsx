@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, memo } from 'react';
-import { X, Send, Trash2, RotateCcw, FileText, Image, Video, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Send, FileText, Video, AlertCircle, Loader2 } from 'lucide-react';
 import { getImageMeta, getVideoMeta, compressImage, formatDuration, formatFileSize, isImageFile, isVideoFile } from '../../lib/mediaUtils';
 import type { ImageMeta, VideoMeta } from '../../lib/mediaUtils';
 
@@ -117,8 +117,7 @@ const FilePreview = memo(function FilePreview({ items, onRemove, onSend, onCance
           compressedMap.set(item.id, compressed);
         } catch {}
         try {
-          const meta = await getImageMeta(item.file);
-          // We can't directly update the item.meta since it's passed in, but we'll handle via state
+          await getImageMeta(item.file);
         } catch {}
       }
       if (isVideoFile(item.file)) {
@@ -172,7 +171,7 @@ const FilePreview = memo(function FilePreview({ items, onRemove, onSend, onCance
       </div>
 
       <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-        {items.map((item, idx) => (
+        {items.map((item) => (
           <FilePreviewCard
             key={item.id}
             item={item}
