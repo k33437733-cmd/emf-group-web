@@ -6,6 +6,7 @@ import { uploadFile, deleteFileFromStorage } from '../firebase/storage';
 import type { ContentItem } from '../types';
 import { Search, Video, Download, Play, Monitor, FileText, Share2, Eye, X, Filter, Inbox, Edit3, EyeOff, Shield, Trash2 } from 'lucide-react';
 import { showToast } from '../components/ui/Toast';
+import LazyVideo from '../components/ui/LazyVideo';
 import { SkeletonGrid } from '../components/ui/Skeleton';
 import EmptyState from '../components/ui/EmptyState';
 
@@ -255,16 +256,7 @@ export default function Content() {
               <article key={item.id} id={item.id} className="card-base content-card">
                 <div className="content-card__media" style={{ background: c.gradient }}>
                   {isVideo ? (
-                    item.thumbnailUrl ? (
-                      <img src={item.thumbnailUrl} alt={item.title} className="content-card__media-image" loading="lazy" />
-                    ) : (
-                      <div className="content-card__media-placeholder">
-                        <div className="content-card__media-placeholder-icon">
-                          <Play size={20} />
-                        </div>
-                        <span>No Preview Available</span>
-                      </div>
-                    )
+                    <LazyVideo src={item.url} />
                   ) : (
                     <div className="content-card__media-placeholder">
                       <div className="content-card__media-placeholder-icon">
