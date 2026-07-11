@@ -37,6 +37,11 @@ export default function Content() {
   const canUseAdminDownload = !!user && ['admin', 'super_admin'].includes(user.role);
   const isAdmin = !!user && (user.role === 'admin' || user.role === 'super_admin');
 
+  // Debug helpers: show counts and sample items when videos seem missing
+  const totalItems = items.length;
+  const totalVideos = items.filter(i => i.type === 'video').length;
+  const sampleItems = items.slice(0, 8);
+
   useEffect(() => {
     const unsub = subscribeToContents((list) => {
       setItems(list);
@@ -195,6 +200,27 @@ export default function Content() {
       </div>
 
       {/* Search & Filters */}
+      {/* Debug panel (temporary) */}
+      <div className="card-base" style={{ padding: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ fontWeight: 700 }}>Debug:</div>
+          <div>Loaded items: <strong>{totalItems}</strong></div>
+          <div>Video items: <strong>{totalVideos}</strong></div>
+        </div>
+        <div style={{ marginTop: '10px', fontSize: '0.95rem' }}>
+          {sampleItems.length === 0 ? (
+            <div style={{ color: 'var(--text-secondary)' }}>No items loaded yet.</div>
+          ) : (
+            <div style={{ display: 'grid', gap: '6px' }}>
+              {sampleItems.map(it => (
+                <div key={it.id} style={{ fontSize: '0.9rem' }}>
+                  {it.title || '(no title)'} — {it.type} — {it.accessLevel ?? 'no accessLevel'}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
       <div className="card-base" role="search" aria-label="بحث في المحتوى" style={{ padding: 'var(--space-4) var(--space-5)', marginBottom: 'var(--space-8)' }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-4)', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ position: 'relative', width: '100%', maxWidth: '360px' }}>

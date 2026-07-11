@@ -104,6 +104,7 @@ export default function Dashboard() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [restoringVisibility, setRestoringVisibility] = useState(false);
 
   // Modal display states
   const [showAddMemberModal, setShowAddMemberModal] = useState(false);
@@ -238,6 +239,26 @@ export default function Dashboard() {
       showToast(t('successToast'), 'success');
     } catch (e) {
       showToast(t('errorToast'), 'error');
+    }
+  };
+
+  const handleRestoreAllVisibility = async () => {
+    if (!user) return;
+    if (!window.confirm('هل تريد استعادة رؤية جميع المحتويات وجعلها مرئية للجميع؟')) return;
+    try {
+      setRestoringVisibility(true);
+      const updates = contents.map(async (c) => {
+        if (c.accessLevel !== 'all') {
+          await updateContentItem(c.id, { accessLevel: 'all' }, user.uid, user.name);
+        }
+      });
+      await Promise.all(updates);
+      showToast('تمت استعادة رؤية جميع المحتويات', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('فشل استعادة الرؤية لبعض المحتويات', 'error');
+    } finally {
+      setRestoringVisibility(false);
     }
   };
 
@@ -737,7 +758,16 @@ export default function Dashboard() {
         {activeTab === 'content' && isAdmin && (
           <div className="card-base animate-scale" style={{ background: 'var(--bg-card)', padding: '24px', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)' }}>
             <h3 style={{ fontSize: 'var(--text-lg)', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '24px' }}>{t('content')}</h3>
-            
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '12px' }}>
+              <button
+                onClick={handleRestoreAllVisibility}
+                disabled={restoringVisibility}
+                style={{ background: 'var(--accent-emerald)', color: 'white', border: 'none', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer' }}
+                title="استعادة رؤية كل المحتويات"
+              >
+                {restoringVisibility ? <Loader2 className="animate-spin-fast" size={14} /> : <FileDown size={14} />} استعادة رؤية الكل
+              </button>
+            </div>
             <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: rtl ? 'right' : 'left' }}>
                 <thead>
