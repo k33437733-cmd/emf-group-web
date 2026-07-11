@@ -345,7 +345,7 @@ export default function Content() {
           position: 'fixed', inset: 0, background: 'var(--bg-overlay)',
           backdropFilter: 'blur(12px)', zIndex: 9999,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 'var(--space-6)',
+          padding: 'clamp(8px, 3vw, 48px)',
         }} onClick={() => setActiveVideoUrl(null)} onKeyDown={(e) => { if (e.key === 'Escape') setActiveVideoUrl(null); }}>
           <div style={{ width: '100%', maxWidth: '850px', display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}
             onClick={(e) => e.stopPropagation()} className="animate-scale">
@@ -357,7 +357,7 @@ export default function Content() {
             </div>
             <div style={{
               background: '#000', borderRadius: 'var(--radius-xl)', overflow: 'hidden',
-              boxShadow: '0 25px 60px rgba(0,0,0,0.85)', aspectRatio: '16/9',
+              boxShadow: '0 25px 60px rgba(0,0,0,0.85)', aspectRatio: '16/9', maxHeight: 'min(70vh, 80vw)',
               border: '1px solid var(--color-border)',
             }}>
               <video src={activeVideoUrl} controls autoPlay style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
@@ -369,7 +369,7 @@ export default function Content() {
 
       {editContentItem && (
         <div role="dialog" aria-modal="true" aria-labelledby="edit-content-title" className="modal-overlay" onClick={() => setEditContentItem(null)}>
-          <div onClick={(e) => e.stopPropagation()} className="modal-content-custom" style={{ maxWidth: '640px' }}>
+          <div onClick={(e) => e.stopPropagation()} className="modal-content-custom" style={{ maxWidth: 'min(640px, calc(100vw - 32px))' }}>
             <div className="modal-header-custom">
               <div>
                 <h2 id="edit-content-title" style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700, color: 'var(--text-primary)' }}>تعديل المحتوى</h2>
@@ -381,7 +381,7 @@ export default function Content() {
             </div>
 
             <form onSubmit={handleEditContentSubmit} className="modal-body-custom" style={{ display: 'grid', gap: '16px' }}>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label htmlFor="edit-title" className="form-label">العنوان</label>
                   <input id="edit-title" type="text" value={editContentForm.title} onChange={(e) => setEditContentForm(prev => ({ ...prev, title: e.target.value }))} required className="form-input" />
@@ -401,7 +401,7 @@ export default function Content() {
                 <textarea id="edit-description" rows={3} value={editContentForm.description} onChange={(e) => setEditContentForm(prev => ({ ...prev, description: e.target.value }))} className="form-input" style={{ resize: 'vertical' }} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
                 <div className="form-group" style={{ margin: 0 }}>
                   <label htmlFor="edit-access-level" className="form-label">رؤية المحتوى</label>
                   <select id="edit-access-level" value={editContentForm.accessLevel} onChange={(e) => setEditContentForm(prev => ({ ...prev, accessLevel: e.target.value as ContentItem['accessLevel'] }))} className="form-input">

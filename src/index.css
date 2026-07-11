@@ -2118,3 +2118,820 @@ p {
   .hover-lift:hover { transform: none !important; }
   .shimmer { animation: none !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPREHENSIVE RESPONSIVE SYSTEM
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ──────────────────────────────────────────────────────────────
+   BREAKPOINT LEGEND
+   320px  – 480px   : Small phones
+   481px  – 767px   : Large phones
+   768px  – 1023px  : Tablets
+   1024px – 1439px  : Laptops
+   1440px – 1919px  : Desktop
+   1920px+          : Ultra-wide
+   ────────────────────────────────────────────────────────────── */
+
+/* ── Ultra-wide (1920px+) ── */
+@media (min-width: 1920px) {
+  .dashboard-page { max-width: 1600px; }
+  .content-library-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .dashboard-hero-grid {
+    grid-template-columns: repeat(4, minmax(240px, 1fr));
+  }
+  .page-wrapper {
+    max-width: 1600px;
+    margin: 0 auto;
+  }
+  .settings-grid {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+}
+
+/* ── Desktop (1440px–1919px) ── */
+@media (min-width: 1440px) and (max-width: 1919px) {
+  .dashboard-hero-grid {
+    grid-template-columns: repeat(4, minmax(240px, 1fr));
+  }
+  .content-library-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ── Laptop (1024px–1439px) ── */
+@media (min-width: 1024px) and (max-width: 1439px) {
+  .dashboard-hero-grid {
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+  }
+  .content-library-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .dashboard-page {
+    padding: var(--space-6);
+  }
+}
+
+/* ── Tablet (768px–1023px) ── */
+@media (min-width: 768px) and (max-width: 1023px) {
+  :root {
+    --sidebar-width: 72px;
+  }
+  .dashboard-hero-grid {
+    grid-template-columns: repeat(2, minmax(200px, 1fr));
+    gap: var(--space-4);
+  }
+  .dashboard-page {
+    padding: var(--space-4) !important;
+  }
+  .content-library-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .content-library-toolbar__search {
+    max-width: 100%;
+    min-width: 100%;
+  }
+  .grid-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .grid-cards-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .grid-cards-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .grid-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+  }
+  .stat-number {
+    font-size: clamp(1.5rem, 4vw, 2.25rem) !important;
+  }
+  .home-hero {
+    padding: 50px var(--space-5) 30px !important;
+    min-height: 45vh !important;
+  }
+  .home-hero h1 {
+    font-size: clamp(2.2rem, 5vw, 3rem) !important;
+  }
+  .login-card {
+    padding: 32px 24px !important;
+  }
+  .table-container {
+    overflow-x: auto;
+  }
+  .table-container table {
+    min-width: 600px;
+  }
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Large Phones (481px–767px) ── */
+@media (min-width: 481px) and (max-width: 767px) {
+  :root {
+    --sidebar-width: 0px;
+    --navbar-height: 60px;
+  }
+  body {
+    font-size: calc(var(--text-base) * 0.95);
+  }
+  .dashboard-hero-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    padding: 0 var(--space-1);
+  }
+  .dashboard-page {
+    padding: var(--space-3) !important;
+  }
+  .dashboard-panel-compact {
+    padding: var(--space-4);
+  }
+  .dashboard-tab-nav {
+    display: flex;
+    overflow-x: auto;
+    gap: 4px;
+    padding: var(--space-2);
+  }
+  .dashboard-tab-nav .sidebar-link {
+    flex-shrink: 0;
+    padding: var(--space-2) var(--space-3);
+  }
+  .content-library-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .content-library-toolbar__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .content-library-toolbar__search {
+    max-width: 100%;
+    min-width: 100%;
+  }
+  .content-library-toolbar__filters {
+    flex-wrap: wrap;
+  }
+  .content-card__body {
+    padding: var(--space-3) !important;
+  }
+  .content-card__title {
+    font-size: calc(var(--text-base) * 0.9);
+  }
+  .page-title {
+    font-size: clamp(1.4rem, 4vw, 1.8rem) !important;
+  }
+  .section-title {
+    font-size: var(--text-xl) !important;
+  }
+  .stat-number {
+    font-size: clamp(1.2rem, 5vw, 1.8rem) !important;
+  }
+  .grid-cards,
+  .grid-cards-2,
+  .grid-cards-3 {
+    grid-template-columns: 1fr;
+    gap: var(--space-4);
+  }
+  .grid-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+  }
+  .page-header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .page-header-actions {
+    width: 100%;
+  }
+  .page-header-actions .btn {
+    flex: 1;
+  }
+  .kpi-card-top {
+    gap: var(--space-2);
+  }
+  .kpi-icon {
+    width: 36px;
+    height: 36px;
+  }
+  .table-container {
+    overflow-x: auto;
+  }
+  .table-container table {
+    min-width: 500px;
+  }
+  .login-card {
+    padding: 28px 20px !important;
+  }
+  .login-card h2 {
+    font-size: 1.2rem !important;
+  }
+  .home-hero {
+    padding: 45px var(--space-4) 25px !important;
+    min-height: 40vh !important;
+  }
+  .home-hero h1 {
+    font-size: clamp(1.8rem, 6vw, 2.5rem) !important;
+  }
+  .home-hero h2 {
+    font-size: clamp(0.95rem, 2.5vw, 1.2rem) !important;
+  }
+  .home-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3) !important;
+  }
+  .home-footer {
+    padding: var(--space-5) var(--space-4) !important;
+  }
+  .page-wrapper {
+    padding: var(--space-4);
+  }
+  .card-body-custom {
+    padding: var(--space-4);
+  }
+  .modal-content-custom {
+    margin: var(--space-2);
+    max-height: 85vh;
+  }
+  .modal-header-custom {
+    padding: var(--space-3) var(--space-4);
+  }
+  .modal-body-custom {
+    padding: var(--space-4);
+  }
+  .modal-footer-custom {
+    padding: var(--space-3) var(--space-4);
+  }
+  .card-base {
+    border-radius: var(--radius-lg);
+  }
+  .form-input {
+    padding: var(--space-2) var(--space-3);
+    font-size: calc(var(--text-base) * 0.95);
+  }
+  .chat-panel-sidebar {
+    width: 100% !important;
+  }
+  .chat-panel-main {
+    width: 100% !important;
+  }
+  .chat-workspace-container {
+    height: calc(100vh - var(--navbar-height) - 12px) !important;
+  }
+  .chat-messages-scroll {
+    padding: 12px 8px !important;
+  }
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-4);
+  }
+}
+
+/* ── Small Phones (320px–480px) ── */
+@media (max-width: 480px) {
+  :root {
+    --sidebar-width: 0px;
+    --navbar-height: 56px;
+  }
+  body {
+    font-size: calc(var(--text-base) * 0.92);
+  }
+  .dashboard-hero-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .dashboard-page {
+    padding: var(--space-2) !important;
+  }
+  .dashboard-panel-compact {
+    padding: var(--space-3);
+  }
+  .dashboard-tab-nav {
+    display: flex;
+    overflow-x: auto;
+    gap: 4px;
+    padding: var(--space-2);
+    -webkit-overflow-scrolling: touch;
+  }
+  .dashboard-tab-nav .sidebar-link {
+    flex-shrink: 0;
+    white-space: nowrap;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+  }
+  .content-library-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .content-library-toolbar {
+    padding: var(--space-3) !important;
+  }
+  .content-library-toolbar__row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--space-3);
+  }
+  .content-library-toolbar__search {
+    max-width: 100%;
+    min-width: 100%;
+  }
+  .content-library-toolbar__filters {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    padding-bottom: var(--space-1);
+    -webkit-overflow-scrolling: touch;
+  }
+  .content-library-toolbar__filters .filter-chip {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+  .content-card__body {
+    padding: var(--space-3) !important;
+  }
+  .content-card__title {
+    font-size: calc(var(--text-base) * 0.88);
+    -webkit-line-clamp: 2;
+  }
+  .content-card__description {
+    -webkit-line-clamp: 2;
+  }
+  .content-card__meta {
+    flex-wrap: wrap;
+  }
+  .content-card__actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .content-card__main-action {
+    width: 100%;
+  }
+  .content-card__icon-action {
+    width: 100%;
+  }
+  .content-card__admin-actions {
+    flex-direction: column;
+  }
+  .content-card__admin-btn {
+    width: 100%;
+  }
+  .page-title {
+    font-size: clamp(1.2rem, 5vw, 1.5rem) !important;
+  }
+  .section-title {
+    font-size: var(--text-lg) !important;
+  }
+  .stat-number {
+    font-size: clamp(1rem, 5vw, 1.5rem) !important;
+  }
+  .grid-cards,
+  .grid-cards-2,
+  .grid-cards-3 {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .grid-stats {
+    grid-template-columns: 1fr;
+    gap: var(--space-3);
+  }
+  .page-header-content {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .page-header-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  .page-header-actions .btn {
+    width: 100%;
+  }
+  .kpi-card-top {
+    gap: var(--space-2);
+  }
+  .kpi-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .kpi-card-meta {
+    flex-wrap: wrap;
+  }
+  .table-container {
+    overflow-x: auto;
+    margin: 0 calc(-1 * var(--space-3));
+    border-radius: 0;
+  }
+  .table-container table {
+    min-width: 400px;
+  }
+  .table-container thead th,
+  .table-container tbody td {
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-xs);
+  }
+  .login-container {
+    padding: var(--space-2) !important;
+    margin: 20px auto !important;
+  }
+  .login-card {
+    padding: 24px 16px !important;
+    border-radius: var(--radius-lg) !important;
+  }
+  .login-card h1 {
+    font-size: var(--text-2xl) !important;
+  }
+  .login-card h2 {
+    font-size: 1.1rem !important;
+  }
+  .login-card p {
+    font-size: 0.78rem !important;
+  }
+  .home-hero {
+    padding: 35px var(--space-3) 20px !important;
+    min-height: 35vh !important;
+  }
+  .home-hero h1 {
+    font-size: clamp(1.5rem, 7vw, 2rem) !important;
+  }
+  .home-hero h2 {
+    font-size: clamp(0.85rem, 3vw, 1.05rem) !important;
+  }
+  .home-hero p {
+    font-size: 0.8rem !important;
+  }
+  .home-stats {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2) !important;
+  }
+  .home-stats .stat-number {
+    font-size: clamp(1.1rem, 4vw, 1.4rem) !important;
+  }
+  .home-footer {
+    padding: var(--space-4) var(--space-3) !important;
+  }
+  .home-footer .btn {
+    width: 100%;
+  }
+  .page-wrapper {
+    padding: var(--space-3);
+  }
+  .card-body-custom {
+    padding: var(--space-3);
+  }
+  .modal-overlay {
+    padding: 0;
+  }
+  .modal-content-custom {
+    max-width: 100% !important;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    max-height: 90vh;
+    margin: 0;
+  }
+  .modal-header-custom {
+    padding: var(--space-3) var(--space-4);
+  }
+  .modal-body-custom {
+    padding: var(--space-3) var(--space-4);
+  }
+  .modal-footer-custom {
+    padding: var(--space-3) var(--space-4);
+    flex-direction: column-reverse;
+  }
+  .modal-footer-custom .btn {
+    width: 100%;
+  }
+  .card-base {
+    border-radius: var(--radius-lg);
+  }
+  .form-input {
+    padding: var(--space-2) var(--space-3);
+    font-size: calc(var(--text-base) * 0.92);
+  }
+  .form-group {
+    margin-bottom: var(--space-4);
+  }
+  .btn {
+    height: 38px;
+    padding: 0 var(--space-4);
+    font-size: var(--text-xs);
+  }
+  .btn-lg {
+    height: 42px;
+    padding: 0 var(--space-5);
+    font-size: var(--text-sm);
+  }
+  .btn-sm {
+    height: 30px;
+    padding: 0 var(--space-2);
+  }
+  .filter-chip {
+    padding: var(--space-1) var(--space-3);
+    font-size: 0.7rem;
+  }
+  .chat-panel-sidebar {
+    width: 100% !important;
+  }
+  .chat-panel-main {
+    width: 100% !important;
+  }
+  .chat-workspace-container {
+    height: calc(100vh - var(--navbar-height) - 8px) !important;
+  }
+  .chat-messages-scroll {
+    padding: 10px 6px !important;
+  }
+  .chat-conv-item {
+    padding: 8px 10px !important;
+  }
+  .chat-input-area {
+    padding: 6px 8px !important;
+  }
+  .chat-input-textarea {
+    font-size: 0.8rem !important;
+    max-height: 64px !important;
+  }
+  .settings-grid {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-3);
+  }
+  .settings-tab-nav {
+    overflow-x: auto;
+    display: flex;
+    gap: 4px;
+    padding: var(--space-2);
+  }
+  .settings-tab-nav button {
+    flex-shrink: 0;
+    white-space: nowrap;
+    font-size: var(--text-xs);
+  }
+}
+
+/* ── Fix for projects page ── */
+@media (max-width: 768px) {
+  .project-card-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .project-card-actions .btn {
+    width: 100%;
+  }
+  [style*="display: flex"][style*="justify-content: space-between"] {
+    flex-wrap: wrap;
+  }
+}
+
+/* ── Fix common inline-style flex layouts ── */
+@media (max-width: 640px) {
+  [style*="display: flex"][style*="flex-wrap: nowrap"] {
+    flex-wrap: wrap !important;
+  }
+}
+
+/* ── Fix for charts on small screens ── */
+@media (max-width: 768px) {
+  .recharts-responsive-container {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .recharts-wrapper {
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+}
+
+/* ── Ensure all images/videos are responsive ── */
+img, video, iframe, embed, object {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ── Fix support chat panels ── */
+@media (max-width: 1024px) {
+  .support-panel-info {
+    display: none;
+  }
+}
+@media (max-width: 768px) {
+  .support-panel-convlist {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  .support-panel-chat {
+    width: 100% !important;
+  }
+}
+
+/* ── Fix sidebar overlay on mobile ── */
+@media (max-width: 767px) {
+  aside[style*="position: fixed"][style*="z-index: 1032"] {
+    width: 280px !important;
+  }
+  .main-layout-container {
+    margin-right: 0 !important;
+    margin-left: 0 !important;
+  }
+}
+
+/* ── Fix breadcrumbs on small screens ── */
+@media (max-width: 600px) {
+  nav[class*="breadcrumbs"],
+  .page-header-breadcrumb {
+    flex-wrap: wrap;
+    font-size: 0.65rem;
+  }
+}
+
+/* ── Ensure proper text truncation ── */
+.text-ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Prevent horizontal overflow on any container ── */
+#app-content,
+main[role="main"],
+.page-wrapper,
+.page-content,
+.dashboard-page {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* ── Fix content card aspect ratio on mobile ── */
+@media (max-width: 480px) {
+  .content-card__media {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+/* ── Ensure buttons within flex containers don't overflow ── */
+@media (max-width: 480px) {
+  .btn {
+    max-width: 100%;
+  }
+  button[class*="btn"] {
+    max-width: 100%;
+  }
+}
+
+/* ── Fix for the hero video on home page ── */
+.home-hero video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ── Improve touch targets for mobile ── */
+@media (hover: none) and (pointer: coarse) {
+  .btn, button, a, input, select, textarea {
+    min-height: 44px;
+  }
+  .btn-sm {
+    min-height: 36px;
+  }
+  .btn-icon {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* ── Fix for ultra-wide content grids ── */
+@media (min-width: 1920px) {
+  .content-library-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+/* ── Fix animation performance ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Home page utility classes ── */
+.view-all-link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-size: clamp(0.78rem, 2vw, 0.84rem);
+  font-weight: 600;
+  transition: opacity 0.2s;
+  opacity: 0.8;
+  white-space: nowrap;
+}
+.view-all-link:hover {
+  opacity: 1;
+}
+.home-card-media {
+  aspect-ratio: 16 / 9;
+}
+.home-card-badge {
+  position: absolute;
+}
+.home-card-desc {
+  color: var(--text-secondary);
+}
+
+/* ── Dashboard responsive table improvements ── */
+@media (max-width: 768px) {
+  .dashboard-split-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+@media (max-width: 480px) {
+  .dashboard-split-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ── Fix Settings page tab navigation ── */
+.settings-tab-nav::-webkit-scrollbar {
+  height: 0;
+}
+
+/* ── Fix dashboard tab nav on small screens ── */
+.dashboard-tab-nav {
+  -webkit-overflow-scrolling: touch;
+}
+.dashboard-tab-nav::-webkit-scrollbar {
+  height: 0;
+}
+
+/* ── Fix recharts width overflow ── */
+.recharts-responsive-container {
+  min-width: 0 !important;
+}
+.recharts-wrapper {
+  min-width: 0 !important;
+}
+
+/* ── Ensure no horizontal scroll from any page-specific layout ── */
+.home-hero,
+.dashboard-page,
+.page-content,
+.page-wrapper,
+.content-library-shell,
+.chat-workspace-container,
+.support-admin-container {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* ── Fix for any sticky elements on small screens ── */
+@media (max-width: 768px) {
+  [style*="position: sticky"] {
+    position: relative !important;
+  }
+  thead th[style*="position: sticky"] {
+    position: sticky !important;
+  }
+}
+
+/* ── Fix projects page action dropdown positioning ── */
+@media (max-width: 480px) {
+  [style*="position: absolute"][style*="min-width: 170px"] {
+    left: auto !important;
+    right: 0 !important;
+    min-width: 140px !important;
+  }
+}
+
+/* ── Fix chat conversation list responsive ── */
+@media (max-width: 768px) {
+  .chat-conv-item {
+    padding: 10px 12px !important;
+  }
+}
+
+/* ── Fix support chat page mobile toggle ── */
+@media (max-width: 768px) {
+  .support-panel-convlist.mobile-hidden {
+    display: none !important;
+  }
+  .support-panel-chat.mobile-hidden {
+    display: none !important;
+  }
+  .mobile-back-chat {
+    display: flex !important;
+  }
+}
+
+/* ── Make forgot password button responsive ── */
+.forgot-pass-btn {
+  font-size: clamp(0.72rem, 2vw, 0.78rem);
+}
+.toggle-auth-state-btn {
+  font-size: clamp(0.78rem, 2vw, 0.84rem);
+}

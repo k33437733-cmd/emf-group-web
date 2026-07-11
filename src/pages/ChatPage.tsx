@@ -269,7 +269,7 @@ export default function ChatPage() {
     <div 
       style={{ 
         width: '100%', 
-        height: 'calc(100vh - var(--navbar-height) - 48px)', 
+        height: 'calc(100vh - var(--navbar-height) - clamp(24px, 4vw, 48px))', 
         display: 'flex', 
         borderRadius: '16px',
         overflow: 'hidden',
@@ -286,7 +286,7 @@ export default function ChatPage() {
       <div 
         className={`chat-sidebar ${activeConvId ? 'hide-mobile' : ''}`} 
         style={{
-          width: sidebarCollapsed ? '0px' : '360px',
+          width: sidebarCollapsed ? '0px' : 'min(360px, 100%)',
           display: 'flex', 
           flexDirection: 'column', 
           overflow: 'hidden', 

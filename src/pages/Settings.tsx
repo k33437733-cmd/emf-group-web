@@ -138,9 +138,9 @@ export default function Settings() {
   };
 
   return (
-    <div style={{ padding: 'var(--space-8)', maxWidth: 900 }}>
-      <div style={{ marginBottom: 'var(--space-8)' }}>
-        <h1 style={{ fontSize: 'var(--text-3xl)', fontWeight: 'var(--fw-bold)', color: 'var(--text-primary)', margin: 0 }}>الإعدادات</h1>
+    <div style={{ padding: 'clamp(16px, 3vw, 32px)', maxWidth: 'min(900px, calc(100vw - 32px))', margin: '0 auto' }}>
+      <div style={{ marginBottom: 'var(--space-6)' }}>
+        <h1 style={{ fontSize: 'clamp(1.25rem, 3vw, 1.75rem)', fontWeight: 'var(--fw-bold)', color: 'var(--text-primary)', margin: 0 }}>الإعدادات</h1>
         <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginTop: 'var(--space-2)' }}>خصص تجربتك وتحكم في إعدادات حسابك</p>
       </div>
 
@@ -195,7 +195,7 @@ export default function Settings() {
             </div>
             <div style={{ marginTop: 'var(--space-6)' }}>
               <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 'var(--fw-bold)', color: 'var(--text-primary)', margin: '0 0 var(--space-4) 0' }}>ألوان لوحة التحكم</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: 'var(--space-3)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(120px, 100%), 1fr))', gap: 'var(--space-3)' }}>
                 {accentOptions.map(opt => (
                   <button key={opt.value} onClick={() => setAccent(opt.value as any)} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',

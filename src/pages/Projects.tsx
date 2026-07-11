@@ -181,7 +181,7 @@ export default function Projects() {
       {/* Add Project Modal */}
       {showModal && (
         <div className="modal-overlay">
-          <div className="modal-content-custom" style={{ maxWidth: '480px' }}>
+          <div className="modal-content-custom" style={{ maxWidth: 'min(480px, calc(100vw - 32px))' }}>
             <div className="modal-header-custom">
               <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>إضافة مشروع جديد</h3>
               <button onClick={() => setShowModal(false)} className="modal-close-btn" aria-label="إغلاق">

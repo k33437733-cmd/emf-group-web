@@ -413,7 +413,7 @@ export default function ReleaseNotes() {
       {/* ── Create Release Modal ── */}
       {showCreate && (
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowCreate(false); }}>
-          <div className="modal-content-custom" style={{ maxWidth: '580px', direction: 'rtl' }}>
+          <div className="modal-content-custom" style={{ maxWidth: 'min(580px, calc(100vw - 32px))', direction: 'rtl' }}>
             <div className="modal-header-custom">
               <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700, margin: 0, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
                 <Megaphone size={18} style={{ color: 'var(--accent-blue)' }} />
@@ -425,7 +425,7 @@ export default function ReleaseNotes() {
             </div>
             <form onSubmit={handleCreate}>
               <div className="modal-body-custom" style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-5)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
                   <div>
                     <label className="form-label">رقم الإصدار *</label>
                     <input

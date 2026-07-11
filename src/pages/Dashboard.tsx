@@ -429,7 +429,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="animate-fade dashboard-page" style={{ direction: rtl ? 'rtl' : 'ltr', padding: '32px 16px', maxWidth: '1440px', margin: '0 auto' }}>
+    <div className="animate-fade dashboard-page" style={{ direction: rtl ? 'rtl' : 'ltr', padding: 'clamp(16px, 3vw, 32px)', maxWidth: '1440px', margin: '0 auto' }}>
       
       {/* 4 Cards Hero Stats Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '32px' }}>
@@ -815,7 +815,8 @@ export default function Dashboard() {
                       </td>
                       <td style={{ padding: '16px' }}>{item.views || 0}</td>
                       <td style={{ padding: '16px' }}>{item.downloads || 0}</td>
-                      <td style={{ padding: '16px', textAlign: 'center', display: 'flex', justifyContent: 'center', gap: '8px' }}>
+                      <td style={{ padding: '16px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', whiteSpace: 'nowrap' }}>
                         <button
                           onClick={() => openEditContentModal(item)}
                           style={{ background: 'transparent', border: 'none', color: 'var(--accent-indigo)', cursor: 'pointer', padding: '4px' }}
@@ -844,6 +845,7 @@ export default function Dashboard() {
                         >
                           <Trash2 size={16} />
                         </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -868,7 +870,7 @@ export default function Dashboard() {
             <div
               onClick={(e) => e.stopPropagation()}
               style={{
-                width: '100%', maxWidth: '680px', background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', padding: '24px', boxShadow: '0 24px 80px rgba(0,0,0,0.18)'
+                width: '100%', maxWidth: 'min(680px, calc(100vw - 32px))', background: 'var(--bg-card)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-color)', padding: 'clamp(16px, 2vw, 24px)', boxShadow: '0 24px 80px rgba(0,0,0,0.18)'
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', marginBottom: '20px', gap: '12px' }}>
@@ -894,7 +896,7 @@ export default function Dashboard() {
               </div>
 
               <form onSubmit={handleEditContentSubmit} style={{ display: 'grid', gap: '18px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                   <div>
                     <label htmlFor="edit-title" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>{rtl ? 'عنوان المحتوى' : 'Title'}</label>
                     <input
@@ -932,7 +934,7 @@ export default function Dashboard() {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                   <div>
                     <label htmlFor="edit-access-level" style={{ display: 'block', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px' }}>{rtl ? 'رؤية المحتوى' : 'Access Level'}</label>
                     <select
@@ -1088,12 +1090,13 @@ export default function Dashboard() {
                             {member.status === 'blocked' ? t('blockedStatus') : t('activeStatus')}
                           </span>
                         </td>
-                        <td style={{ padding: '16px', display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <td style={{ padding: '16px' }}>
+                          <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
                           {member.role !== 'super_admin' && (
                             <>
                               <button
                                 onClick={() => handleChangeRole(member, member.role === 'admin' ? 'user' : 'admin')}
-                                style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                                style={{ background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', padding: '4px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, whiteSpace: 'nowrap' }}
                               >
                                 {t('changeRole')}
                               </button>
@@ -1103,13 +1106,14 @@ export default function Dashboard() {
                                   background: member.status === 'blocked' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(244, 63, 94, 0.1)',
                                   border: 'none',
                                   color: member.status === 'blocked' ? 'var(--accent-emerald)' : 'var(--accent-red)',
-                                  padding: '4px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600
+                                  padding: '4px 10px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, whiteSpace: 'nowrap'
                                 }}
                               >
                                 {member.status === 'blocked' ? t('unblockUser') : t('blockUser')}
                               </button>
                             </>
                           )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -1191,7 +1195,7 @@ export default function Dashboard() {
       </div>
 
       {/* Floating Action Panel (bottom-right) */}
-      <div style={{ position: 'fixed', bottom: '32px', right: rtl ? 'auto' : '32px', left: rtl ? '32px' : 'auto', zIndex: 100 }}>
+      <div style={{ position: 'fixed', bottom: 'clamp(16px, 4vw, 32px)', right: rtl ? 'auto' : 'clamp(12px, 4vw, 32px)', left: rtl ? 'clamp(12px, 4vw, 32px)' : 'auto', zIndex: 100 }}>
         {showQuickActions && (
           <div className="glass-card animate-scale" style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px', background: 'var(--bg-elevated)', border: '1px solid var(--border-hover)', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)', marginBottom: '12px', minWidth: '160px' }}>
             <button onClick={() => { setShowQuickActions(false); setShowAddMemberModal(true); }} style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', color: 'var(--text-primary)', padding: '10px 14px', borderRadius: 'var(--radius-sm)', cursor: 'pointer', fontSize: 'var(--text-sm)', textAlign: rtl ? 'right' : 'left' }}>
@@ -1252,7 +1256,7 @@ export default function Dashboard() {
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowAddMemberModal(false); }}
         >
-          <div className="glass-card animate-scale" style={{ background: 'var(--bg-elevated)', width: '100%', maxWidth: '440px', borderRadius: 'var(--radius-xl)', overflow: 'hidden', border: '1px solid var(--border-hover)', boxShadow: 'var(--shadow-xl)' }}>
+          <div className="glass-card animate-scale" style={{ background: 'var(--bg-elevated)', width: '100%', maxWidth: 'min(440px, calc(100vw - 32px))', borderRadius: 'var(--radius-xl)', overflow: 'hidden', border: '1px solid var(--border-hover)', boxShadow: 'var(--shadow-xl)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1px solid var(--border-color)', flexDirection: rtl ? 'row' : 'row-reverse' }}>
               <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>{t('addMemberBtn')}</h3>
               <button onClick={() => setShowAddMemberModal(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>
