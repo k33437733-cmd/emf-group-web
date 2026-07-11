@@ -347,7 +347,7 @@ export function useSupportChat(): UseSupportChatReturn {
         setHasMore(result.hasMore);
         setOldestCursor(result.oldestCursor);
       }
-      setHasMore(more);
+        setHasMore(result.hasMore);
     } catch (err) {
       console.error('loadMore failed', err);
     } finally {

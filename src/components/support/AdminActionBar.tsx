@@ -14,7 +14,7 @@ export default function AdminActionBar({ conversation }: Props) {
   const [tagText, setTagText] = useState('');
   const [tags, setTags] = useState<string[]>(conversation.tags || []);
 
-  const doAction = async (action: string, fn: () => Promise<void>) => {
+  const doAction = async (_action: string, fn: () => Promise<void>) => {
     try { await fn(); } catch {}
   };
 

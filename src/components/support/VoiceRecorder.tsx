@@ -11,7 +11,7 @@ interface Props {
 
 const SPEEDS = [0.5, 1, 1.5, 2];
 
-export default function VoiceRecorder({ onSend, onCancel, disabled }: Props) {
+export default function VoiceRecorder({ onSend, disabled }: Props) {
   const [state, setState] = useState<RecorderState>('idle');
   const [duration, setDuration] = useState(0);
   const [previewTime, setPreviewTime] = useState(0);

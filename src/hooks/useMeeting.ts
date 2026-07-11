@@ -33,7 +33,7 @@ export function useMeeting({ user, meetingId: externalId, type, conversationId }
   const [recording, setRecording] = useState(false);
   const [chatMessages, setChatMessages] = useState<MeetingChatMessage[]>([]);
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed'>('idle');
-  const [activeSpeaker, setActiveSpeaker] = useState<string | null>(null);
+  const [activeSpeaker] = useState<string | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
 
   const peersRef = useRef<Map<string, PeerConnection>>(new Map());
