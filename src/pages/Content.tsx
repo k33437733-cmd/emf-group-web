@@ -47,9 +47,10 @@ export default function Content() {
 
   useEffect(() => {
     let result = items.filter(item => {
-      if (item.accessLevel === 'all') return true;
-      if (item.accessLevel === 'agent') return canViewRestricted;
-      if (item.accessLevel === 'admin') return canUseAdminDownload;
+      const level = item.accessLevel || 'all';
+      if (level === 'all') return true;
+      if (level === 'agent') return canViewRestricted;
+      if (level === 'admin') return canUseAdminDownload;
       return false;
     });
     if (selectedType !== 'all') result = result.filter(item => item.type === selectedType);

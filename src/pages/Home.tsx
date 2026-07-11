@@ -47,9 +47,10 @@ export default function Home() {
   useEffect(() => {
     const unsub = subscribeToContents((items) => {
       const visibleItems = items.filter(item => {
-        if (item.accessLevel === 'all') return true;
-        if (item.accessLevel === 'agent') return canViewRestricted;
-        if (item.accessLevel === 'admin') return canViewAdminOnly;
+        const level = item.accessLevel || 'all';
+        if (level === 'all') return true;
+        if (level === 'agent') return canViewRestricted;
+        if (level === 'admin') return canViewAdminOnly;
         return false;
       });
       // Show only top 6 latest items on home page
