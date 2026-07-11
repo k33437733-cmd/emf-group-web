@@ -149,14 +149,16 @@ export async function editSupportMessage(messageId: string, senderId: string, ne
 }
 
 export function uploadAttachment(file: File, onProgress: (pct: number) => void): Promise<string> {
+  const storage = getStorage(app);
+  const ext = file.name.split('.').pop() || 'bin';
+  const path = `support_attachments/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const storageReference = storageRef(storage, path);
+  const task = uploadBytesResumable(storageReference, file);
   return new Promise<string>((resolve, reject) => {
-    const storage = getStorage(app);
-    const ext = file.name.split('.').pop() || 'bin';
-    const path = `support_attachments/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const storageReference = storageRef(storage, path);
-    const task = uploadBytesResumable(storageReference, file);
-    task.on('state_changed', snap => onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)));
-    task.then(() => getDownloadURL(storageReference)).then((url: string) => resolve(url)).catch(() => reject(new Error('Upload failed')));
+    task.on('state_changed',
+      snap => onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)),
+      err => reject(err),
+      () => getDownloadURL(storageReference).then(resolve).catch(reject));
   });
 }
 
