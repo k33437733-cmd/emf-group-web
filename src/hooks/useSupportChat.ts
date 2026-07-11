@@ -110,7 +110,7 @@ export function useSupportChat(): UseSupportChatReturn {
       }
     );
 
-    markConversationRead(activeConvId, user?.uid || '');
+    markConversationRead(activeConvId);
 
     return () => { cancelled = true; unsub(); };
   }, [activeConvId, user?.uid]);

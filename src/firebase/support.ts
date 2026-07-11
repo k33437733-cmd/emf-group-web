@@ -1,6 +1,6 @@
 import {
   collection, doc, getDoc, getDocs, setDoc, updateDoc,
-  query, where, orderBy, limit, onSnapshot, writeBatch, increment,
+  query, where, limit, onSnapshot, writeBatch, increment,
   serverTimestamp,
 } from 'firebase/firestore';
 import { ref as storageRef, getStorage, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
@@ -12,18 +12,40 @@ const MESSAGES = 'support_messages';
 
 function nowISO() { return new Date().toISOString(); }
 
+// ── Single-field helpers (avoid composite index requirements) ────────────
+
+/**
+ * Sort conversations by updatedAt descending.
+ */
+function sortConvs(list: Conversation[]): Conversation[] {
+  return list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+/**
+ * Sort messages by createdAt ascending.
+ */
+function sortMsgs(list: ChatMessage[]): ChatMessage[] {
+  return list.sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+}
+
+// ── Conversation management ─────────────────────────────────────────────
+
 /**
  * Find existing support conversation for a customer, or create one.
+ * Uses a SINGLE-FIELD query (array-contains on members) — no composite index needed.
  */
 export async function ensureSupportConversation(customer: UserProfile): Promise<string> {
   const q = query(
     collection(db, CONVERSATIONS),
     where('members', 'array-contains', customer.uid),
-    where('type', '==', 'support'),
-    limit(1)
+    limit(20)
   );
   const snap = await getDocs(q);
-  if (!snap.empty) return snap.docs[0].id;
+  // Filter type === 'support' in JS
+  const existing = snap.docs
+    .map(d => d.data() as Conversation)
+    .find(c => c.type === 'support');
+  if (existing) return existing.id;
 
   const convRef = doc(collection(db, CONVERSATIONS));
   const now = nowISO();
@@ -40,10 +62,15 @@ export async function ensureSupportConversation(customer: UserProfile): Promise<
   return convRef.id;
 }
 
+// ── Real-time subscriptions (single-field queries only) ─────────────────
+
 /**
- * Subscribe to support conversations.
- * No orderBy in the query (avoids composite index requirements) — sort client-side.
- * All error paths resolve the callback with empty array so loading never hangs.
+ * Subscribe to support conversations in real time.
+ *
+ * Admin:  `where('type', '==', 'support')`  ← single-field on `type`
+ * Client: `where('members', 'array-contains', uid)`  ← single-field on `members`
+ *
+ * Both filter and sort in JavaScript to avoid ANY composite index.
  */
 export function subscribeToSupportConversations(
   userUid: string,
@@ -54,36 +81,33 @@ export function subscribeToSupportConversations(
   try {
     const base = collection(db, CONVERSATIONS);
     if (isAdmin) {
+      // Single-field: only needs index on `type`
       const q = query(base, where('type', '==', 'support'));
       return onSnapshot(q,
-        snap => {
-          const list = snap.docs.map(d => d.data() as Conversation);
-          list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-          callback(list);
-        },
-        err => { console.error('Admin conv snapshot error', err); onError?.(err); callback([]); }
+        snap => callback(sortConvs(snap.docs.map(d => d.data() as Conversation))),
+        err => { console.error('❌ Admin conv onSnapshot failed', err); onError?.(err); }
       );
     }
-    const q = query(base, where('members', 'array-contains', userUid), where('type', '==', 'support'));
+    // Single-field: only needs index on `members` array-contains
+    // Filter type === 'support' in JS since we can't combine fields without composite index
+    const q = query(base, where('members', 'array-contains', userUid));
     return onSnapshot(q,
       snap => {
-        const list = snap.docs.map(d => d.data() as Conversation);
-        list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-        callback(list);
+        const all = snap.docs.map(d => d.data() as Conversation);
+        callback(sortConvs(all.filter(c => c.type === 'support')));
       },
-      err => { console.error('User conv snapshot error', err); onError?.(err); callback([]); }
+      err => { console.error('❌ User conv onSnapshot failed', err); onError?.(err); }
     );
   } catch (err) {
-    console.error('Conv query error', err);
+    console.error('❌ Conv query error', err);
     onError?.(err as Error);
-    callback([]);
     return () => {};
   }
 }
 
 /**
  * Subscribe to messages for a conversation.
- * Uses orderBy('createdAt', 'asc') which only needs a single-field index on createdAt.
+ * Single-field `where('conversationId', '==', id)` — no orderBy, sorts in JS.
  */
 export function subscribeToMessages(
   conversationId: string,
@@ -93,24 +117,21 @@ export function subscribeToMessages(
   try {
     const q = query(
       collection(db, MESSAGES),
-      where('conversationId', '==', conversationId),
-      orderBy('createdAt', 'asc')
+      where('conversationId', '==', conversationId)
     );
     return onSnapshot(q,
-      snap => callback(snap.docs.map(d => ({ ...d.data(), id: d.id } as ChatMessage))),
-      err => { console.error('Messages snapshot error', err); onError?.(err); }
+      snap => callback(sortMsgs(snap.docs.map(d => ({ ...d.data(), id: d.id } as ChatMessage)))),
+      err => { console.error('❌ Messages onSnapshot failed', err); onError?.(err); }
     );
   } catch (err) {
-    console.error('Messages query error', err);
+    console.error('❌ Messages query error', err);
     onError?.(err as Error);
     return () => {};
   }
 }
 
-/**
- * Send a message and update conversation metadata.
- * Creates notifications for all admin users so they receive real-time alerts.
- */
+// ── Write operations ────────────────────────────────────────────────────
+
 export async function sendSupportMessage(
   conversationId: string, sender: UserProfile, content: string,
   type: ChatMessage['type'] = 'text',
@@ -143,19 +164,26 @@ export async function sendSupportMessage(
   return msgRef.id;
 }
 
-export async function markConversationRead(conversationId: string, _userUid: string) {
-  const ref = doc(db, CONVERSATIONS, conversationId);
-  await updateDoc(ref, { 'unreadCount.total': 0 });
+export async function markConversationRead(conversationId: string) {
+  await updateDoc(doc(db, CONVERSATIONS, conversationId), { 'unreadCount.total': 0 });
 }
 
-export async function updateMessageStatus(_conversationId: string, messageId: string, status: ChatMessage['deliveryStatus'], userUid: string) {
+export async function updateMessageStatus(
+  _conversationId: string, messageId: string,
+  status: ChatMessage['deliveryStatus'], userUid: string
+) {
   const ref = doc(db, MESSAGES, messageId);
-  const update: any = { deliveryStatus: status };
+  const update: Record<string, any> = { deliveryStatus: status };
   if (status === 'read') update[`readBy.${userUid}`] = nowISO();
   await updateDoc(ref, update);
 }
 
-export function subscribeTypingStatus(conversationId: string, callback: (data: { userId: string; userName: string; isTyping: boolean } | null) => void) {
+// ── Typing indicators ───────────────────────────────────────────────────
+
+export function subscribeTypingStatus(
+  conversationId: string,
+  callback: (data: { userId: string; userName: string; isTyping: boolean } | null) => void
+) {
   return onSnapshot(doc(db, 'typing_status', conversationId),
     snap => {
       if (!snap.exists()) { callback(null); return; }
@@ -167,8 +195,14 @@ export function subscribeTypingStatus(conversationId: string, callback: (data: {
 }
 
 export async function setTypingStatus(conversationId: string, userId: string, userName: string, isTyping: boolean) {
-  await setDoc(doc(db, 'typing_status', conversationId), { userId, userName, isTyping, updatedAt: serverTimestamp() }, { merge: true });
+  await setDoc(
+    doc(db, 'typing_status', conversationId),
+    { userId, userName, isTyping, updatedAt: serverTimestamp() },
+    { merge: true }
+  );
 }
+
+// ── Message edit / delete ───────────────────────────────────────────────
 
 export async function deleteSupportMessage(messageId: string, senderId: string) {
   const ref = doc(db, MESSAGES, messageId);
@@ -188,6 +222,8 @@ export async function editSupportMessage(messageId: string, senderId: string, ne
   await updateDoc(ref, { content: newContent, editedAt: nowISO() });
 }
 
+// ── File upload ─────────────────────────────────────────────────────────
+
 export function uploadAttachment(file: File, onProgress: (pct: number) => void): Promise<string> {
   const storage = getStorage(app);
   const ext = file.name.split('.').pop() || 'bin';
@@ -202,15 +238,12 @@ export function uploadAttachment(file: File, onProgress: (pct: number) => void):
   });
 }
 
-/**
- * Mark all unread messages in a conversation as read.
- * Filters senderId !== userUid in JS (avoids composite index requirement).
- */
+// ── Mark-as-read (single-field query, no orderBy) ───────────────────────
+
 export async function markAllMessagesRead(conversationId: string, userUid: string) {
   const q = query(
     collection(db, MESSAGES),
-    where('conversationId', '==', conversationId),
-    orderBy('createdAt', 'asc')
+    where('conversationId', '==', conversationId)
   );
   const snap = await getDocs(q);
   const batch = writeBatch(db);
@@ -225,10 +258,11 @@ export async function markAllMessagesRead(conversationId: string, userUid: strin
   if (count > 0) await batch.commit();
 }
 
-export function subscribeUnreadSupportCount(_userUid: string, callback: (count: number) => void) {
+// ── Unread count (single-field query on unreadCount.total) ──────────────
+
+export function subscribeUnreadSupportCount(callback: (count: number) => void) {
   const q = query(
     collection(db, CONVERSATIONS),
-    where('type', '==', 'support'),
     where('unreadCount.total', '>', 0)
   );
   return onSnapshot(q,
