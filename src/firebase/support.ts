@@ -156,7 +156,7 @@ export function uploadAttachment(file: File, onProgress: (pct: number) => void):
     const storageReference = storageRef(storage, path);
     const task = uploadBytesResumable(storageReference, file);
     task.on('state_changed', snap => onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)));
-    task.then(() => getDownloadURL(storageReference)).then(url => resolve(url)).catch(reject);
+    task.then(() => getDownloadURL(storageReference)).then((url: string) => resolve(url)).catch(() => reject(new Error('Upload failed')));
   });
 }
 

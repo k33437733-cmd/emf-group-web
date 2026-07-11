@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { Send, Paperclip, X } from 'lucide-react';
+import { Send, Paperclip, X, Image as ImageIcon } from 'lucide-react';
 
 interface Props {
   onSend: (text: string, file?: File) => void;
@@ -56,7 +56,7 @@ export default function MessageInput({ onSend, onTyping, sending, uploadProgress
     }}>
       {file && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', marginBottom: '8px', background: 'var(--bg-card)', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.78rem' }}>
-          <Image size={14} style={{ color: 'var(--color-primary)' }} />
+          <ImageIcon size={14} style={{ color: 'var(--color-primary)' }} />
           <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>{file.name}</span>
           <span style={{ color: 'var(--text-tertiary)', fontSize: '0.65rem' }}>{(file.size / 1024 / 1024).toFixed(1)} MB</span>
           <button onClick={() => setFile(null)} style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: '2px' }}><X size={14} /></button>
