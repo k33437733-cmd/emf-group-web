@@ -294,6 +294,34 @@ export async function purgeOldMessages(): Promise<number> {
   }
 }
 
+// ─── Message search ──────────────────────────────────────────────────────────
+
+/**
+ * Search messages in a conversation by content keyword.
+ * Loads a page of matching messages ordered by newest first.
+ */
+export async function searchMessages(
+  conversationId: string,
+  keyword: string,
+  pageSize = 50,
+): Promise<ChatMessage[]> {
+  try {
+    const q = query(
+      col(),
+      where('conversationId', '==', conversationId),
+      orderBy('createdAt', 'desc'),
+      limit(pageSize),
+    );
+    const snap = await getDocs(q);
+    const lowerKeyword = keyword.toLowerCase();
+    return snap.docs
+      .map(d => ({ ...d.data() }) as ChatMessage)
+      .filter(m => !m.deletedAt && m.content?.toLowerCase().includes(lowerKeyword));
+  } catch (err) {
+    wrapFirestoreError(err, 'searchMessages');
+  }
+}
+
 // ─── Export preview utility ───────────────────────────────────────────────────
 
 export { messagePreview };

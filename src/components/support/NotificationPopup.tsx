@@ -1,13 +1,15 @@
 import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MessageSquare, X, ExternalLink, Bell } from 'lucide-react';
+import { MessageSquare, X, ExternalLink, Bell, Clock } from 'lucide-react';
 import { playNotificationSound } from '../../lib/notificationSound';
 
 interface Alert {
   id: string;
   customerName: string;
+  customerPhoto?: string;
   body: string;
   conversationId: string;
+  time?: string;
 }
 
 const listeners = new Set<(alert: Alert) => void>();
@@ -31,6 +33,12 @@ export default function NotificationPopup() {
         return [...prev, alert];
       });
       playNotificationSound();
+      // Auto-dismiss after 8 seconds
+      const t = setTimeout(() => {
+        setAlerts(prev => prev.filter(a => a.id !== alert.id));
+        timersRef.current.delete(alert.id);
+      }, 8000);
+      timersRef.current.set(alert.id, t);
     };
     listeners.add(handler);
     return () => { listeners.delete(handler); };
@@ -43,13 +51,19 @@ export default function NotificationPopup() {
     timersRef.current.delete(id);
   };
 
+  const dismissAll = () => {
+    timersRef.current.forEach(t => clearTimeout(t));
+    timersRef.current.clear();
+    setAlerts([]);
+  };
+
   const openConv = (convId: string) => {
     dismiss(convId);
     navigate(`/support?conv=${convId}`);
   };
 
   const openNotifications = () => {
-    setAlerts([]);
+    dismissAll();
     navigate('/support');
   };
 
@@ -67,13 +81,13 @@ export default function NotificationPopup() {
         <div style={{
           background: 'var(--bg-elevated)', borderRadius: '12px', padding: '10px 14px',
           border: '1px solid var(--color-border)', boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-          display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: '10px',
           animation: 'popupIn 0.25s ease',
-        }} onClick={openNotifications}>
+        }}>
           <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <Bell size={14} style={{ color: '#050816' }} />
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, cursor: 'pointer' }} onClick={openNotifications}>
             <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>
               {alerts.length} رسائل جديدة
             </div>
@@ -81,7 +95,14 @@ export default function NotificationPopup() {
               {alerts.map(a => a.customerName).join('، ')}
             </div>
           </div>
-          <X size={14} style={{ color: 'var(--text-tertiary)', flexShrink: 0 }} onClick={(e) => { e.stopPropagation(); setAlerts([]); }} />
+          <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
+            <button onClick={openNotifications} style={{ background: 'var(--sidebar-hover)', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '6px 10px', borderRadius: '6px', fontSize: '0.65rem', fontFamily: 'inherit', fontWeight: 500 }}>
+              عرض الكل
+            </button>
+            <button onClick={dismissAll} style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '6px', display: 'flex' }}>
+              <X size={14} />
+            </button>
+          </div>
         </div>
       )}
       {!showAll && alerts.map(alert => (
@@ -91,18 +112,29 @@ export default function NotificationPopup() {
           animation: 'popupIn 0.25s ease',
         }}>
           <div style={{ padding: '12px 14px', display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
-            <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff', fontSize: '0.75rem', fontWeight: 700 }}>
-              {alert.customerName.charAt(0)}
-            </div>
+            {alert.customerPhoto ? (
+              <img src={alert.customerPhoto} alt="" style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+            ) : (
+              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff', fontSize: '0.85rem', fontWeight: 700 }}>
+                {alert.customerName.charAt(0)}
+              </div>
+            )}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{alert.customerName}</span>
-                <button onClick={() => dismiss(alert.id)} style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
-                  <X size={13} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {alert.time && (
+                    <span style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                      <Clock size={10} /> {alert.time}
+                    </span>
+                  )}
+                  <button onClick={() => dismiss(alert.id)} style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+                    <X size={13} />
+                  </button>
+                </div>
               </div>
-              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {alert.body}
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>
+                {alert.body.length > 60 ? alert.body.substring(0, 57) + '…' : alert.body}
               </div>
             </div>
           </div>
@@ -123,6 +155,15 @@ export default function NotificationPopup() {
               transition: 'background 0.15s',
             }}>
               <ExternalLink size={12} /> الإشعارات
+            </button>
+            <button onClick={() => dismiss(alert.id)} style={{
+              flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              padding: '8px', border: 'none', borderRight: '1px solid var(--color-border)',
+              background: 'transparent', color: 'var(--text-tertiary)',
+              cursor: 'pointer', fontSize: '0.72rem', fontWeight: 500, fontFamily: 'inherit',
+              transition: 'background 0.15s',
+            }}>
+              <X size={12} /> إخفاء
             </button>
           </div>
         </div>

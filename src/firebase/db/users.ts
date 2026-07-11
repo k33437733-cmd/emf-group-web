@@ -147,7 +147,7 @@ export async function setUser(profile: UserProfile): Promise<void> {
 export async function updateUser(
   uid: string,
   updates: Partial<
-    Pick<UserProfile, 'name' | 'avatar' | 'phone' | 'preferences' | 'lastLogin' | 'onlineStatus' | 'lastSeen'>
+    Pick<UserProfile, 'name' | 'avatar' | 'phone' | 'bio' | 'preferences' | 'lastLogin' | 'onlineStatus' | 'lastSeen'>
   >,
 ): Promise<void> {
   try {

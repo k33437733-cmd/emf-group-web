@@ -1,6 +1,6 @@
 import { Search, Inbox } from 'lucide-react';
 import type { Conversation } from '../../types';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 
 interface Props {
   conversations: Conversation[];
@@ -8,6 +8,7 @@ interface Props {
   onSelect: (id: string) => void;
   loading: boolean;
   rtl?: boolean;
+  currentUserUid?: string;
 }
 
 function relativeTime(iso: string) {
@@ -21,11 +22,83 @@ function relativeTime(iso: string) {
   return days === 1 ? 'أمس' : `منذ ${days} ي`;
 }
 
-function getUnreadCount(conv: Conversation): number {
+function getUnreadCount(conv: Conversation, uid?: string): number {
+  if (uid && conv.unreadCount && typeof conv.unreadCount[uid] === 'number') {
+    return conv.unreadCount[uid] as number;
+  }
   return (conv.unreadCount as any)?.total || 0;
 }
 
-export default function ConversationList({ conversations, activeId, onSelect, loading, rtl = true }: Props) {
+const ConvItem = memo(function ConvItem({ conv, active, unread, onSelect, rtl }: {
+  conv: Conversation; active: boolean; unread: number; onSelect: (id: string) => void; rtl: boolean;
+}) {
+  return (
+    <div key={conv.id} onClick={() => onSelect(conv.id)}
+      style={{
+        display: 'flex', gap: '10px', padding: '10px 12px', cursor: 'pointer',
+        background: active ? 'var(--sidebar-active)' : 'transparent',
+        borderRight: active && rtl ? '3px solid var(--color-primary)' : '3px solid transparent',
+        borderLeft: active && !rtl ? '3px solid var(--color-primary)' : '3px solid transparent',
+        transition: 'all 0.12s',
+      }}>
+      <div style={{
+        width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
+        background: 'var(--gradient-primary)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        color: '#fff', fontSize: '0.85rem', fontWeight: 700,
+        position: 'relative',
+      }}>
+        {(conv.name || 'U').charAt(0)}
+        {unread > 0 && (
+          <span style={{
+            position: 'absolute', top: '-2px', right: '-2px',
+            width: '10px', height: '10px', borderRadius: '50%',
+            background: 'var(--color-danger)',
+            border: '2px solid var(--bg-secondary)',
+          }} />
+        )}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
+          <span style={{
+            fontSize: '0.82rem', fontWeight: unread > 0 ? 700 : 500,
+            color: 'var(--text-primary)',
+            overflow: 'hidden', textOverflow: 'ellipsis',
+          }}>
+            {conv.name || (rtl ? 'مستخدم' : 'User')}
+          </span>
+          <span style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', flexShrink: 0 }}>
+            {relativeTime(conv.lastMessageTime)}
+          </span>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{
+            fontSize: '0.72rem',
+            color: unread > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
+            fontWeight: unread > 0 ? 600 : 400,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            maxWidth: '160px',
+          }}>
+            {conv.lastMessage || (rtl ? 'بدء المحادثة' : 'Start conversation')}
+          </span>
+          {unread > 0 && (
+            <span style={{
+              background: 'var(--color-primary)', color: '#050816',
+              fontSize: '0.55rem', fontWeight: 700,
+              minWidth: '18px', height: '18px', borderRadius: '9px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: '0 5px',
+            }}>
+              {unread > 99 ? '99+' : unread}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
+const ConversationList = memo(function ConversationList({ conversations, activeId, onSelect, loading, rtl = true, currentUserUid }: Props) {
   const [search, setSearch] = useState('');
 
   const filtered = useMemo(() => {
@@ -86,78 +159,19 @@ export default function ConversationList({ conversations, activeId, onSelect, lo
               {rtl ? 'لا توجد محادثات' : 'No conversations'}
             </div>
           </div>
-        ) : filtered.map(c => {
-          const active = c.id === activeId;
-          const unread = getUnreadCount(c);
-          return (
-            <div key={c.id} onClick={() => onSelect(c.id)}
-              style={{
-                display: 'flex', gap: '10px', padding: '10px 12px', cursor: 'pointer',
-                background: active ? 'var(--sidebar-active)' : 'transparent',
-                borderRight: active && rtl ? '3px solid var(--color-primary)' : '3px solid transparent',
-                borderLeft: active && !rtl ? '3px solid var(--color-primary)' : '3px solid transparent',
-                transition: 'all 0.12s',
-              }}>
-              {/* Avatar */}
-              <div style={{
-                width: '40px', height: '40px', borderRadius: '50%', flexShrink: 0,
-                background: 'var(--gradient-primary)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#fff', fontSize: '0.85rem', fontWeight: 700,
-                position: 'relative',
-              }}>
-                {(c.name || 'U').charAt(0)}
-                {unread > 0 && (
-                  <span style={{
-                    position: 'absolute', top: '-2px', [rtl ? 'right' : 'right']: '-2px',
-                    width: '10px', height: '10px', borderRadius: '50%',
-                    background: 'var(--color-danger)',
-                    border: '2px solid var(--bg-secondary)',
-                  }} />
-                )}
-              </div>
-
-              {/* Content */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2px' }}>
-                  <span style={{
-                    fontSize: '0.82rem', fontWeight: unread > 0 ? 700 : 500,
-                    color: 'var(--text-primary)',
-                    overflow: 'hidden', textOverflow: 'ellipsis',
-                  }}>
-                    {c.name || (rtl ? 'مستخدم' : 'User')}
-                  </span>
-                  <span style={{ fontSize: '0.6rem', color: 'var(--text-tertiary)', flexShrink: 0 }}>
-                    {relativeTime(c.lastMessageTime)}
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{
-                    fontSize: '0.72rem',
-                    color: unread > 0 ? 'var(--text-primary)' : 'var(--text-secondary)',
-                    fontWeight: unread > 0 ? 600 : 400,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    maxWidth: '160px',
-                  }}>
-                    {c.lastMessage || (rtl ? 'بدء المحادثة' : 'Start conversation')}
-                  </span>
-                  {unread > 0 && (
-                    <span style={{
-                      background: 'var(--color-primary)', color: '#050816',
-                      fontSize: '0.55rem', fontWeight: 700,
-                      minWidth: '18px', height: '18px', borderRadius: '9px',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      padding: '0 5px',
-                    }}>
-                      {unread > 99 ? '99+' : unread}
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+        ) : filtered.map(c => (
+          <ConvItem
+            key={c.id}
+            conv={c}
+            active={c.id === activeId}
+            unread={getUnreadCount(c, currentUserUid)}
+            onSelect={onSelect}
+            rtl={rtl}
+          />
+        ))}
       </div>
     </div>
   );
-}
+});
+
+export default ConversationList;

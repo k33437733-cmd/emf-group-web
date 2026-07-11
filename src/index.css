@@ -1878,3 +1878,243 @@ p {
   .project-card-actions { flex-direction: column; align-items: stretch; }
   .project-card-actions .btn { width: 100%; }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PART 14 — Responsive Communication UI
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Support Chat: responsive panels ── */
+.support-admin-container {
+  --sidebar-width: 320px;
+  --info-width: 260px;
+}
+@media (max-width: 1200px) {
+  .support-admin-container { --info-width: 220px; }
+}
+@media (max-width: 1024px) {
+  .support-admin-container { --info-width: 0px; }
+  .support-panel-info { display: none; }
+}
+@media (max-width: 768px) {
+  .support-admin-container { --sidebar-width: 100%; }
+  .support-panel-convlist { width: 100% !important; }
+  .support-panel-convlist.mobile-hidden { display: none !important; }
+  .support-panel-chat { width: 100% !important; min-width: 0 !important; }
+  .chat-back-btn { display: flex !important; }
+}
+.support-panel-convlist { width: var(--sidebar-width); }
+.support-panel-info { width: var(--info-width); }
+
+/* ── Message bubbles responsive ── */
+@media (max-width: 768px) {
+  .msg-bubble { max-width: 88% !important; }
+}
+@media (max-width: 480px) {
+  .msg-bubble { max-width: 92% !important; }
+  .msg-bubble audio { height: 28px !important; }
+  .msg-bubble video { max-height: 160px; }
+}
+.msg-bubble {
+  max-width: 75%;
+  transition: max-width 0.15s ease;
+}
+
+/* ── File preview responsive ── */
+@media (max-width: 768px) {
+  .file-preview-card { width: 140px !important; }
+}
+@media (max-width: 480px) {
+  .file-preview-row { gap: 6px; }
+  .file-preview-card { width: 120px !important; }
+  .file-preview-card-preview { height: 90px !important; }
+}
+
+/* ── Meeting room responsive ── */
+@media (max-width: 1024px) {
+  .meeting-sidebar { display: none; }
+  .meeting-main { width: 100% !important; }
+}
+@media (max-width: 768px) {
+  .meeting-video-grid { grid-template-columns: 1fr !important; }
+  .meeting-controls { flex-wrap: wrap; gap: 4px; }
+  .meeting-controls button { padding: 8px !important; }
+  .meeting-control-label { display: none; }
+  .meeting-chat-panel { position: fixed; inset: 0; z-index: 1000; border-radius: 0 !important; }
+}
+@media (max-width: 480px) {
+  .meeting-video-grid { gap: 4px; }
+  .meeting-video { max-height: 180px; }
+}
+
+/* ── Chat input responsive ── */
+@media (max-width: 768px) {
+  .chat-input-area { padding: 8px 10px !important; }
+  .chat-input-textarea { font-size: 0.82rem !important; max-height: 80px !important; }
+  .chat-input-emoji-picker { width: 260px !important; }
+}
+@media (max-width: 480px) {
+  .chat-input-area { padding: 6px 8px !important; }
+  .chat-input-btn { padding: 5px !important; }
+  .chat-input-textarea { padding: 6px 0 !important; }
+  .emoji-grid { gap: 1px; }
+  .emoji-grid button { padding: 3px !important; font-size: 1rem !important; }
+}
+
+/* ── Chat page responsive ── */
+@media (max-width: 768px) {
+  .chat-workspace-container { height: calc(100vh - var(--navbar-height) - 16px) !important; }
+  .chat-messages-scroll { padding: 16px 10px !important; }
+  .chat-sidebar { width: 100% !important; }
+  .chat-window { width: 100% !important; }
+  .chat-window.hide-mobile { display: none !important; }
+  .chat-sidebar.hide-mobile { display: none !important; }
+  .chat-conv-item { padding: 10px 12px !important; }
+  .mobile-back-chat { display: flex !important; }
+  .chat-toggle-sidebar-button { display: none !important; }
+  .chat-new-dm-panel { width: 100% !important; }
+}
+
+/* ── Voice recorder responsive ── */
+@media (max-width: 480px) {
+  .voice-recorder { flex-direction: column !important; align-items: stretch !important; }
+  .voice-recorder-controls { justify-content: center; }
+  .voice-recorder-canvas { height: 36px !important; }
+  .voice-preview-speed { font-size: 0.6rem !important; }
+}
+
+/* ── Incoming call dialog responsive ── */
+@media (max-width: 480px) {
+  .incoming-call-dialog { width: 90vw !important; max-width: 320px !important; }
+  .incoming-call-actions { gap: 8px; }
+  .incoming-call-actions button { padding: 10px 16px !important; font-size: 0.78rem !important; }
+}
+
+/* ── Forward dialog responsive ── */
+@media (max-width: 480px) {
+  .forward-dialog { width: 95vw !important; border-radius: 12px !important; }
+  .forward-search-input { font-size: 0.8rem !important; }
+}
+
+/* ── Lightbox responsive ── */
+@media (max-width: 768px) {
+  .msg-lightbox img { max-width: 98vw !important; max-height: 80vh !important; }
+}
+
+/* ── Attachment track bar responsive ── */
+@media (max-width: 480px) {
+  .upload-track-item { flex-wrap: wrap; gap: 4px; }
+  .upload-track-progress { max-width: 60px !important; }
+  .upload-track-name { font-size: 0.65rem !important; max-width: 80px; }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PART 15 — Modern Animations
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Message bubble entry anim ── */
+.msg-enter { animation: msgSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes msgSlideIn {
+  from { opacity: 0; transform: translateY(10px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Staggered list items ── */
+.conv-list-enter { animation: fadeSlide 0.3s ease both; }
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* ── Panel transitions ── */
+.panel-enter { animation: panelIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Reaction pop ── */
+.reaction-pop { animation: pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes pop {
+  from { transform: scale(0); }
+  to   { transform: scale(1); }
+}
+
+/* ── Status dot pulse (unread) ── */
+.status-dot-pulse { animation: pulse 2s ease-in-out infinite; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+/* ── Typing bounce ── */
+.typing-dot { animation: typingBounce 1.4s ease-in-out infinite; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30%           { transform: translateY(-4px); }
+}
+
+/* ── Delivery animation ── */
+.delivery-anim { animation: deliveryPulse 0.4s ease; }
+@keyframes deliveryPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* ── Smooth scrollbar ── */
+.smooth-scroll {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ── Fade-in-up for overlays ── */
+.overlay-enter {
+  animation: overlayFade 0.2s ease;
+}
+@keyframes overlayFade {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to   { opacity: 1; backdrop-filter: blur(4px); }
+}
+
+/* ── Shimmer for loading states (modern skeleton) ── */
+.shimmer {
+  background: linear-gradient(90deg,
+    var(--badge-bg) 25%,
+    var(--bg-secondary) 50%,
+    var(--badge-bg) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+/* ── Hover scale for interactive elements ── */
+.hover-lift {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* ── Button press effect ── */
+.btn-press:active {
+  transform: scale(0.96);
+}
+
+/* ── Reduced motion safety ── */
+@media (prefers-reduced-motion: reduce) {
+  .msg-enter,
+  .conv-list-enter,
+  .panel-enter,
+  .reaction-pop,
+  .delivery-anim,
+  .overlay-enter { animation: none !important; }
+  .hover-lift:hover { transform: none !important; }
+  .shimmer { animation: none !important; }
+}

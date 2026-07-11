@@ -43,22 +43,22 @@ export default function App() {
               />
               
               <div id="app-content" style={{ flexGrow: 1 }}>
-                <Suspense fallback={<PageLoader />}>
-                  <Routes>
-                    <Route path="/" element={<Home />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
-                      <Route path="/dashboard" element={<Dashboard />} />
-                      <Route path="/content" element={<Content />} />
-                      <Route path="/chat" element={<ChatPage />} />
-                      <Route path="/support" element={<SupportChatPage />} />
-                      <Route path="/projects" element={<Projects />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="/admin/release-notes" element={<ReleaseNotes />} />
-                    </Route>
-                    <Route path="*" element={<Navigate to="/" replace />} />
-                  </Routes>
-                </Suspense>
+                  <Suspense fallback={<PageLoader />}>
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                      <Route path="/login" element={<Login />} />
+                      <Route element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+                        <Route path="/dashboard" element={<ErrorBoundary><Dashboard /></ErrorBoundary>} />
+                        <Route path="/content" element={<ErrorBoundary><Content /></ErrorBoundary>} />
+                        <Route path="/chat" element={<ErrorBoundary><ChatPage /></ErrorBoundary>} />
+                        <Route path="/support" element={<ErrorBoundary><SupportChatPage /></ErrorBoundary>} />
+                        <Route path="/projects" element={<ErrorBoundary><Projects /></ErrorBoundary>} />
+                        <Route path="/settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
+                        <Route path="/admin/release-notes" element={<ErrorBoundary><ReleaseNotes /></ErrorBoundary>} />
+                      </Route>
+                      <Route path="*" element={<Navigate to="/" replace />} />
+                    </Routes>
+                  </Suspense>
               </div>
               
               <ToastContainer />

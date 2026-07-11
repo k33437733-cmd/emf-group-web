@@ -1,12 +1,25 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from './useAuth';
+import { checkRateLimit } from '../lib/rateLimit';
+import { sanitizeText, validateFile, validateMessageContent } from '../lib/sanitize';
 import {
   ensureSupportConversation, subscribeToSupportConversations,
   subscribeToMessages, sendSupportMessage, markConversationRead,
   setTypingStatus, deleteSupportMessage, editSupportMessage,
-  uploadAttachment, subscribeTypingStatus,
+  uploadAttachment, subscribeTypingStatus, broadcastAllConversationsToAdmins,
+  subscribeUnreadSupportCount, uploadAttachments, getSupportMessagePage,
+  addReaction, getMessage,
 } from '../firebase/support';
 import type { Conversation, ChatMessage } from '../types';
+import type { FileUploadItem } from '../firebase/support';
+
+interface UploadTrack {
+  id: string;
+  fileName: string;
+  progress: number;
+  status: 'uploading' | 'done' | 'error';
+  error?: string;
+}
 
 interface UseSupportChatReturn {
   conversations: Conversation[];
@@ -18,14 +31,23 @@ interface UseSupportChatReturn {
   typingUsers: { userId: string; userName: string }[];
   activeConversation: Conversation | null;
   uploadProgress: number;
+  uploadTracks: UploadTrack[];
+  unreadCount: number;
   setActiveConv: (id: string | null) => void;
-  sendMessage: (content: string, type?: ChatMessage['type'], file?: File) => Promise<void>;
+  sendMessage: (content: string, type?: ChatMessage['type'], files?: File[]) => Promise<void>;
   startNewConversation: () => Promise<void>;
   setTyping: (isTyping: boolean) => void;
   deleteMessage: (msgId: string) => Promise<void>;
   editMessage: (msgId: string, content: string) => Promise<void>;
+  cancelUpload: (id: string) => void;
+  retryUpload: (id: string) => void;
   loadMore: () => void;
   hasMore: boolean;
+  loadingMore: boolean;
+  replyToMsg: ChatMessage | null;
+  setReplyTo: (msg: ChatMessage | null) => void;
+  addReaction: (messageId: string, emoji: string) => Promise<void>;
+  sendReply: (content: string) => Promise<void>;
 }
 
 export function useSupportChat(): UseSupportChatReturn {
@@ -39,12 +61,35 @@ export function useSupportChat(): UseSupportChatReturn {
   const [typingUsers, setTypingUsers] = useState<{ userId: string; userName: string }[]>([]);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [oldestCursor, setOldestCursor] = useState<string | null>(null);
+  const [replyToMsg, setReplyToMsg] = useState<ChatMessage | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [uploadTracks, setUploadTracks] = useState<UploadTrack[]>([]);
+  const uploadHandlesRef = useRef<Map<string, { cancel: () => void; file: File }>>(new Map());
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isAdmin = !!(user && (user.role === 'admin' || user.role === 'super_admin'));
+  const broadcastDoneRef = useRef(false);
 
   const activeConversation = conversations.find(c => c.id === activeConvId) || null;
 
-  // Subscribe to conversations list, with error fallback
+  // Broadcast to admins on mount (ensures new admins are added to all conversations)
+  useEffect(() => {
+    if (!user || !isAdmin || broadcastDoneRef.current) return;
+    broadcastDoneRef.current = true;
+    broadcastAllConversationsToAdmins().catch(err =>
+      console.error('Failed to broadcast conversations to admins', err)
+    );
+  }, [user, isAdmin]);
+
+  // Subscribe to unread count
+  useEffect(() => {
+    if (!user) return;
+    const unsub = subscribeUnreadSupportCount(user.uid, setUnreadCount);
+    return () => unsub();
+  }, [user]);
+
+  // Subscribe to conversations list
   useEffect(() => {
     if (!user) { setLoading(false); return; }
 
@@ -99,10 +144,18 @@ export function useSupportChat(): UseSupportChatReturn {
     if (!activeConvId) { setMessages([]); return; }
 
     let cancelled = false;
+    setHasMore(true);
+    setOldestCursor(null);
 
     const unsub = subscribeToMessages(
       activeConvId,
-      (msgs) => { if (!cancelled) setMessages(msgs); },
+      (msgs) => {
+        if (cancelled) return;
+        setMessages(msgs);
+        if (msgs.length > 0) {
+          setOldestCursor(msgs[0].createdAt);
+        }
+      },
       (err) => {
         if (cancelled) return;
         console.error('Failed to load messages', err);
@@ -110,7 +163,7 @@ export function useSupportChat(): UseSupportChatReturn {
       }
     );
 
-    markConversationRead(activeConvId);
+    if (user) markConversationRead(activeConvId, user.uid);
 
     return () => { cancelled = true; unsub(); };
   }, [activeConvId, user?.uid]);
@@ -130,18 +183,84 @@ export function useSupportChat(): UseSupportChatReturn {
     return () => { cancelled = true; unsub(); };
   }, [activeConvId, user?.uid]);
 
-  const sendMsg = useCallback(async (content: string, type: ChatMessage['type'] = 'text', file?: File) => {
-    if (!user || !activeConvId || (!content.trim() && !file)) return;
+  const sendMsg = useCallback(async (content: string, _type: ChatMessage['type'] = 'text', files?: File[]) => {
+    if (!user || !activeConvId || (!content.trim() && (!files || files.length === 0))) return;
+    const key = `send:${user.uid}`;
+    if (!checkRateLimit(key, { maxRequests: 10, windowMs: 1000 })) return;
+    const validContent = validateMessageContent(content);
+    if (!validContent.valid) return;
+    const sanitized = sanitizeText(content.trim());
     setSending(true);
+
     try {
-      let fileData: any = undefined;
-      if (file) {
-        setUploadProgress(0);
-        const url = await uploadAttachment(file, setUploadProgress);
-        fileData = { fileUrl: url, fileName: file.name, fileSize: file.size, fileType: file.type };
-        type = file.type.startsWith('image/') ? 'image' : 'file';
+      if (files && files.length > 0) {
+        // Prepare upload items
+        const items: FileUploadItem[] = files.map(f => ({
+          id: `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,
+          file: f,
+          progress: 0,
+          status: 'pending' as const,
+        }));
+
+        // Track them
+        setUploadTracks(items.map(i => ({ id: i.id, fileName: i.file.name, progress: 0, status: 'uploading' })));
+
+        // Store handles for cancel
+        const handleMap = new Map<string, { cancel: () => void; file: File }>();
+        const controllers = new Map<string, AbortController>();
+
+        // Upload each file individually with progress
+        const uploadOne = async (item: FileUploadItem): Promise<{ id: string; url: string; file: File }> => {
+          const controller = new AbortController();
+          controllers.set(item.id, controller);
+          const handle = uploadAttachment(item.file, (pct) => {
+            setUploadTracks(prev => prev.map(t => t.id === item.id ? { ...t, progress: pct } : t));
+          }, controller.signal);
+          handleMap.set(item.id, { cancel: handle.cancel, file: item.file });
+          try {
+            const url = await handle.promise;
+            setUploadTracks(prev => prev.map(t => t.id === item.id ? { ...t, progress: 100, status: 'done' } : t));
+            return { id: item.id, url, file: item.file };
+          } catch (err: any) {
+            if (err?.name === 'CanceledError' || err?.code === 'storage/canceled') {
+              setUploadTracks(prev => prev.map(t => t.id === item.id ? { ...t, status: 'error', error: 'ملغي' } : t));
+            } else {
+              setUploadTracks(prev => prev.map(t => t.id === item.id ? { ...t, status: 'error', error: 'فشل الرفع' } : t));
+            }
+            controllers.delete(item.id);
+            handleMap.delete(item.id);
+            throw err;
+          }
+        };
+
+        uploadHandlesRef.current = handleMap;
+
+        // Upload all files in parallel
+        const results = await Promise.allSettled(items.map(uploadOne));
+
+        // Send successfully uploaded files as messages
+        for (const result of results) {
+          if (result.status === 'fulfilled') {
+            const { url, file } = result.value;
+            const msgType = file.type.startsWith('image/') ? 'image' as const : 'file' as const;
+            await sendSupportMessage(activeConvId, user, '', msgType, {
+              fileUrl: url, fileName: file.name, fileSize: file.size, fileType: file.type,
+            });
+          }
+        }
+
+        // If there was text too, send it as a separate message
+        if (sanitized) {
+          await sendSupportMessage(activeConvId, user, sanitized, 'text', undefined);
+        }
+
+        controllers.clear();
+        handleMap.clear();
+      } else {
+        // Text-only message
+        await sendSupportMessage(activeConvId, user, sanitized, 'text', undefined);
       }
-      await sendSupportMessage(activeConvId, user, content.trim(), type, fileData);
+
       setTypingStatus(activeConvId, user.uid, user.name || '', false);
       if (typingTimerRef.current) clearTimeout(typingTimerRef.current);
     } catch (e) {
@@ -149,8 +268,21 @@ export function useSupportChat(): UseSupportChatReturn {
     } finally {
       setSending(false);
       setUploadProgress(0);
+      setTimeout(() => setUploadTracks([]), 2000);
     }
   }, [user, activeConvId]);
+
+  const cancelUpload = useCallback((id: string) => {
+    const handle = uploadHandlesRef.current.get(id);
+    if (handle) handle.cancel();
+  }, []);
+
+  const retryUpload = useCallback((id: string) => {
+    const handle = uploadHandlesRef.current.get(id);
+    if (!handle) return;
+    // Re-trigger sendMsg with just this file
+    sendMsg('', 'file', [handle.file]);
+  }, [sendMsg]);
 
   const startNewConv = useCallback(async () => {
     if (!user) return;
@@ -188,14 +320,45 @@ export function useSupportChat(): UseSupportChatReturn {
     await editSupportMessage(msgId, user.uid, content);
   }, [user]);
 
-  const loadMore = useCallback(() => {
-    setHasMore(false);
-  }, []);
+  const handleAddReaction = useCallback(async (messageId: string, emoji: string) => {
+    if (!activeConvId || !user) return;
+    await addReaction(messageId, activeConvId, user.uid, emoji);
+  }, [activeConvId, user]);
+
+  const handleSendReply = useCallback(async (content: string) => {
+    if (!user || !activeConvId || !replyToMsg || !content.trim()) return;
+    const sanitized = sanitizeText(content.trim());
+    await sendSupportMessage(activeConvId, user, sanitized, 'text', { replyTo: replyToMsg.id });
+    setReplyToMsg(null);
+  }, [user, activeConvId, replyToMsg]);
+
+  const loadMore = useCallback(async () => {
+    if (!activeConvId || !oldestCursor || loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    try {
+      const { messages: oldMsgs, hasMore: more, oldestCursor: newCursor } = await getSupportMessagePage(activeConvId, oldestCursor, 40);
+      if (oldMsgs.length > 0) {
+        setMessages(prev => {
+          const existingIds = new Set(prev.map(m => m.id));
+          const newOnes = oldMsgs.filter(m => !existingIds.has(m.id));
+          return [...newOnes, ...prev];
+        });
+        setOldestCursor(newCursor);
+      }
+      setHasMore(more);
+    } catch (err) {
+      console.error('loadMore failed', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [activeConvId, oldestCursor, loadingMore, hasMore]);
 
   return {
     conversations, activeConvId, messages, loading, error, sending, typingUsers,
-    activeConversation, uploadProgress,
+    activeConversation, uploadProgress, uploadTracks, unreadCount, loadingMore,
     setActiveConv: setActiveConvId, sendMessage: sendMsg, startNewConversation: startNewConv,
     setTyping, deleteMessage: deleteMsg, editMessage: editMsg, loadMore, hasMore,
+    cancelUpload, retryUpload,
+    replyToMsg, setReplyTo: setReplyToMsg, addReaction: handleAddReaction, sendReply: handleSendReply,
   };
 }

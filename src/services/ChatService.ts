@@ -200,6 +200,11 @@ export async function sendMessage(opts: SendMessageOptions): Promise<ChatMessage
     throw new RepositoryError('Sender is not a member of this conversation', 'permission-denied');
   }
 
+  // Broadcast channels: only admins/creator can send
+  if (conv.isBroadcast && !isAgent(opts.sender)) {
+    throw new RepositoryError('Only admins can send messages in broadcast channels', 'permission-denied');
+  }
+
   // ── Write the message (critical — fail if this throws) ──
   const msg = await createMessage({
     conversationId: opts.conversationId,

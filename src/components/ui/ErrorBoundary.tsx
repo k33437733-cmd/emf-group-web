@@ -1,8 +1,10 @@
-import { Component, type ReactNode, type ErrorInfo } from 'react';
+import { Component } from 'react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
+  children: React.ReactNode;
+  fallback?: React.ReactNode;
+  onError?: (error: Error, errorInfo: React.ErrorInfo) => void;
 }
 
 interface State {
@@ -20,8 +22,9 @@ export default class ErrorBoundary extends Component<Props, State> {
     return { hasError: true, error };
   }
 
-  componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error('[ErrorBoundary]', error, info.componentStack);
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('❌ ErrorBoundary caught:', error.message, errorInfo);
+    this.props.onError?.(error, errorInfo);
   }
 
   handleRetry = () => {
@@ -31,50 +34,40 @@ export default class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
+
       return (
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '60vh',
-            padding: '40px',
-            textAlign: 'center',
-            color: 'var(--text-primary)',
-            direction: 'rtl',
-          }}
-        >
-          <div
-            style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '50%',
-              background: 'rgba(239, 68, 68, 0.1)',
-              border: '1px solid rgba(239, 68, 68, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '28px',
-              marginBottom: '20px',
-            }}
-          >
-            ⚠️
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          padding: '40px 20px', gap: '12px', minHeight: '200px',
+          color: 'var(--text-secondary)',
+        }}>
+          <div style={{
+            width: '48px', height: '48px', borderRadius: '50%',
+            background: 'rgba(239,68,68,0.12)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#EF4444',
+          }}>
+            <AlertTriangle size={22} />
           </div>
-          <h2 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '8px' }}>حدث خطأ غير متوقع</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '24px', maxWidth: '400px' }}>
-            نأسف للإزعاج. يرجى تحديث الصفحة أو المحاولة مرة أخرى.
+          <h3 style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+            حدث خطأ غير متوقع
+          </h3>
+          <p style={{ fontSize: '0.78rem', textAlign: 'center', maxWidth: '360px', margin: 0 }}>
+            {this.state.error?.message || 'تعذر تحميل هذا القسم. حاول مرة أخرى.'}
           </p>
-          <button
-            onClick={this.handleRetry}
-            className="btn btn-primary"
-            style={{ padding: '10px 28px' }}
-          >
+          <button onClick={this.handleRetry}
+            style={{
+              display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 20px',
+              borderRadius: '8px', border: 'none', background: 'var(--color-primary)',
+              color: '#050816', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600,
+              fontFamily: 'inherit', marginTop: '4px',
+            }}>
+            <RefreshCw size={14} />
             إعادة المحاولة
           </button>
         </div>
       );
     }
+
     return this.props.children;
   }
 }

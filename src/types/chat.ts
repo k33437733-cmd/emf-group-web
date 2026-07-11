@@ -4,7 +4,10 @@ export type ConversationType =
   | 'admin_dm'      // admin ↔ admin direct message
   | 'admin_group'   // all admins group chat
   | 'agent_member'  // agent ↔ specific regular user
-  | 'support';      // customer support thread (linked to a ticket)
+  | 'support'       // customer support thread (linked to a ticket)
+  | 'department'    // department-wide chat
+  | 'project_room'  // per-project chat room
+  | 'broadcast';    // one-way broadcast channel
 
 export type ConversationStatus = 'active' | 'archived';
 
@@ -12,6 +15,7 @@ export type MessageType =
   | 'text'
   | 'image'
   | 'file'
+  | 'voice'
   | 'bot_card'      // chatbot card with quick-reply buttons
   | 'system_event'; // status changes, assignments, etc.
 
@@ -28,7 +32,11 @@ export interface Conversation {
   memberNames: Record<string, string>;     // uid → display name
   memberRoles: Record<string, string>;     // uid → role
   ticketId?: string;                       // set for type === 'support'
+  departmentId?: string;                   // set for type === 'department'
+  projectId?: string;                      // set for type === 'project_room'
+  customerAvatar?: string;                 // customer photo URL for support conversations
   isGroup: boolean;
+  isBroadcast: boolean;                    // true for broadcast channels (read-only for non-owners)
   name?: string;
   groupName?: string;
   avatar?: string;            // group avatar URL
@@ -36,6 +44,10 @@ export interface Conversation {
   lastMessageTime: string;
   lastMessageSenderId: string;
   unreadCount: Record<string, number>;     // uid → count
+  pinnedMessages?: string[];               // IDs of pinned messages
+  muted?: boolean;                         // muted by an admin
+  isImportant?: boolean;                   // flagged as important
+  tags?: string[];                         // custom tags/labels
   status: ConversationStatus;
   createdAt: string;
   createdBy: string;
@@ -72,11 +84,18 @@ export interface ChatMessage {
   imageUrls?: string[];
   botData?: BotCardData;
   isInternal: boolean;  // agent-only note — never sent to customer
-  replyTo?: string;     // message ID
+  replyTo?: string;     // message ID being replied to
+  parentId?: string;    // thread parent (if this is a thread reply)
+  mentionedUsers?: string[]; // UIDs of mentioned users (@mentions)
+  isPinned?: boolean;   // pinned message flag
   editedAt?: string;
-  deletedAt?: string;   // soft delete: keep doc, hide content
+  deletedAt?: string;
+  forwardedFrom?: string;
+  forwardedBy?: string;
+  forwardedAt?: string;
+  reactions?: Record<string, { emoji: string; users: string[] }>;
   deliveryStatus: DeliveryStatus;
-  readBy: Record<string, string>; // uid → ISO timestamp
+  readBy: Record<string, string>;
   createdAt: string;
 }
 

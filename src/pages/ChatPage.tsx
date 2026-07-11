@@ -19,6 +19,7 @@ import {
 import {
   subscribeToLatestMessages,
   purgeOldMessages,
+  getMessagePage,
 } from '../firebase/db/messages';
 import { sendMessage, markRead } from '../services/ChatService';
 import type { Conversation, UserProfile } from '../types';
@@ -27,9 +28,10 @@ import ChatInput from '../components/chat/ChatInput';
 import ConversationList from '../components/chat/ConversationList';
 import CreateGroupModal from '../components/chat/CreateGroupModal';
 import GroupSettings from '../components/chat/GroupSettings';
+import VirtualizedMessageList from '../components/support/VirtualizedMessageList';
 import { showToast } from '../components/ui/Toast';
 
-type ChatTab = 'admin' | 'member' | 'support';
+type ChatTab = 'admin' | 'member' | 'support' | 'channels';
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -47,6 +49,12 @@ export default function ChatPage() {
 
   // All groups (including non-member)
   const [allGroups, setAllGroups] = useState<Conversation[]>([]);
+
+  // New conversation types
+  const [departmentConvs, setDepartmentConvs] = useState<Conversation[]>([]);
+  const [projectConvs, setProjectConvs] = useState<Conversation[]>([]);
+  const [broadcastConvs, setBroadcastConvs] = useState<Conversation[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Active conversation
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
@@ -109,6 +117,9 @@ export default function ChatPage() {
 
     const unsubMember = subscribeToConversations(user.uid, 'agent_member', setMemberConvs);
     const unsubSupport = subscribeToSupportConversations(user.uid, setSupportConvs);
+    const unsubDepartments = subscribeToConversations(user.uid, 'department', setDepartmentConvs);
+    const unsubProjects = subscribeToConversations(user.uid, 'project_room', setProjectConvs);
+    const unsubBroadcasts = subscribeToConversations(user.uid, 'broadcast', setBroadcastConvs);
 
     return () => {
       unsubAdminDMs();
@@ -116,6 +127,9 @@ export default function ChatPage() {
       unsubAllGroups();
       unsubMember();
       unsubSupport();
+      unsubDepartments();
+      unsubProjects();
+      unsubBroadcasts();
     };
   }, [user]);
 
@@ -343,6 +357,36 @@ export default function ChatPage() {
               </span>
             )}
           </button>
+          <button 
+            onClick={() => { setTab('channels'); setActiveConvId(null); }} 
+            style={{
+              flex: 1, padding: '14px 10px', background: 'none', border: 'none',
+              color: tab === 'channels' ? 'var(--accent-purple)' : 'var(--text-secondary)',
+              fontWeight: tab === 'channels' ? 700 : 500,
+              borderBottom: tab === 'channels' ? '2px solid var(--accent-purple)' : '2px solid transparent',
+              cursor: 'pointer', transition: 'all 0.2s', fontSize: '0.8rem'
+            }}
+          >
+            <span>القنوات</span>
+            {[...departmentConvs, ...projectConvs, ...broadcastConvs].filter(c => (c.unreadCount?.[user.uid] || 0) > 0).length > 0 && (
+              <span style={{
+                marginRight: '6px',
+                background: 'var(--accent-purple, #8B5CF6)',
+                color: 'white',
+                borderRadius: '50%',
+                width: '16px',
+                height: '16px',
+                fontSize: '0.62rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold',
+                verticalAlign: 'middle'
+              }}>
+                {[...departmentConvs, ...projectConvs, ...broadcastConvs].filter(c => (c.unreadCount?.[user.uid] || 0) > 0).length}
+              </span>
+            )}
+          </button>
         </div>
 
         {/* Contacts List Scroll area */}
@@ -515,6 +559,14 @@ export default function ChatPage() {
               currentUid={user.uid}
               onSelect={handleSelectConv}
               emptyLabel="لا توجد محادثات مع أعضاء"
+            />
+          ) : tab === 'channels' ? (
+            <ConversationList
+              conversations={[...departmentConvs, ...projectConvs, ...broadcastConvs]}
+              activeId={activeConvId}
+              currentUid={user.uid}
+              onSelect={handleSelectConv}
+              emptyLabel="لا توجد قنوات متاحة"
             />
           ) : (
             <ConversationList
@@ -770,127 +822,94 @@ export default function ChatPage() {
             </div>
 
             {/* Messaging Feed Scroll area */}
-            <div 
-              role="log"
-              aria-live="polite"
-              aria-label="الرسائل"
-              style={{ 
-                flex: 1, 
-                overflowY: 'auto', 
-                padding: '24px 20px', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '14px', 
-                background: 'var(--bg-primary)' 
-              }}
-              className="chat-messages-scroll"
-            >
-              {messages.length === 0 ? (
-                <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
-                  لا توجد رسائل سابقة. أرسل رسالتك الأولى للبدء.
-                </div>
-              ) : messages.map(msg => {
-                const isSelf = msg.senderId === user.uid;
-                const isBot = msg.senderId === 'bot';
-                const isSystem = msg.type === 'system_event';
+            {messages.length === 0 ? (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '0.82rem' }}>
+                لا توجد رسائل سابقة. أرسل رسالتك الأولى للبدء.
+              </div>
+            ) : (
+              <VirtualizedMessageList
+                messages={messages}
+                scrollToBottom={true}
+                className="chat-messages-scroll"
+                style={{ flex: 1, padding: '24px 20px' }}
+                renderMessage={(msg) => {
+                  const isSelf = msg.senderId === user.uid;
+                  const isBot = msg.senderId === 'bot';
+                  const isSystem = msg.type === 'system_event';
 
-                if (isSystem) {
+                  if (isSystem) {
+                    return (
+                      <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0', padding: '0 16px' }}>
+                        <div style={{
+                          background: 'var(--badge-bg)',
+                          border: '1px solid var(--border-color)',
+                          borderRadius: '10px',
+                          padding: '6px 16px',
+                          fontSize: '0.72rem',
+                          color: 'var(--text-secondary)',
+                          textAlign: 'center',
+                          maxWidth: '85%',
+                        }}>
+                          <span>{msg.content}</span>
+                          <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {formatTime(msg.createdAt)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
-                    <div key={msg.id} style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
+                    <div style={{
+                      display: 'flex', flexDirection: 'column', alignItems: isSelf ? 'flex-end' : 'flex-start',
+                      padding: '1px 16px', gap: '2px',
+                    }}>
+                      {activeConv.isGroup && !isSelf && !isBot && (
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: msg.senderRole === 'super_admin' ? 'var(--accent-purple)' : 'var(--accent-blue)', marginRight: '6px' }}>
+                          {msg.senderName}
+                        </span>
+                      )}
+                      {isBot && !isSelf && (
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--accent-emerald)', marginRight: '6px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                          <Bot size={11} />
+                          <span>المساعد الذكي</span>
+                        </span>
+                      )}
                       <div style={{
-                        background: 'var(--badge-bg)', 
-                        border: '1px solid var(--border-color)',
-                        borderRadius: '10px',
-                        padding: '6px 16px', 
-                        fontSize: '0.72rem', 
-                        color: 'var(--text-secondary)',
-                        textAlign: 'center', 
-                        maxWidth: '85%',
+                        padding: isBot ? '12px 18px' : '10px 16px',
+                        borderRadius: isSelf ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
+                        background: isSelf ? 'var(--accent-blue)' : isBot ? 'rgba(16, 185, 129, 0.05)' : 'var(--bg-card)',
+                        border: '1px solid',
+                        borderColor: isSelf ? 'rgba(59,130,246,0.2)' : isBot ? 'rgba(16, 185, 129, 0.15)' : 'var(--border-color)',
+                        color: isSelf ? 'white' : 'var(--text-primary)',
+                        wordBreak: 'break-word',
+                        display: 'flex', flexDirection: 'column', gap: '8px',
+                        boxShadow: isSelf ? '0 4px 12px rgba(59,130,246,0.15)' : 'none',
+                        maxWidth: isBot ? '80%' : '72%',
                       }}>
-                        <span>{msg.content}</span>
-                        <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '2px' }}>
-                          {formatTime(msg.createdAt)}
+                        {msg.type === 'image' && msg.imageUrls?.map((url: string, i: number) => (
+                          <img key={i} src={url} alt=""
+                            style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)' }}
+                            onClick={() => window.open(url, '_blank')} />
+                        ))}
+                        {msg.type === 'file' && msg.fileUrl && (
+                          <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer"
+                            style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-cyan)', fontSize: '0.8rem', textDecoration: 'underline', fontWeight: 600 }}>
+                            {msg.content}
+                          </a>
+                        )}
+                        {msg.type === 'text' && <span style={{ fontSize: '0.84rem', lineHeight: 1.6 }}>{msg.content}</span>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end', fontSize: '0.62rem', color: isSelf ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)', marginTop: '2px' }}>
+                          <span>{formatTime(msg.createdAt)}</span>
+                          {isSelf && <CheckCheck size={11} style={{ color: 'var(--accent-cyan)' }} />}
                         </div>
                       </div>
                     </div>
                   );
-                }
-
-                return (
-                  <div 
-                    key={msg.id} 
-                    style={{ 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      alignSelf: isSelf ? 'flex-start' : 'flex-end', 
-                      maxWidth: isBot ? '80%' : '72%', 
-                      gap: '4px' 
-                    }}
-                  >
-                    {activeConv.isGroup && !isSelf && !isBot && (
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: msg.senderRole === 'super_admin' ? 'var(--accent-purple)' : 'var(--accent-blue)', marginRight: '6px' }}>
-                        {msg.senderName}
-                      </span>
-                    )}
-                    {isBot && !isSelf && (
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--accent-emerald)', marginRight: '6px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                        <Bot size={11} />
-                        <span>المساعد الذكي</span>
-                      </span>
-                    )}
-
-                    {/* Chat Bubble Container */}
-                    <div style={{
-                      padding: isBot ? '12px 18px' : '10px 16px', 
-                      borderRadius: isSelf ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
-                      background: isSelf 
-                        ? 'var(--accent-blue)' 
-                        : isBot 
-                        ? 'rgba(16, 185, 129, 0.05)' 
-                        : 'var(--bg-card)',
-                      border: '1px solid', 
-                      borderColor: isSelf 
-                        ? 'rgba(59,130,246,0.2)' 
-                        : isBot 
-                        ? 'rgba(16, 185, 129, 0.15)' 
-                        : 'var(--border-color)',
-                      color: isSelf ? 'white' : 'var(--text-primary)', 
-                      wordBreak: 'break-word', 
-                      display: 'flex', 
-                      flexDirection: 'column', 
-                      gap: '8px',
-                      boxShadow: isSelf ? '0 4px 12px rgba(59,130,246,0.15)' : 'none'
-                    }}>
-                      {/* Image attachments */}
-                      {msg.type === 'image' && msg.imageUrls?.map((url: string, i: number) => (
-                        <img 
-                          key={i} 
-                          src={url} 
-                          alt="" 
-                          style={{ maxWidth: '100%', maxHeight: '220px', borderRadius: '10px', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.05)' }} 
-                          onClick={() => window.open(url, '_blank')} 
-                        />
-                      ))}
-                      {/* File attachments */}
-                      {msg.type === 'file' && msg.fileUrl && (
-                        <a href={msg.fileUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--accent-cyan)', fontSize: '0.8rem', textDecoration: 'underline', fontWeight: 600 }}>
-                          {msg.content}
-                        </a>
-                      )}
-                      
-                      {msg.type === 'text' && <span style={{ fontSize: '0.84rem', lineHeight: 1.6 }}>{msg.content}</span>}
-                      
-                      {/* Bubble footer info */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)', justifyContent: 'flex-end', fontSize: '0.62rem', color: isSelf ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)', marginTop: 'var(--space-1)' }}>
-                        <span>{formatTime(msg.createdAt)}</span>
-                        {isSelf && <CheckCheck size={11} style={{ color: 'var(--accent-cyan)' }} />}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-              <div ref={messagesEndRef} />
-            </div>
+                }}
+              />
+            )}
+            <div ref={messagesEndRef} />
 
             {/* Chat Input panel */}
             <ChatInput

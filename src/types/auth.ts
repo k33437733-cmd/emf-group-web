@@ -28,6 +28,7 @@ export interface UserProfile {
   status: UserStatus;
   avatar?: string;
   phone?: string;
+  bio?: string;
   onlineStatus: OnlineStatus;
   lastSeen: string; // ISO string (Timestamp on server)
   fcmTokens: string[];

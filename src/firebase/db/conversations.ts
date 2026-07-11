@@ -434,6 +434,155 @@ export async function archiveConversation(conversationId: string): Promise<void>
   }
 }
 
+// ─── Department conversations ─────────────────────────────────────────────────
+
+export async function createDepartmentConversation(
+  name: string,
+  departmentId: string,
+  members: UserProfile[],
+  creator: UserProfile,
+): Promise<string> {
+  try {
+    const convRef = doc(col());
+    const now = nowISO();
+    const memberNames: Record<string, string> = {};
+    const memberRoles: Record<string, string> = {};
+    const unreadCount: Record<string, number> = {};
+
+    members.forEach(m => {
+      memberNames[m.uid] = m.name;
+      memberRoles[m.uid] = m.role;
+      unreadCount[m.uid] = 0;
+    });
+
+    const conv: Conversation = {
+      id: convRef.id, type: 'department', departmentId,
+      members: members.map(m => m.uid), memberNames, memberRoles,
+      isGroup: true, isBroadcast: false,
+      groupName: `📁 ${name}`, lastMessage: '', lastMessageTime: now,
+      lastMessageSenderId: '', unreadCount, status: 'active',
+      createdAt: now, createdBy: creator.uid, updatedAt: now,
+    };
+    await setDoc(convRef, conv);
+    return convRef.id;
+  } catch (err) {
+    wrapFirestoreError(err, 'createDepartmentConversation');
+  }
+}
+
+// ─── Project room conversations ───────────────────────────────────────────────
+
+export async function createProjectRoomConversation(
+  projectName: string,
+  projectId: string,
+  members: UserProfile[],
+  creator: UserProfile,
+): Promise<string> {
+  try {
+    const convRef = doc(col());
+    const now = nowISO();
+    const memberNames: Record<string, string> = {};
+    const memberRoles: Record<string, string> = {};
+    const unreadCount: Record<string, number> = {};
+
+    members.forEach(m => {
+      memberNames[m.uid] = m.name;
+      memberRoles[m.uid] = m.role;
+      unreadCount[m.uid] = 0;
+    });
+
+    const conv: Conversation = {
+      id: convRef.id, type: 'project_room', projectId,
+      members: members.map(m => m.uid), memberNames, memberRoles,
+      isGroup: true, isBroadcast: false,
+      groupName: `🚀 ${projectName}`, lastMessage: '', lastMessageTime: now,
+      lastMessageSenderId: '', unreadCount, status: 'active',
+      createdAt: now, createdBy: creator.uid, updatedAt: now,
+    };
+    await setDoc(convRef, conv);
+    return convRef.id;
+  } catch (err) {
+    wrapFirestoreError(err, 'createProjectRoomConversation');
+  }
+}
+
+// ─── Broadcast channels ───────────────────────────────────────────────────────
+
+export async function createBroadcastChannel(
+  name: string,
+  members: UserProfile[],
+  creator: UserProfile,
+): Promise<string> {
+  try {
+    const convRef = doc(col());
+    const now = nowISO();
+    const memberNames: Record<string, string> = {};
+    const memberRoles: Record<string, string> = {};
+    const unreadCount: Record<string, number> = {};
+
+    members.forEach(m => {
+      memberNames[m.uid] = m.name;
+      memberRoles[m.uid] = m.role;
+      unreadCount[m.uid] = 0;
+    });
+
+    const conv: Conversation = {
+      id: convRef.id, type: 'broadcast',
+      members: members.map(m => m.uid), memberNames, memberRoles,
+      isGroup: true, isBroadcast: true,
+      groupName: `📢 ${name}`, lastMessage: '', lastMessageTime: now,
+      lastMessageSenderId: '', unreadCount, status: 'active',
+      createdAt: now, createdBy: creator.uid, updatedAt: now,
+    };
+    await setDoc(convRef, conv);
+    return convRef.id;
+  } catch (err) {
+    wrapFirestoreError(err, 'createBroadcastChannel');
+  }
+}
+
+// ─── Pinned messages ──────────────────────────────────────────────────────────
+
+export async function pinMessage(conversationId: string, messageId: string): Promise<void> {
+  try {
+    const conv = await getConversationById(conversationId);
+    if (!conv) return;
+    const pinned = conv.pinnedMessages ?? [];
+    if (pinned.includes(messageId)) return;
+    await updateDoc(ref(conversationId), {
+      pinnedMessages: [...pinned, messageId],
+      updatedAt: nowISO(),
+    });
+  } catch (err) {
+    wrapFirestoreError(err, 'pinMessage');
+  }
+}
+
+export async function unpinMessage(conversationId: string, messageId: string): Promise<void> {
+  try {
+    const conv = await getConversationById(conversationId);
+    if (!conv) return;
+    const pinned = (conv.pinnedMessages ?? []).filter(id => id !== messageId);
+    await updateDoc(ref(conversationId), {
+      pinnedMessages: pinned,
+      updatedAt: nowISO(),
+    });
+  } catch (err) {
+    wrapFirestoreError(err, 'unpinMessage');
+  }
+}
+
+export async function getPinnedMessages(
+  conversationId: string,
+): Promise<string[]> {
+  try {
+    const conv = await getConversationById(conversationId);
+    return conv?.pinnedMessages ?? [];
+  } catch (err) {
+    wrapFirestoreError(err, 'getPinnedMessages');
+  }
+}
+
 // ─── Group management ──────────────────────────────────────────────────────────
 
 /**

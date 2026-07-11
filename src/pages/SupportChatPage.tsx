@@ -4,11 +4,17 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSupportChat } from '../hooks/useSupportChat';
 import { useI18n } from '../context/I18nContext';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 import MessageBubble from '../components/support/MessageBubble';
 import MessageInput from '../components/support/MessageInput';
 import TypingIndicator from '../components/support/TypingIndicator';
 import ConversationList from '../components/support/ConversationList';
 import SkeletonChat from '../components/support/SkeletonChat';
+import VirtualizedMessageList from '../components/support/VirtualizedMessageList';
+import ReconnectIndicator from '../components/support/ReconnectIndicator';
+import ScrollToBottomFAB from '../components/support/ScrollToBottomFAB';
+import ForwardDialog from '../components/support/ForwardDialog';
+import MessageReactions from '../components/support/MessageReactions';
 import { markAllMessagesRead } from '../firebase/support';
 import { MessageSquare, CheckCheck } from 'lucide-react';
 
@@ -42,15 +48,20 @@ export default function SupportChatPage() {
 
   const {
     conversations, activeConvId, messages, loading, error, sending, typingUsers,
-    activeConversation, uploadProgress, setActiveConv, sendMessage,
+    activeConversation, uploadProgress, uploadTracks, loadingMore, setActiveConv, sendMessage,
     startNewConversation, setTyping, deleteMessage, editMessage,
+    cancelUpload, retryUpload, loadMore, hasMore,
+    replyToMsg, setReplyTo, addReaction, sendReply,
   } = useSupportChat();
+
+  const { status: netStatus, isOnline } = useNetworkStatus();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [adminTab, setAdminTab] = useState<AdminTab>('all');
   const mq = useMediaQuery();
   const [showMobileConvList, setShowMobileConvList] = useState(true);
+  const [forwardMsg, setForwardMsg] = useState<any>(null);
 
   // Auto-select conversation from URL param
   useEffect(() => {
@@ -76,9 +87,9 @@ export default function SupportChatPage() {
     return () => clearTimeout(timeout);
   }, [activeConvId, user]);
 
-  const handleSend = useCallback((text: string, file?: File) => {
-    if (!text.trim() && !file) return;
-    sendMessage(text, 'text', file);
+  const handleSend = useCallback((text: string, files?: File[]) => {
+    if (!text.trim() && (!files || files.length === 0)) return;
+    sendMessage(text, 'text', files);
   }, [sendMessage]);
 
   // On mobile, selecting a conversation shows the chat panel
@@ -188,39 +199,90 @@ export default function SupportChatPage() {
           </div>
         ) : (
           <>
+            {/* Network status */}
+            <ReconnectIndicator status={netStatus} rtl={rtl} />
+
             {/* Messages area */}
-            <div ref={messagesContainerRef} style={{
-              flex: 1, overflowY: 'auto', padding: '8px 0',
-              background: 'var(--chat-bg, var(--bg-primary))',
-            }}>
-              {messages.filter(m => !m.isInternal).map((msg, idx) => (
-                <div key={msg.id}>
-                  {shouldShowDateSeparator(msg.createdAt, idx > 0 ? messages[idx - 1]?.createdAt : undefined) && (
-                    <div style={{
-                      textAlign: 'center', padding: '12px 16px 8px',
-                      fontSize: '0.68rem', color: 'var(--text-tertiary)',
-                      fontWeight: 500,
-                    }}>
-                      <span style={{
-                        background: 'var(--bg-secondary)', padding: '4px 14px',
-                        borderRadius: '12px', border: '1px solid var(--color-border)',
+            <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+              <VirtualizedMessageList
+                messages={messages.filter(m => !m.isInternal)}
+                loadMore={loadMore}
+                hasMore={hasMore}
+                loading={loadingMore}
+                scrollToBottom={true}
+                renderMessage={(msg, idx, msgs) => (
+                  <>
+                    {shouldShowDateSeparator(msg.createdAt, idx > 0 ? msgs[idx - 1]?.createdAt : undefined) && (
+                      <div style={{
+                        textAlign: 'center', padding: '12px 16px 8px',
+                        fontSize: '0.68rem', color: 'var(--text-tertiary)',
+                        fontWeight: 500,
                       }}>
-                        {formatDateSeparator(msg.createdAt, rtl)}
-                      </span>
+                        <span style={{
+                          background: 'var(--bg-secondary)', padding: '4px 14px',
+                          borderRadius: '12px', border: '1px solid var(--color-border)',
+                        }}>
+                          {formatDateSeparator(msg.createdAt, rtl)}
+                        </span>
+                      </div>
+                    )}
+                    {msg.forwardedAt && (
+                      <div style={{
+                        textAlign: 'center', padding: '2px 16px',
+                        fontSize: '0.6rem', color: 'var(--text-tertiary)', opacity: 0.6,
+                      }}>
+                        📨 {rtl ? 'رسالة مُعاد توجيهها' : 'Forwarded message'}
+                      </div>
+                    )}
+                    <div onClick={() => setReplyTo(msg)} style={{ cursor: 'pointer' }}>
+                      <MessageBubble
+                        message={msg}
+                        isOwn={msg.senderId === user.uid}
+                        onDelete={deleteMessage}
+                        onEdit={editMessage}
+                        onForward={isAdmin ? (m) => setForwardMsg(m) : undefined}
+                        showStatus={true}
+                      />
                     </div>
-                  )}
-                  <MessageBubble
-                    message={msg}
-                    isOwn={msg.senderId === user.uid}
-                    onDelete={deleteMessage}
-                    onEdit={editMessage}
-                    showStatus={true}
-                  />
-                </div>
-              ))}
-              {typingUsers.length > 0 && <TypingIndicator userName={typingUsers[0].userName} rtl={rtl} />}
-              <div ref={messagesEndRef} />
+                    <div style={{ padding: '0 16px 4px' }}>
+                      <MessageReactions
+                        reactions={msg.reactions}
+                        currentUid={user.uid}
+                        onReact={(emoji) => addReaction(msg.id, emoji)}
+                      />
+                    </div>
+                  </>
+                )}
+                renderTyping={typingUsers.length > 0 ? <TypingIndicator userName={typingUsers[0].userName} rtl={rtl} /> : undefined}
+              />
+              <ScrollToBottomFAB scrollRef={messagesContainerRef} rtl={rtl} />
             </div>
+
+            {/* Upload progress tracks */}
+            {uploadTracks.length > 0 && (
+              <div style={{ padding: '4px 16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {uploadTracks.map(t => (
+                  <div key={t.id} className="upload-track-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '8px', fontSize: '0.7rem' }}>
+                    <span className="upload-track-name" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>{t.fileName}</span>
+                    <div className="upload-track-progress" style={{ flex: 1, height: '4px', background: 'var(--border-light)', borderRadius: '2px', overflow: 'hidden', maxWidth: '100px' }}>
+                      <div style={{ width: `${t.progress}%`, height: '100%', background: t.status === 'error' ? '#EF4444' : 'var(--color-primary)', borderRadius: '2px', transition: 'width 0.2s' }} />
+                    </div>
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: '0.6rem', minWidth: '28px' }}>{t.progress}%</span>
+                    {t.status === 'uploading' && (
+                      <button onClick={() => cancelUpload(t.id)} style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+                        <span style={{ fontSize: '0.65rem' }}>إلغاء</span>
+                      </button>
+                    )}
+                    {t.status === 'error' && (
+                      <button onClick={() => retryUpload(t.id)} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+                        <span style={{ fontSize: '0.65rem' }}>إعادة</span>
+                      </button>
+                    )}
+                    {t.status === 'done' && <span style={{ color: '#16A34A', fontSize: '0.65rem' }}>تم</span>}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Input */}
             <MessageInput
@@ -229,6 +291,8 @@ export default function SupportChatPage() {
               sending={sending}
               uploadProgress={uploadProgress}
               rtl={rtl}
+              replyToMsg={replyToMsg}
+              onCancelReply={() => setReplyTo(null)}
             />
           </>
         )}
@@ -298,6 +362,7 @@ export default function SupportChatPage() {
             onSelect={handleSelectConv}
             loading={loading}
             rtl={rtl}
+            currentUserUid={user?.uid}
           />
         </div>
       </div>
@@ -344,38 +409,89 @@ export default function SupportChatPage() {
               </button>
             </div>
 
+            {/* Network status */}
+            <ReconnectIndicator status={netStatus} rtl={rtl} />
+
             {/* Messages */}
-            <div ref={messagesContainerRef} style={{
-              flex: 1, overflowY: 'auto', padding: '8px 0',
-              background: 'var(--chat-bg, var(--bg-primary))',
-            }}>
-              {messages.filter(m => !m.isInternal).map((msg, idx) => (
-                <div key={msg.id}>
-                  {shouldShowDateSeparator(msg.createdAt, idx > 0 ? messages[idx - 1]?.createdAt : undefined) && (
-                    <div style={{
-                      textAlign: 'center', padding: '12px 16px 8px',
-                      fontSize: '0.68rem', color: 'var(--text-tertiary)', fontWeight: 500,
-                    }}>
-                      <span style={{
-                        background: 'var(--bg-secondary)', padding: '4px 14px',
-                        borderRadius: '12px', border: '1px solid var(--color-border)',
+            <div style={{ flex: 1, position: 'relative', minHeight: 0 }}>
+              <VirtualizedMessageList
+                messages={messages.filter(m => !m.isInternal)}
+                loadMore={loadMore}
+                hasMore={hasMore}
+                loading={loadingMore}
+                scrollToBottom={true}
+                renderMessage={(msg, idx, msgs) => (
+                  <>
+                    {shouldShowDateSeparator(msg.createdAt, idx > 0 ? msgs[idx - 1]?.createdAt : undefined) && (
+                      <div style={{
+                        textAlign: 'center', padding: '12px 16px 8px',
+                        fontSize: '0.68rem', color: 'var(--text-tertiary)', fontWeight: 500,
                       }}>
-                        {formatDateSeparator(msg.createdAt, rtl)}
-                      </span>
+                        <span style={{
+                          background: 'var(--bg-secondary)', padding: '4px 14px',
+                          borderRadius: '12px', border: '1px solid var(--color-border)',
+                        }}>
+                          {formatDateSeparator(msg.createdAt, rtl)}
+                        </span>
+                      </div>
+                    )}
+                    {msg.forwardedAt && (
+                      <div style={{
+                        textAlign: 'center', padding: '2px 16px',
+                        fontSize: '0.6rem', color: 'var(--text-tertiary)', opacity: 0.6,
+                      }}>
+                        📨 {rtl ? 'رسالة مُعاد توجيهها' : 'Forwarded message'}
+                      </div>
+                    )}
+                    <div onClick={() => setReplyTo(msg)} style={{ cursor: 'pointer' }}>
+                      <MessageBubble
+                        message={msg}
+                        isOwn={msg.senderId === user.uid}
+                        onDelete={deleteMessage}
+                        onEdit={editMessage}
+                        onForward={isAdmin ? (m) => setForwardMsg(m) : undefined}
+                        showStatus={true}
+                      />
                     </div>
-                  )}
-                  <MessageBubble
-                    message={msg}
-                    isOwn={msg.senderId === user.uid}
-                    onDelete={deleteMessage}
-                    onEdit={editMessage}
-                    showStatus={true}
-                  />
-                </div>
-              ))}
-              {typingUsers.length > 0 && <TypingIndicator userName={typingUsers[0].userName} rtl={rtl} />}
-              <div ref={messagesEndRef} />
+                    <div style={{ padding: '0 16px 4px' }}>
+                      <MessageReactions
+                        reactions={msg.reactions}
+                        currentUid={user.uid}
+                        onReact={(emoji) => addReaction(msg.id, emoji)}
+                      />
+                    </div>
+                  </>
+                )}
+                renderTyping={typingUsers.length > 0 ? <TypingIndicator userName={typingUsers[0].userName} rtl={rtl} /> : undefined}
+              />
+              <ScrollToBottomFAB scrollRef={messagesContainerRef} rtl={rtl} />
             </div>
+
+            {/* Upload progress tracks */}
+            {uploadTracks.length > 0 && (
+              <div style={{ padding: '4px 16px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                {uploadTracks.map(t => (
+                  <div key={t.id} className="upload-track-item" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px', background: 'var(--bg-card)', borderRadius: '8px', fontSize: '0.7rem' }}>
+                    <span className="upload-track-name" style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', color: 'var(--text-primary)' }}>{t.fileName}</span>
+                    <div className="upload-track-progress" style={{ flex: 1, height: '4px', background: 'var(--border-light)', borderRadius: '2px', overflow: 'hidden', maxWidth: '100px' }}>
+                      <div style={{ width: `${t.progress}%`, height: '100%', background: t.status === 'error' ? '#EF4444' : 'var(--color-primary)', borderRadius: '2px', transition: 'width 0.2s' }} />
+                    </div>
+                    <span style={{ color: 'var(--text-tertiary)', fontSize: '0.6rem', minWidth: '28px' }}>{t.progress}%</span>
+                    {t.status === 'uploading' && (
+                      <button onClick={() => cancelUpload(t.id)} style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+                        <span style={{ fontSize: '0.65rem' }}>إلغاء</span>
+                      </button>
+                    )}
+                    {t.status === 'error' && (
+                      <button onClick={() => retryUpload(t.id)} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', cursor: 'pointer', padding: '2px', display: 'flex' }}>
+                        <span style={{ fontSize: '0.65rem' }}>إعادة</span>
+                      </button>
+                    )}
+                    {t.status === 'done' && <span style={{ color: '#16A34A', fontSize: '0.65rem' }}>تم</span>}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Input */}
             <MessageInput
@@ -384,6 +500,9 @@ export default function SupportChatPage() {
               sending={sending}
               uploadProgress={uploadProgress}
               rtl={rtl}
+              isAdmin={isAdmin}
+              replyToMsg={replyToMsg}
+              onCancelReply={() => setReplyTo(null)}
             />
           </>
         ) : (
@@ -470,6 +589,15 @@ export default function SupportChatPage() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Forward Dialog */}
+      {forwardMsg && (
+        <ForwardDialog
+          message={forwardMsg}
+          conversations={conversations.filter(c => c.id !== activeConvId)}
+          onClose={() => setForwardMsg(null)}
+        />
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, memo } from 'react';
 import { Send, Smile, Paperclip, Loader2, X } from 'lucide-react';
 import { uploadImageWithCompression } from '../../lib/cloudinary';
 
@@ -18,7 +18,7 @@ interface ChatInputProps {
   placeholder?: string;
 }
 
-export default function ChatInput({ onSend, placeholder = 'اكتب رسالتك...' }: ChatInputProps) {
+const ChatInput = memo(function ChatInput({ onSend, placeholder = 'اكتب رسالتك...' }: ChatInputProps) {
   const [text, setText] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
   const [files, setFiles] = useState<PendingFile[]>([]);
@@ -170,4 +170,6 @@ export default function ChatInput({ onSend, placeholder = 'اكتب رسالتك
       </div>
     </form>
   );
-}
+});
+
+export default ChatInput;

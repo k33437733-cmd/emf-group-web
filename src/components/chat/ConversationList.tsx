@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { Search, Users } from 'lucide-react';
 import type { Conversation } from '../../types';
 
@@ -12,7 +12,50 @@ interface ConversationListProps {
   onSelectGroup?: () => void;
 }
 
-export default function ConversationList({
+const ChatConvItem = memo(function ChatConvItem({ conv, active, unread, otherName, onSelect }: {
+  conv: Conversation; active: boolean; unread: number; otherName: string; onSelect: (conv: Conversation) => void;
+}) {
+  return (
+    <div key={conv.id} onClick={() => onSelect(conv)} style={{
+      padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer',
+      display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.15s',
+      background: active ? 'rgba(59,130,246,0.08)' : 'transparent'
+    }} className="chat-hover">
+      <div style={{
+        width: '40px', height: '40px', borderRadius: conv.isGroup ? '12px' : '50%', flexShrink: 0,
+        background: conv.isGroup ? 'var(--gradient-cyber)' : conv.type === 'agent_member' ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)',
+        overflow: 'hidden', position: 'relative',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 'bold', fontSize: '0.8rem',
+        color: conv.isGroup ? 'white' : conv.type === 'agent_member' ? '#10b981' : 'var(--accent-blue)'
+      }}>
+        {conv.isGroup && conv.avatar ? (
+          <img src={conv.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : conv.isGroup ? (
+          <Users size={20} />
+        ) : (
+          otherName?.substring(0, 2) || '??'
+        )}
+      </div>
+      <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
+        <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'var(--text-primary)' }}>{otherName}</div>
+        <div style={{
+          fontSize: '0.75rem', color: 'var(--text-secondary)',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+        }}>{conv.lastMessage || '...'}</div>
+      </div>
+      {unread > 0 && (
+        <div style={{
+          background: '#f59e0b', color: 'white', fontSize: '0.65rem', fontWeight: 'bold',
+          borderRadius: '50%', width: '20px', height: '20px', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', flexShrink: 0
+        }}>{unread > 9 ? '9+' : unread}</div>
+      )}
+    </div>
+  );
+});
+
+const ConversationList = memo(function ConversationList({
   conversations, activeId, currentUid, onSelect,
   emptyLabel = 'لا توجد محادثات', showGroup, onSelectGroup
 }: ConversationListProps) {
@@ -93,51 +136,22 @@ export default function ConversationList({
         {filtered.length === 0 ? (
               <div style={{ padding: 'var(--space-6)', textAlign: 'center', color: 'var(--text-muted)', fontSize: 'var(--text-sm)' }}>{emptyLabel}</div>
         ) : filtered.map(conv => {
-          const isActive = conv.id === activeId;
-          const unread = conv.unreadCount?.[currentUid] || 0;
           const otherUid = conv.members.find(m => m !== currentUid);
           const otherName = otherUid ? conv.memberNames?.[otherUid] || conv.name : conv.name;
-
           return (
-            <div key={conv.id} onClick={() => onSelect(conv)} style={{
-              padding: '12px 16px', borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: '12px', transition: 'background 0.15s',
-              background: isActive ? 'rgba(59,130,246,0.08)' : 'transparent'
-            }} className="chat-hover">
-              <div style={{
-                width: '40px', height: '40px', borderRadius: conv.isGroup ? '12px' : '50%', flexShrink: 0,
-                background: conv.isGroup ? 'var(--gradient-cyber)' : conv.type === 'agent_member' ? 'rgba(16,185,129,0.1)' : 'rgba(59,130,246,0.1)',
-                overflow: 'hidden', position: 'relative',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 'bold', fontSize: '0.8rem',
-                color: conv.isGroup ? 'white' : conv.type === 'agent_member' ? '#10b981' : 'var(--accent-blue)'
-              }}>
-                {conv.isGroup && conv.avatar ? (
-                  <img src={conv.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : conv.isGroup ? (
-                  <Users size={20} />
-                ) : (
-                  otherName?.substring(0, 2) || '??'
-                )}
-              </div>
-              <div style={{ flex: 1, textAlign: 'right', minWidth: 0 }}>
-                <div style={{ fontWeight: 'bold', fontSize: '0.85rem', color: 'var(--text-primary)' }}>{otherName}</div>
-                <div style={{
-                  fontSize: '0.75rem', color: 'var(--text-secondary)',
-                  whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                }}>{conv.lastMessage || '...'}</div>
-              </div>
-              {unread > 0 && (
-                <div style={{
-                  background: '#f59e0b', color: 'white', fontSize: '0.65rem', fontWeight: 'bold',
-                  borderRadius: '50%', width: '20px', height: '20px', display: 'flex',
-                  alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                }}>{unread > 9 ? '9+' : unread}</div>
-              )}
-            </div>
+            <ChatConvItem
+              key={conv.id}
+              conv={conv}
+              active={conv.id === activeId}
+              unread={conv.unreadCount?.[currentUid] || 0}
+              otherName={otherName}
+              onSelect={onSelect}
+            />
           );
         })}
       </div>
     </div>
   );
-}
+});
+
+export default ConversationList;

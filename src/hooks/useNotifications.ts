@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useAuth } from './useAuth';
 import { subscribeToSupportConversations } from '../firebase/support';
 import type { Conversation } from '../types';
@@ -7,39 +7,23 @@ import { showToast } from '../components/ui/Toast';
 interface NotificationPopup {
   id: string;
   customerName: string;
+  customerPhoto?: string;
   message: string;
   conversationId: string;
+  time: string;
+}
+
+// Module-level Map: persists across re-mounts so first-message detection works
+const notifiedConversations = new Map<string, string>();
+
+function formatTime(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
 }
 
 export function useNotifications(onNewMessage?: (popup: NotificationPopup) => void) {
   const { user } = useAuth();
   const isAdmin = !!(user && (user.role === 'admin' || user.role === 'super_admin'));
-  const prevConversationsRef = useRef<Map<string, string>>(new Map());
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-    }
-  }, []);
-
-  const playSound = useCallback(() => {
-    try {
-      if (audioRef.current) {
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const oscillator = ctx.createOscillator();
-        const gain = ctx.createGain();
-        oscillator.connect(gain);
-        gain.connect(ctx.destination);
-        oscillator.frequency.value = 800;
-        oscillator.type = 'sine';
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-        oscillator.start();
-        oscillator.stop(ctx.currentTime + 0.15);
-      }
-    } catch {}
-  }, []);
 
   const showBrowserNotification = useCallback((title: string, body: string, link: string) => {
     if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
@@ -60,34 +44,49 @@ export function useNotifications(onNewMessage?: (popup: NotificationPopup) => vo
 
     const unsub = subscribeToSupportConversations(user.uid, true, (conversations: Conversation[]) => {
       conversations.forEach(conv => {
-        const lastId = prevConversationsRef.current.get(conv.id);
         const currentTime = conv.lastMessageTime;
-        if (lastId && lastId !== currentTime && conv.lastMessageSenderId !== user.uid) {
-          playSound();
-          const customerName = conv.name || 'مستخدم';
-          const msg = conv.lastMessage || 'رسالة جديدة';
+        const knownTime = notifiedConversations.get(conv.id);
+        if (!currentTime) return;
 
-          if (onNewMessage) {
-            onNewMessage({
-              id: conv.id,
-              customerName,
-              message: msg,
-              conversationId: conv.id,
-            });
-          }
-
-          showToast(`رسالة من ${customerName}: ${msg}`, 'info');
-          showBrowserNotification(customerName, msg, '/support');
+        // Skip own messages
+        if (conv.lastMessageSenderId === user.uid) {
+          if (!knownTime) notifiedConversations.set(conv.id, currentTime);
+          return;
         }
 
-        if (!lastId) {
-          prevConversationsRef.current.set(conv.id, conv.lastMessageTime);
-        } else if (lastId !== currentTime) {
-          prevConversationsRef.current.set(conv.id, conv.lastMessageTime);
+        const isNew = !knownTime;
+        const isUpdated = knownTime !== currentTime;
+
+        if (isNew || isUpdated) {
+          notifiedConversations.set(conv.id, currentTime);
+          if (conv.lastMessage && conv.lastMessageSenderId !== user.uid) {
+            triggerNotification(conv);
+          }
         }
       });
     });
 
     return () => unsub();
-  }, [isAdmin, user, playSound, showBrowserNotification, onNewMessage]);
+  }, [isAdmin, user, showBrowserNotification, onNewMessage]);
+
+  function triggerNotification(conv: Conversation) {
+    if (!user) return;
+    const customerName = conv.name || 'مستخدم';
+    const msg = conv.lastMessage || 'رسالة جديدة';
+    const preview = msg.length > 60 ? msg.substring(0, 57) + '…' : msg;
+
+    if (onNewMessage) {
+      onNewMessage({
+        id: conv.id,
+        customerName,
+        customerPhoto: conv.customerAvatar || undefined,
+        message: preview,
+        conversationId: conv.id,
+        time: formatTime(conv.lastMessageTime || conv.updatedAt),
+      });
+    }
+
+    showToast(`رسالة من ${customerName}: ${preview}`, 'info');
+    showBrowserNotification(customerName, preview, `/support?conv=${conv.id}`);
+  }
 }

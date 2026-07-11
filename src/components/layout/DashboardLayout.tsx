@@ -1,10 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useI18n } from '../../context/I18nContext';
-import { useAuth } from '../../hooks/useAuth';
-import { subscribeToSupportConversations } from '../../firebase/support';
+import { useNotifications } from '../../hooks/useNotifications';
 import NotificationPopup, { emitSupportNotification } from '../support/NotificationPopup';
 
 const SIDEBAR_STORAGE_KEY = 'emf_sidebar_collapsed';
@@ -18,41 +17,28 @@ function getInitialCollapsed(): boolean {
 }
 
 export default function DashboardLayout() {
-  const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isTablet, setIsTablet] = useState(window.innerWidth >= 768 && window.innerWidth < 1024);
   const { rtl } = useI18n();
   const location = useLocation();
-  const prevRef = useRef<Map<string, string>>(new Map());
-  const isAdmin = !!(user && (user.role === 'admin' || user.role === 'super_admin'));
 
   const useOverlay = isMobile || (isTablet && mobileOpen);
   const sidebarMargin = !isMobile ? (collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)') : '0';
   const marginProp = rtl ? 'marginRight' : 'marginLeft';
 
-  // Global notification listener for support messages
-  useEffect(() => {
-    if (!isAdmin || !user) return;
-    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
-    const unsub = subscribeToSupportConversations(user.uid, true, (convs) => {
-      convs.forEach(c => {
-        const prev = prevRef.current.get(c.id);
-        const curr = c.lastMessageTime;
-        if (c.lastMessageSenderId !== user.uid && prev && prev !== curr) {
-          const customer = c.name || 'مستخدم';
-          emitSupportNotification({ id: c.id, customerName: customer, body: c.lastMessage || 'رسالة جديدة', conversationId: c.id });
-          if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-            const n = new Notification(customer, { body: c.lastMessage || 'رسالة جديدة', icon: '/favicon.ico' });
-            n.onclick = () => { window.focus(); window.location.href = '/support'; };
-          }
-        }
-        prevRef.current.set(c.id, curr);
-      });
+  // Unified notification hook: sound + toast + browser notification + popup
+  useNotifications(useCallback((popup) => {
+    emitSupportNotification({
+      id: popup.conversationId,
+      customerName: popup.customerName,
+      customerPhoto: popup.customerPhoto,
+      body: popup.message,
+      conversationId: popup.conversationId,
+      time: popup.time,
     });
-    return () => unsub();
-  }, [isAdmin, user]);
+  }, []));
 
   useEffect(() => {
     try { localStorage.setItem(SIDEBAR_STORAGE_KEY, String(collapsed)); } catch {}
