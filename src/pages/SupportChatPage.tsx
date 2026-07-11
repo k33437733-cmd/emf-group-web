@@ -1,481 +1,287 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { subscribeToCustomerSupportConversation } from '../firebase/db/conversations';
-import { subscribeToLatestMessages } from '../firebase/db/messages';
-import { sendMessage, markRead } from '../services/ChatService';
-import { createSupportTicket } from '../services/TicketService';
-import { useChatBot } from '../hooks/useChatBot';
-import type { Conversation, ChatMessage } from '../types';
-import { MessageSquare, AlertCircle, CheckCheck, Users, Bot, Loader2 } from 'lucide-react';
-import ChatInput from '../components/chat/ChatInput';
-import { showToast } from '../components/ui/Toast';
+import { useSupportChat } from '../hooks/useSupportChat';
+import { useI18n } from '../context/I18nContext';
+import MessageBubble from '../components/support/MessageBubble';
+import MessageInput from '../components/support/MessageInput';
+import TypingIndicator from '../components/support/TypingIndicator';
+import ConversationList from '../components/support/ConversationList';
+import SkeletonChat from '../components/support/SkeletonChat';
+import { subscribeToSupportConversations, markAllMessagesRead } from '../firebase/support';
+import type { Conversation } from '../types';
+import { MessageSquare, ArrowLeft, Loader2, Search, X, Filter, Inbox, CheckCheck } from 'lucide-react';
+
+type AdminTab = 'all' | 'unread' | 'waiting';
 
 export default function SupportChatPage() {
   const { user } = useAuth();
+  const { rtl } = useI18n();
   const navigate = useNavigate();
-  
-  const [conversation, setConversation] = useState<Conversation | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [initializing, setInitializing] = useState(false);
-  const [ticketId, setTicketId] = useState<string | undefined>();
-  
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isAdmin = !!(user && (user.role === 'admin' || user.role === 'super_admin'));
 
-  // Redirect if admin (Removed so they can test the bot)
+  const {
+    conversations, activeConvId, messages, loading, sending, typingUsers,
+    activeConversation, uploadProgress, setActiveConv, sendMessage,
+    startNewConversation, setTyping, deleteMessage, editMessage,
+  } = useSupportChat();
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom on new messages
   useEffect(() => {
-    if (!user) {
-      navigate('/login', { replace: true });
-      return;
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
+  }, [messages, activeConvId]);
+
+  // Mark messages read when viewing
+  useEffect(() => {
+    if (!activeConvId || !user) return;
+    const timeout = setTimeout(() => {
+      markAllMessagesRead(activeConvId, user.uid);
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [activeConvId, user]);
+
+  const handleSend = useCallback((text: string, file?: File) => {
+    if (!text.trim() && !file) return;
+    sendMessage(text, 'text', file);
+  }, [sendMessage]);
+
+  const [adminFilter, setAdminFilter] = useState<AdminTab>('all');
+
+  const filteredConversations = useMemo(() => {
+    if (!isAdmin) return conversations;
+    if (adminFilter === 'all') return conversations;
+    if (adminFilter === 'unread') return conversations.filter(c => Object.values(c.unreadCount || {}).some(v => (v as number) > 0));
+    return conversations;
+  }, [conversations, adminFilter, isAdmin]);
+
+  // ── Admin does not load → redirect to login ──
+  useEffect(() => {
+    if (!user) { navigate('/login', { replace: true }); }
   }, [user, navigate]);
 
-  // Initialize support conversation
-  useEffect(() => {
-    if (!user) return;
-    
-    setInitializing(true);
-    
-    // الاشتراك في محادثة الدعم
-    const unsub = subscribeToCustomerSupportConversation(user.uid, (conv) => {
-      if (conv) {
-        setConversation(conv);
-        setLoading(false);
-        setInitializing(false);
-      } else {
-        // إنشاء محادثة دعم جديدة وتذكرة دعم
-        setLoading(true);
-        createSupportTicket(user, 'طلب دعم فني تلقائي', 'general')
-          .then(() => {
-            setLoading(false);
-            setInitializing(false);
-          })
-          .catch((err) => {
-            console.error('Failed to create support conversation:', err);
-            showToast('فشل إنشاء محادثة الدعم', 'error');
-            setLoading(false);
-            setInitializing(false);
-          });
-      }
-    });
-    
-    return () => unsub();
-  }, [user]);
+  if (!user) return null;
 
-  // Subscribe to messages
-  useEffect(() => {
-    if (!conversation) return;
-    
-    const unsub = subscribeToLatestMessages(conversation.id, setMessages);
-    return () => unsub();
-  }, [conversation]);
-
-  // Track ticketId from conversation
-  useEffect(() => {
-    if (conversation?.ticketId) {
-      setTicketId(conversation.ticketId);
-    }
-  }, [conversation]);
-
-  // Mark as read
-  useEffect(() => {
-    if (!conversation || !user) return;
-    markRead(conversation.id, user).catch(() => {});
-  }, [conversation, user]);
-
-  // Scroll to bottom
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  // 🤖 Chatbot auto-responder (user side only)
-  useChatBot(conversation?.id ?? null, messages, user, ticketId);
-
-  const handleSend = (text: string, imageUrls?: string[]) => {
-    if (!conversation || !user || !text.trim()) return;
-    
-    sendMessage({
-      conversationId: conversation.id,
-      sender: user,
-      content: text,
-      type: imageUrls ? 'image' : 'text',
-      imageUrls
-    }).catch((err) => {
-      console.error('Failed to send support message:', err);
-      showToast('فشل إرسال الرسالة', 'error');
-    });
-  };
-
-  const formatTime = (iso: string) =>
-    new Date(iso).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-
-  if (!user || user.role !== 'user') return null;
-
-  if (loading || initializing) {
+  // ═══════════════════════════════════════════════════════════════
+  // CLIENT VIEW  (single conversation, WhatsApp-style)
+  // ═══════════════════════════════════════════════════════════════
+  if (!isAdmin) {
     return (
-      <div style={{ 
-        maxWidth: '850px', 
-        margin: '60px auto', 
-        padding: '0 24px', 
-        textAlign: 'center',
-        direction: 'rtl' 
-      }}>
-        <div className="glass-card" style={{ padding: '60px 40px' }}>
-          <Loader2 className="animate-spin-fast text-primary mb-3" size={32} style={{ margin: '0 auto' }} />
-          <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '6px', color: 'var(--text-primary)' }}>
-            {initializing ? 'جاري إنشاء محادثة الدعم...' : 'جاري التحميل...'}
-          </h3>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-            يرجى الانتظار قليلاً لتأكيد التذكرة
-          </p>
+      <div style={{ height: 'calc(100vh - var(--navbar-height))', display: 'flex', flexDirection: 'column', background: 'var(--bg-primary)', direction: rtl ? 'rtl' : 'ltr' }}>
+
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 16px', borderBottom: '1px solid var(--color-border)', background: 'var(--bg-secondary)', flexShrink: 0 }}>
+          <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.85rem' }}>
+            <MessageSquare size={16} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>الدعم الفني</div>
+            <div style={{ fontSize: '0.68rem', color: 'var(--text-tertiary)' }}>
+              {activeConversation ? 'نرد عادةً خلال دقائق' : 'كيف يمكننا مساعدتك؟'}
+            </div>
+          </div>
         </div>
+
+        {loading ? (
+          <SkeletonChat />
+        ) : !activeConvId ? (
+          /* No conversation yet - start new */
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '16px', padding: '32px' }}>
+            <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'var(--badge-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)' }}>
+              <MessageSquare size={24} />
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>ابدأ محادثة مع الدعم</h3>
+              <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', maxWidth: '320px' }}>نحن هنا لمساعدتك. أرسل لنا رسالة وسنرد عليك في أقرب وقت.</p>
+            </div>
+            <button onClick={startNewConversation} className="btn btn-primary" style={{ gap: '8px', padding: '0 24px' }}>
+              <MessageSquare size={14} /> بدء محادثة جديدة
+            </button>
+          </div>
+        ) : (
+          <>
+            {/* Messages */}
+            <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}>
+              {messages.filter(m => !m.isInternal).map(msg => (
+                <MessageBubble
+                  key={msg.id} message={msg}
+                  isOwn={msg.senderId === user.uid}
+                  onDelete={deleteMessage}
+                  onEdit={editMessage}
+                  showStatus={true}
+                />
+              ))}
+              {typingUsers.length > 0 && <TypingIndicator userName={typingUsers[0].userName} rtl={rtl} />}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <MessageInput
+              onSend={handleSend}
+              onTyping={setTyping}
+              sending={sending}
+              uploadProgress={uploadProgress}
+              rtl={rtl}
+            />
+          </>
+        )}
       </div>
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // ADMIN VIEW  (3-panel dashboard)
+  // ═══════════════════════════════════════════════════════════════
+  const adminTabs: { key: AdminTab; label: string }[] = [
+    { key: 'all', label: 'الكل' },
+    { key: 'unread', label: 'غير مقروء' },
+    { key: 'waiting', label: 'بانتظار الرد' },
+  ];
+
   return (
-    <div 
-      style={{ 
-        maxWidth: '850px', 
-        margin: '0 auto', 
-        height: 'calc(100vh - var(--navbar-height) - 48px)', 
-        padding: '0 24px', 
-        direction: 'rtl' 
-      }} 
-      className="page-enter support-chat-page-wrapper"
-    >
-      
-      <div 
-        className="glass-card" 
-        style={{ 
-          height: '100%', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          overflow: 'hidden',
-          border: '1px solid var(--border-color)',
-          background: 'var(--bg-secondary)'
-        }}
-      >
-        
-        {/* Header section */}
-        <div style={{ 
-          padding: '16px 24px', 
-          borderBottom: '1px solid var(--border-color)', 
-          background: 'var(--bg-tertiary)' 
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            <div style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '12px',
-              background: 'rgba(59, 130, 246, 0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent-blue)',
-              fontSize: '1.25rem',
-              border: '1px solid rgba(59, 130, 246, 0.15)'
-            }}>
-              <Users size={20} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <h2 style={{ fontSize: '1rem', fontWeight: 700, marginBottom: '2px', color: 'var(--text-primary)' }}>
-                دعم فني EMF Group 💬
-              </h2>
-              <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', margin: 0 }}>
-                تواصل مع فريق الدعم الفني - المسؤولون متصلون لتسوية مشكلتك
-              </p>
-            </div>
+    <div style={{ height: 'calc(100vh - var(--navbar-height))', display: 'flex', direction: rtl ? 'rtl' : 'ltr', background: 'var(--bg-primary)' }}>
+
+      {/* ── Left Panel: Conversations List ── */}
+      <div style={{
+        width: '320px', borderLeft: rtl ? '1px solid var(--color-border)' : 'none',
+        borderRight: !rtl ? '1px solid var(--color-border)' : 'none',
+        display: 'flex', flexDirection: 'column', background: 'var(--bg-secondary)', flexShrink: 0,
+      }}>
+        <div style={{ padding: '14px 14px 0', borderBottom: '1px solid var(--color-border)' }}>
+          <h3 style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '10px' }}>محادثات الدعم</h3>
+          <div style={{ display: 'flex', gap: '4px', marginBottom: '0' }}>
+            {adminTabs.map(tab => (
+              <button key={tab.key} onClick={() => setAdminFilter(tab.key)}
+                style={{
+                  padding: '6px 12px', borderRadius: '6px 6px 0 0', border: 'none', cursor: 'pointer',
+                  background: adminFilter === tab.key ? 'var(--bg-primary)' : 'transparent',
+                  color: adminFilter === tab.key ? 'var(--color-primary)' : 'var(--text-tertiary)',
+                  fontSize: '0.72rem', fontWeight: adminFilter === tab.key ? 700 : 500,
+                  fontFamily: 'inherit', transition: 'all 0.15s',
+                }}>{tab.label}</button>
+            ))}
           </div>
         </div>
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <ConversationList
+            conversations={filteredConversations}
+            activeId={activeConvId}
+            onSelect={setActiveConv}
+            loading={loading}
+            rtl={rtl}
+          />
+        </div>
+      </div>
 
-        {/* Welcome information banner */}
-        {messages.length === 0 && (
-          <div style={{ 
-            padding: '36px 24px', 
-            textAlign: 'center',
-            borderBottom: '1px solid var(--border-color)',
-            background: 'var(--bg-primary)'
-          }}>
-            <div style={{
-              width: '64px',
-              height: '64px',
-              borderRadius: '18px',
-              background: 'rgba(59, 130, 246, 0.06)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent-blue)',
-              margin: '0 auto 16px',
-              border: '1px solid rgba(59, 130, 246, 0.12)'
-            }}>
-              <MessageSquare size={26} />
+      {/* ── Center Panel: Chat ── */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        {/* Chat Header */}
+        {activeConversation ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 16px', borderBottom: '1px solid var(--color-border)', background: 'var(--bg-secondary)', flexShrink: 0 }}>
+            <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 }}>
+              {(activeConversation.name || 'U').charAt(0)}
             </div>
-            <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '8px', color: 'var(--text-primary)' }}>
-              مرحباً بك في الدعم الفني! 👋
-            </h3>
-            <p style={{ 
-              color: 'var(--text-secondary)', 
-              fontSize: '0.82rem', 
-              lineHeight: 1.6,
-              maxWidth: '480px',
-              margin: '0 auto'
-            }}>
-              هذه محادثة خاصة بينك وبين فريق الدعم الفني لشركة EMF Group.
-              يمكنك طرح أي سؤال أو مشكلة، وسيتم الرد عليك من قبل المسؤول في أقرب وقت.
-            </p>
-            
-            {/* Action Tips layout */}
-            <div style={{ 
-              marginTop: '20px', 
-              display: 'flex', 
-              flexDirection: 'column', 
-              gap: '8px',
-              maxWidth: '380px',
-              margin: '20px auto 0'
-            }}>
-              <div 
-                className="glass-card" 
-                style={{ 
-                  padding: '10px 14px', 
-                  textAlign: 'right',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: 'rgba(255,255,255,0.01)'
-                }}
-              >
-                <AlertCircle size={14} style={{ color: 'var(--accent-blue)', flexShrink: 0 }} />
-                <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                  جميع المسؤولين يمكنهم رؤية المحادثة والرد
-                </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                {activeConversation.name || 'مستخدم'}
               </div>
-              <div 
-                className="glass-card" 
-                style={{ 
-                  padding: '10px 14px', 
-                  textAlign: 'right',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: 'rgba(255,255,255,0.01)'
-                }}
-              >
-                <CheckCheck size={14} style={{ color: 'var(--accent-emerald)', flexShrink: 0 }} />
-                <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
-                  يمكنك إرسال رسائل نصية ومرفقات صور
-                </span>
+              <div style={{ fontSize: '0.65rem', color: 'var(--text-tertiary)' }}>
+                {activeConversation.members.length} عضو
               </div>
             </div>
+          </div>
+        ) : (
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-tertiary)', fontSize: '0.85rem' }}>
+            اختر محادثة من القائمة
           </div>
         )}
 
-        {/* Message Feed grid */}
-        <div role="log" aria-live="polite" aria-label="رسائل الدعم" style={{ 
-          flex: 1, 
-          overflowY: 'auto', 
-          padding: '20px 24px', 
-          display: 'flex', 
-          flexDirection: 'column', 
-          gap: '14px',
-          background: 'var(--bg-primary)' 
-        }} className="support-chat-messages-scroll">
-          {messages.map(msg => {
-            const isSelf = msg.senderId === user.uid;
-            const isAdmin = msg.senderRole === 'admin' || msg.senderRole === 'super_admin';
-            const isBot = msg.senderId === 'bot';
-            
-            return (
-              <div 
-                key={msg.id} 
-                style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column',
-                  alignSelf: isSelf ? 'flex-start' : 'flex-end',
-                  maxWidth: isBot ? '80%' : '75%',
-                  gap: '4px'
-                }}
-              >
-                {/* Sender Title Banner */}
-                {!isSelf && isAdmin && !isBot && (
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '6px',
-                    marginRight: '6px'
-                  }}>
-                    <div style={{
-                      width: '22px',
-                      height: '22px',
-                      borderRadius: '50%',
-                      background: msg.senderRole === 'super_admin' 
-                        ? 'rgba(139, 92, 246, 0.15)' 
-                        : 'rgba(59, 130, 246, 0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.62rem',
-                      fontWeight: 'bold',
-                      color: msg.senderRole === 'super_admin' 
-                        ? 'var(--accent-purple)' 
-                        : 'var(--accent-blue)'
-                    }}>
-                      {msg.senderName.substring(0, 2)}
-                    </div>
-                    <span style={{ 
-                      fontSize: '0.7rem', 
-                      fontWeight: 'bold',
-                      color: msg.senderRole === 'super_admin' 
-                        ? 'var(--accent-purple)' 
-                        : 'var(--accent-blue)'
-                    }}>
-                      {msg.senderName}
-                      {msg.senderRole === 'super_admin' && '⭐'}
-                    </span>
-                  </div>
-                )}
+        {activeConversation && (
+          <>
+            <div ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '12px 0' }}>
+              {messages.filter(m => !m.isInternal).map(msg => (
+                <MessageBubble
+                  key={msg.id} message={msg}
+                  isOwn={msg.senderId === user.uid}
+                  onDelete={deleteMessage}
+                  onEdit={editMessage}
+                  showStatus={true}
+                />
+              ))}
+              {typingUsers.length > 0 && <TypingIndicator userName={typingUsers[0].userName} rtl={rtl} />}
+              <div ref={messagesEndRef} />
+            </div>
 
-                {/* Bot indicator */}
-                {isBot && (
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '6px',
-                    marginRight: '6px'
-                  }}>
-                    <div style={{
-                      width: '22px',
-                      height: '22px',
-                      borderRadius: '50%',
-                      background: 'rgba(16, 185, 129, 0.15)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '0.65rem',
-                      fontWeight: 'bold',
-                      color: 'var(--accent-emerald)'
-                    }}>
-                      <Bot size={12} />
-                    </div>
-                    <span style={{ 
-                      fontSize: '0.7rem', 
-                      fontWeight: 'bold',
-                      color: 'var(--accent-emerald)'
-                    }}>
-                      المساعد الذكي
-                    </span>
-                  </div>
-                )}
-                
-                {/* Bubble box */}
-                <div style={{
-                  padding: isBot ? '12px 16px' : '10px 16px',
-                  borderRadius: isSelf ? '18px 18px 6px 18px' : '18px 18px 18px 6px',
-                  background: isSelf 
-                    ? 'var(--bg-chat-bubble-self)' 
-                    : isBot
-                    ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.04) 0%, rgba(6, 95, 70, 0.1) 100%)'
-                    : 'var(--bg-chat-bubble-other)',
-                  border: '1px solid',
-                  borderColor: isSelf 
-                    ? 'rgba(59,130,246,0.2)' 
-                    : isBot
-                    ? 'rgba(16, 185, 129, 0.15)'
-                    : 'var(--border-color)',
-                  color: isSelf ? '#fff' : 'var(--text-primary)',
-                  wordBreak: 'break-word',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px',
-                  boxShadow: isSelf ? '0 4px 12px rgba(59, 130, 246, 0.15)' : 'none'
-                }}>
-                  {isBot && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      marginBottom: '2px',
-                      paddingBottom: '6px',
-                      borderBottom: '1px solid rgba(16, 185, 129, 0.15)'
-                    }}>
-                      <Bot size={12} style={{ color: 'var(--accent-emerald)' }} />
-                      <span style={{
-                        fontSize: '0.66rem',
-                        fontWeight: 700,
-                        color: 'var(--accent-emerald)'
-                      }}>
-                        رد تلقائي
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Images content */}
-                  {msg.type === 'image' && msg.imageUrls?.map((url: string, i: number) => (
-                    <img 
-                      key={i} 
-                      src={url} 
-                      alt="" 
-                      style={{ 
-                        maxWidth: '100%', 
-                        maxHeight: '260px', 
-                        borderRadius: '10px', 
-                        cursor: 'pointer',
-                        border: '1px solid rgba(255,255,255,0.05)'
-                      }} 
-                      onClick={() => window.open(url, '_blank')} 
-                    />
-                  ))}
-                  
-                  {/* Message texts */}
-                  {(msg.type === 'text' || isBot) && (
-                    <span style={{ 
-                      fontSize: '0.84rem', 
-                      lineHeight: 1.65,
-                      whiteSpace: 'pre-wrap'
-                    }}>
-                      {msg.content}
-                    </span>
-                  )}
-                  
-                  {/* Timestamp specs */}
-                  <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '4px', 
-                    justifyContent: 'flex-end',
-                    fontSize: '0.6rem',
-                    color: isSelf ? 'rgba(255,255,255,0.6)' : 'var(--text-muted)',
-                    marginTop: '2px'
-                  }}>
-                    <span>{formatTime(msg.createdAt)}</span>
-                    {isSelf && <CheckCheck size={11} style={{ color: 'var(--accent-cyan)' }} />}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-          <div ref={messagesEndRef} />
-        </div>
-
-        {/* Input box */}
-        <ChatInput
-          onSend={handleSend}
-          placeholder="اكتب رسالتك للدعم الفني..."
-        />
+            <MessageInput
+              onSend={handleSend}
+              onTyping={setTyping}
+              sending={sending}
+              uploadProgress={uploadProgress}
+              rtl={rtl}
+            />
+          </>
+        )}
       </div>
 
-      <style>{`
-        .support-chat-messages-scroll::-webkit-scrollbar {
-          width: 4px;
-        }
-        @media(max-width: 768px) {
-          .support-chat-page-wrapper {
-            padding: 0px 4px !important;
-            height: calc(100vh - var(--navbar-height) - 16px) !important;
-          }
-        }
-      `}</style>
+      {/* ── Right Panel: Customer Profile ── */}
+      {activeConversation && (
+        <div style={{
+          width: '260px', borderRight: rtl ? '1px solid var(--color-border)' : 'none',
+          borderLeft: !rtl ? '1px solid var(--color-border)' : 'none',
+          padding: '16px', background: 'var(--bg-secondary)', flexShrink: 0,
+          display: 'flex', flexDirection: 'column', gap: '16px',
+        }}>
+          {/* Avatar & name */}
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--gradient-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px', color: '#fff', fontWeight: 700, fontSize: '1.1rem' }}>
+              {(activeConversation.name || 'U').charAt(0)}
+            </div>
+            <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              {activeConversation.name || 'مستخدم'}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-tertiary)', marginTop: '4px' }}>
+              {activeConversation.memberRoles[activeConversation.members[0]] === 'user' ? 'عضو مسجل' : 'مستخدم'}
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div style={{ background: 'var(--bg-card)', borderRadius: '10px', padding: '12px', border: '1px solid var(--color-border)' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>معلومات المحادثة</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.7rem', color: 'var(--text-secondary)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>الرسائل</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{messages.length}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>الحالة</span>
+                <span style={{ fontWeight: 600, color: 'var(--color-success)' }}>{activeConversation.status === 'active' ? 'نشط' : 'مغلق'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span>تاريخ البداية</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.65rem' }}>
+                  {new Date(activeConversation.createdAt).toLocaleDateString('ar-EG')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            <button style={{
+              display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px',
+              borderRadius: '8px', border: '1px solid var(--color-border)', background: 'transparent',
+              color: 'var(--text-primary)', cursor: 'pointer', fontSize: '0.78rem', fontFamily: 'inherit',
+              transition: 'all 0.15s',
+            }}>
+              <CheckCheck size={14} style={{ color: 'var(--color-success)' }} /> تحديد كمقروء
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

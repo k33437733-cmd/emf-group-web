@@ -1,8 +1,11 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useI18n } from '../../context/I18nContext';
+import { useAuth } from '../../hooks/useAuth';
+import { showToast } from '../ui/Toast';
+import { subscribeToSupportConversations } from '../../firebase/support';
 
 const SIDEBAR_STORAGE_KEY = 'emf_sidebar_collapsed';
 
@@ -15,10 +18,35 @@ function getInitialCollapsed(): boolean {
 }
 
 export default function DashboardLayout() {
+  const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(getInitialCollapsed);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const { rtl } = useI18n();
+  const prevRef = useRef<Map<string, string>>(new Map());
+  const isAdmin = !!(user && (user.role === 'admin' || user.role === 'super_admin'));
+
+  // Global notification listener for support messages
+  useEffect(() => {
+    if (!isAdmin || !user) return;
+    if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+    const unsub = subscribeToSupportConversations(user.uid, true, (convs) => {
+      convs.forEach(c => {
+        const prev = prevRef.current.get(c.id);
+        const curr = c.lastMessageTime;
+        if (prev && prev !== curr && c.lastMessageSenderId !== user.uid) {
+          const customer = c.name || 'مستخدم';
+          showToast(`رسالة من ${customer}: ${c.lastMessage}`, 'info');
+          if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
+            const n = new Notification(customer, { body: c.lastMessage, icon: '/favicon.ico' });
+            n.onclick = () => { window.focus(); };
+          }
+        }
+        prevRef.current.set(c.id, curr);
+      });
+    });
+    return () => unsub();
+  }, [isAdmin, user]);
 
   useEffect(() => {
     try {
