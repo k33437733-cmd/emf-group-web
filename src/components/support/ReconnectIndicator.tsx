@@ -1,4 +1,4 @@
-import { Wifi, WifiOff, RefreshCw } from 'lucide-react';
+import { WifiOff, RefreshCw } from 'lucide-react';
 
 interface Props {
   status: 'online' | 'offline' | 'reconnecting';

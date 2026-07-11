@@ -37,7 +37,7 @@ export class UploadService {
     }
   }
 
-  static cancelUpload(uploadId: string): void {
+  static cancelUpload(_uploadId: string): void {
     // Cancellation is handled via AbortSignal per-upload
   }
 }

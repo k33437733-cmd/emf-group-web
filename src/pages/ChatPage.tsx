@@ -19,7 +19,6 @@ import {
 import {
   subscribeToLatestMessages,
   purgeOldMessages,
-  getMessagePage,
 } from '../firebase/db/messages';
 import { sendMessage, markRead } from '../services/ChatService';
 import type { Conversation, UserProfile } from '../types';
@@ -54,8 +53,6 @@ export default function ChatPage() {
   const [departmentConvs, setDepartmentConvs] = useState<Conversation[]>([]);
   const [projectConvs, setProjectConvs] = useState<Conversation[]>([]);
   const [broadcastConvs, setBroadcastConvs] = useState<Conversation[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-
   // Active conversation
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [messages, setMessages] = useState<any[]>([]);

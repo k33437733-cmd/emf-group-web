@@ -1,5 +1,5 @@
-import type { ChatMessage, UserProfile, Conversation } from '../types';
-import { messageRepository, conversationRepository, userRepository } from '../repositories';
+import type { ChatMessage, UserProfile } from '../types';
+import { messageRepository, conversationRepository } from '../repositories';
 import { sanitizeText, validateFile, validateMessageContent } from '../lib/sanitize';
 import { checkRateLimit } from '../lib/rateLimit';
 import { enqueueAudit, createAuditEntry } from '../audit/auditService';

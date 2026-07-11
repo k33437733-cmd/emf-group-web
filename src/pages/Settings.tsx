@@ -256,7 +256,7 @@ export default function Settings() {
               <label style={{ fontSize: 'var(--text-sm)', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: 'var(--space-2)' }}>اللغة</label>
               <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
                 {LANGUAGES.map(l => (
-                  <button key={l.value} onClick={() => setLang(l.value)} style={{ flex: 1, padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', border: lang === l.value ? '2px solid var(--accent-blue)' : '1px solid var(--border-color)', background: lang === l.value ? 'var(--sidebar-active)' : 'var(--bg-secondary)', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: lang === l.value ? 700 : 400, fontSize: 'var(--text-sm)', fontFamily: 'inherit' }}>
+                  <button key={l.value} onClick={() => setLang(l.value as 'ar' | 'en')} style={{ flex: 1, padding: 'var(--space-3) var(--space-4)', borderRadius: 'var(--radius-lg)', border: lang === l.value ? '2px solid var(--accent-blue)' : '1px solid var(--border-color)', background: lang === l.value ? 'var(--sidebar-active)' : 'var(--bg-secondary)', cursor: 'pointer', color: 'var(--text-primary)', fontWeight: lang === l.value ? 700 : 400, fontSize: 'var(--text-sm)', fontFamily: 'inherit' }}>
                     {l.label}
                   </button>
                 ))}

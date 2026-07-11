@@ -66,7 +66,6 @@ export default function GlobalSearch({ conversations, onSelectConversation, onCl
       const msgQuery = query(
         collection(db, 'support_messages'),
         where('conversationId', 'in', conversations.map(c => c.id).slice(0, 10)),
-        orderBy('createdAt', 'desc'),
         limit(200)
       );
       const msgSnap = await getDocs(msgQuery);
@@ -77,7 +76,7 @@ export default function GlobalSearch({ conversations, onSelectConversation, onCl
         // Filter by tab
         if (activeTab === 'files' && msg.type !== 'file') return;
         if (activeTab === 'images' && msg.type !== 'image') return;
-        if (activeTab === 'videos' && msg.type !== 'video') return;
+        if (activeTab === 'videos' && msg.type !== ('video' as any)) return;
         if (activeTab === 'voice' && msg.type !== 'voice') return;
         if (activeTab === 'messages' && msg.type !== 'text') return;
 

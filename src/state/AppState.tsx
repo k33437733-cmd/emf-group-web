@@ -1,5 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { Conversation, ChatMessage, UserProfile } from '../types';
+import { createContext, useContext, useState, type ReactNode } from 'react';
 
 interface AppState {
   globalLoading: boolean;

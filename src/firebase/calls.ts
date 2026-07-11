@@ -1,6 +1,6 @@
-import { collection, doc, setDoc, updateDoc, deleteDoc, getDoc, getDocs, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { collection, doc, setDoc, updateDoc, deleteDoc, getDoc, getDocs, query, where, orderBy, onSnapshot, addDoc } from 'firebase/firestore';
 import { db } from './config';
-import type { Meeting, Participant, SignalingMessage, MeetingChatMessage, MeetingStatus } from '../types/call';
+import type { Meeting, Participant, SignalingMessage, MeetingChatMessage } from '../types/call';
 
 const CALLS_COL = 'meetings';
 const PARTICIPANTS_SUB = 'participants';

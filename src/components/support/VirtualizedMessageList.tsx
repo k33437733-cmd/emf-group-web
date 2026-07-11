@@ -21,7 +21,6 @@ export default function VirtualizedMessageList({
   const parentRef = useRef<HTMLDivElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const autoScrollRef = useRef(true);
-  const prevLengthRef = useRef(messages.length);
 
   const rowVirtualizer = useVirtualizer({
     count: messages.length + 1,

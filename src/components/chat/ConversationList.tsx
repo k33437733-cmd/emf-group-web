@@ -144,7 +144,7 @@ const ConversationList = memo(function ConversationList({
               conv={conv}
               active={conv.id === activeId}
               unread={conv.unreadCount?.[currentUid] || 0}
-              otherName={otherName}
+              otherName={otherName || ''}
               onSelect={onSelect}
             />
           );

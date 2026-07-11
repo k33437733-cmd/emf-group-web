@@ -362,8 +362,6 @@ export async function uploadAttachments(
 ): Promise<Map<string, string>> {
   const results = new Map<string, string>();
   const queue = [...items];
-  const inProgress = new Set<Promise<void>>();
-
   const next = async (): Promise<void> => {
     while (queue.length > 0) {
       const item = queue.shift()!;
@@ -508,7 +506,7 @@ export async function transferConversation(conversationId: string, newAssigneeUi
 
 // ── Reactions ──────────────────────────────────────────────────
 
-export async function addReaction(messageId: string, conversationId: string, userId: string, emoji: string) {
+export async function addReaction(messageId: string, _conversationId: string, userId: string, emoji: string) {
   const ref = doc(db, MESSAGES, messageId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return;
@@ -542,7 +540,7 @@ export async function sendReplyMessage(
 
 // ── Get message by ID for reply preview ────────────────────────
 
-export async function getMessage(conversationId: string, messageId: string): Promise<ChatMessage | null> {
+export async function getMessage(_conversationId: string, messageId: string): Promise<ChatMessage | null> {
   const ref = doc(db, MESSAGES, messageId);
   const snap = await getDoc(ref);
   if (!snap.exists()) return null;

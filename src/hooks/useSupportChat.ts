@@ -1,14 +1,13 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from './useAuth';
 import { checkRateLimit } from '../lib/rateLimit';
-import { sanitizeText, validateFile, validateMessageContent } from '../lib/sanitize';
+import { sanitizeText, validateMessageContent } from '../lib/sanitize';
 import {
   ensureSupportConversation, subscribeToSupportConversations,
   subscribeToMessages, sendSupportMessage, markConversationRead,
   setTypingStatus, deleteSupportMessage, editSupportMessage,
   uploadAttachment, subscribeTypingStatus, broadcastAllConversationsToAdmins,
-  subscribeUnreadSupportCount, uploadAttachments, getSupportMessagePage,
-  addReaction, getMessage,
+  subscribeUnreadSupportCount,
 } from '../firebase/support';
 import type { Conversation, ChatMessage } from '../types';
 import type { FileUploadItem } from '../firebase/support';

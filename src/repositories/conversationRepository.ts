@@ -1,4 +1,6 @@
-import type { Conversation, ChatMessage } from '../types';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase/config';
+import type { Conversation } from '../types';
 import * as supportFirebase from '../firebase/support';
 import * as convFirebase from '../firebase/db/conversations';
 
@@ -41,7 +43,6 @@ export const conversationRepository = {
 
   async getById(id: string): Promise<Conversation | null> {
     try {
-      const { doc, getDoc, db } = await import('../firebase/config');
       const snap = await getDoc(doc(db, 'support_conversations', id));
       return snap.exists() ? (snap.data() as Conversation) : null;
     } catch {

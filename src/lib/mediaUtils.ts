@@ -43,7 +43,7 @@ export function getVideoMeta(file: File, seekTo = 0.5): Promise<VideoMeta> {
       canvas.toBlob(blob => {
         URL.revokeObjectURL(url);
         video.remove();
-        if (blob) resolve({ duration, thumbnailBlob: blob });
+        if (blob) resolve({ duration: video.duration, thumbnailBlob: blob });
         else reject(new Error('Thumbnail generation failed'));
       }, 'image/jpeg', 0.7);
     };

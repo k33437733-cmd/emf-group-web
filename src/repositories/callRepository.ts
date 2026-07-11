@@ -3,11 +3,11 @@ import * as callsFirebase from '../firebase/calls';
 
 export const callRepository = {
   async createMeeting(meeting: Meeting): Promise<void> {
-    return callsFirebase.createMeeting(meeting);
+    await callsFirebase.createMeeting(meeting);
   },
 
   async updateMeeting(meetingId: string, data: Partial<Meeting>): Promise<void> {
-    return callsFirebase.updateMeeting(meetingId, data);
+    await callsFirebase.updateMeeting(meetingId, data);
   },
 
   async getMeeting(meetingId: string): Promise<Meeting | null> {
@@ -19,15 +19,15 @@ export const callRepository = {
   },
 
   async addParticipant(meetingId: string, participant: Participant): Promise<void> {
-    return callsFirebase.addParticipant(meetingId, participant);
+    await callsFirebase.addParticipant(meetingId, participant);
   },
 
   async removeParticipant(meetingId: string, participantId: string): Promise<void> {
-    return callsFirebase.removeParticipant(meetingId, participantId);
+    await callsFirebase.removeParticipant(meetingId, participantId);
   },
 
   async updateParticipant(meetingId: string, participantId: string, data: Partial<Participant>): Promise<void> {
-    return callsFirebase.updateParticipant(meetingId, participantId, data);
+    await callsFirebase.updateParticipant(meetingId, participantId, data);
   },
 
   subscribeParticipants(meetingId: string, callback: (participants: Participant[]) => void) {
@@ -35,10 +35,10 @@ export const callRepository = {
   },
 
   async sendSignal(meetingId: string, signal: SignalingMessage): Promise<void> {
-    return callsFirebase.sendSignal(meetingId, signal);
+    await callsFirebase.sendSignal(meetingId, signal);
   },
 
-  subscribeSignals(meetingId: string, callback: (signals: SignalingMessage[]) => void) {
-    return callsFirebase.subscribeSignals(meetingId, callback);
+  subscribeSignals(meetingId: string, userUid: string, callback: (msg: SignalingMessage) => void) {
+    return callsFirebase.subscribeSignals(meetingId, userUid, callback);
   },
 };

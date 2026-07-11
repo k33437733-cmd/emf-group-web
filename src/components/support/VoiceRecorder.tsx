@@ -22,11 +22,11 @@ export default function VoiceRecorder({ onSend, onCancel, disabled }: Props) {
   const streamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
-  const timerRef = useRef<ReturnType<typeof setInterval>>();
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const animRef = useRef<number>();
+  const animRef = useRef<number>(undefined);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const blobUrlRef = useRef<string>('');
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
@@ -194,7 +194,6 @@ export default function VoiceRecorder({ onSend, onCancel, disabled }: Props) {
     }
   }, [drawWaveform]);
 
-  // Cancel recording
   const cancelRecording = useCallback(() => {
     clearInterval(timerRef.current);
     cancelAnimationFrame(animRef.current!);

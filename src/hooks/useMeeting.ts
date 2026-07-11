@@ -33,7 +33,6 @@ export function useMeeting({ user, meetingId: externalId, type, conversationId }
   const [recording, setRecording] = useState(false);
   const [chatMessages, setChatMessages] = useState<MeetingChatMessage[]>([]);
   const [connectionState, setConnectionState] = useState<'idle' | 'connecting' | 'connected' | 'reconnecting' | 'failed'>('idle');
-  const [activeSpeaker, setActiveSpeaker] = useState<string | null>(null);
   const [screenStream, setScreenStream] = useState<MediaStream | null>(null);
 
   const peersRef = useRef<Map<string, PeerConnection>>(new Map());
@@ -41,7 +40,6 @@ export function useMeeting({ user, meetingId: externalId, type, conversationId }
   const localStreamRef = useRef<MediaStream | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const recorderChunksRef = useRef<Blob[]>([]);
-  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const processedSignalsRef = useRef<Set<string>>(new Set());
 
   // Initialize media

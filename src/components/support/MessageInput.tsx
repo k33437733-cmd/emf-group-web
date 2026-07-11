@@ -130,8 +130,6 @@ const MessageInput = memo(function MessageInput({ onSend, onTyping, sending, upl
     inputRef.current?.focus();
   };
 
-  const hasContent = text.trim() || previewItems.length > 0;
-
   return (
     <div style={{
       borderTop: '1px solid var(--color-border)', padding: '8px 16px',

@@ -51,15 +51,14 @@ export default function SupportChatPage() {
     activeConversation, uploadProgress, uploadTracks, loadingMore, setActiveConv, sendMessage,
     startNewConversation, setTyping, deleteMessage, editMessage,
     cancelUpload, retryUpload, loadMore, hasMore,
-    replyToMsg, setReplyTo, addReaction, sendReply,
+    replyToMsg, setReplyTo, addReaction,
   } = useSupportChat();
 
-  const { status: netStatus, isOnline } = useNetworkStatus();
+  const { status: netStatus } = useNetworkStatus();
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const [adminTab, setAdminTab] = useState<AdminTab>('all');
-  const mq = useMediaQuery();
   const [showMobileConvList, setShowMobileConvList] = useState(true);
   const [forwardMsg, setForwardMsg] = useState<any>(null);
 

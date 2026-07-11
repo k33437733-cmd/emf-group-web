@@ -7,7 +7,7 @@ interface Props {
   rtl?: boolean;
 }
 
-export default function ReplyPreview({ message, onCancel, rtl = true }: Props) {
+export default function ReplyPreview({ message, onCancel }: Props) {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: '8px',

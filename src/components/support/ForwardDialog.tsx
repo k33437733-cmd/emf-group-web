@@ -25,7 +25,7 @@ export default function ForwardDialog({ message, conversations, currentUser, onC
     if (!selectedId) return;
     setSending(true);
     try {
-      await forwardMessage(message.conversationId, selectedId, message, currentUser.uid);
+      await forwardMessage(message.conversationId, selectedId, message, currentUser!.uid);
       setDone(true);
       setTimeout(onClose, 1200);
     } catch {}
