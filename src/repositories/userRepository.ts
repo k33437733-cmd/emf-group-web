@@ -26,6 +26,6 @@ export const userRepository = {
   },
 
   async createProfile(uid: string, email: string, name: string, role: string) {
-    await userDb.setUser({ uid, email, name, role: role as any, status: 'active', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    await userDb.setUser({ uid, email, name, role: role as any, status: 'active', onlineStatus: 'offline', lastSeen: new Date().toISOString(), fcmTokens: [], createdAt: new Date().toISOString(), lastLogin: new Date().toISOString(), preferences: {} as any, metadata: {} as any });
   },
 };

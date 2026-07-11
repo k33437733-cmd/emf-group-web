@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { useMediaQuery } from '../hooks/useMediaQuery';
+
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { useSupportChat } from '../hooks/useSupportChat';

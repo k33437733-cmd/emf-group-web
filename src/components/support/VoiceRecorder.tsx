@@ -194,20 +194,6 @@ export default function VoiceRecorder({ onSend, onCancel, disabled }: Props) {
     }
   }, [drawWaveform]);
 
-  const cancelRecording = useCallback(() => {
-    clearInterval(timerRef.current);
-    cancelAnimationFrame(animRef.current!);
-    recorderRef.current?.stop();
-    streamRef.current?.getTracks().forEach(t => t.stop());
-    audioCtxRef.current?.close();
-    if (blobUrlRef.current) URL.revokeObjectURL(blobUrlRef.current);
-    chunksRef.current = [];
-    setState('idle');
-    setPendingFile(null);
-    setDuration(0);
-    onCancel();
-  }, [onCancel]);
-
   // Playback in preview
   const togglePlayback = useCallback(() => {
     if (!audioRef.current) {

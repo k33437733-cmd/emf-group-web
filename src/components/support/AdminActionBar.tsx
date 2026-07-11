@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Pin, Archive, Download, Bell, BellOff, Tag, Star, CheckCheck } from 'lucide-react';
-import { muteConversation, unmuteConversation, toggleImportant, archiveConversation, setConversationTags, unpinMessage } from '../../firebase/support';
+import { Pin, Download, Bell, BellOff, Tag, Star, CheckCheck, Archive as ArchiveIcon } from 'lucide-react';
+import { muteConversation, unmuteConversation, toggleImportant, archiveConversation, setConversationTags } from '../../firebase/support';
 import type { Conversation } from '../../types';
 
 interface Props {
@@ -12,13 +12,10 @@ export default function AdminActionBar({ conversation }: Props) {
   const [important, setImportant] = useState(!!conversation.isImportant);
   const [showTagInput, setShowTagInput] = useState(false);
   const [tagText, setTagText] = useState('');
-  const [saving, setSaving] = useState<string | null>(null);
   const [tags, setTags] = useState<string[]>(conversation.tags || []);
 
   const doAction = async (action: string, fn: () => Promise<void>) => {
-    setSaving(action);
     try { await fn(); } catch {}
-    finally { setSaving(null); }
   };
 
   const addTag = async () => {
@@ -37,12 +34,6 @@ export default function AdminActionBar({ conversation }: Props) {
   };
 
   const pinConvMsg = async () => {
-    // Pin is per-message; for simplicity on the conversation header we toggle pin on lastMessage
-    // In real use, user selects a message to pin from the bubble actions.
-    // Here we just toggle the first pinnedMessages entry as a demo.
-    if (conversation.pinnedMessages && conversation.pinnedMessages.length > 0) {
-      await unpinMessage(conversation.id, conversation.pinnedMessages[0]);
-    }
   };
 
   return (

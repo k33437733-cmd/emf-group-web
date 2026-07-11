@@ -2,8 +2,8 @@ import type { Meeting, Participant, SignalingMessage } from '../types/call';
 import * as callsFirebase from '../firebase/calls';
 
 export const callRepository = {
-  async createMeeting(meeting: Meeting): Promise<void> {
-    await callsFirebase.createMeeting(meeting);
+  async createMeeting(meeting: Meeting): Promise<string> {
+    return callsFirebase.createMeeting(meeting);
   },
 
   async updateMeeting(meetingId: string, data: Partial<Meeting>): Promise<void> {
@@ -18,12 +18,12 @@ export const callRepository = {
     return callsFirebase.subscribeMeeting(meetingId, callback);
   },
 
-  async addParticipant(meetingId: string, participant: Participant): Promise<void> {
-    await callsFirebase.addParticipant(meetingId, participant);
+  async joinMeeting(meetingId: string, participant: Participant): Promise<void> {
+    await callsFirebase.joinMeeting(meetingId, participant);
   },
 
-  async removeParticipant(meetingId: string, participantId: string): Promise<void> {
-    await callsFirebase.removeParticipant(meetingId, participantId);
+  async leaveMeeting(meetingId: string, participantId: string): Promise<void> {
+    await callsFirebase.leaveMeeting(meetingId, participantId);
   },
 
   async updateParticipant(meetingId: string, participantId: string, data: Partial<Participant>): Promise<void> {

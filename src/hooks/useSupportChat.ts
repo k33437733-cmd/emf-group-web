@@ -321,6 +321,7 @@ export function useSupportChat(): UseSupportChatReturn {
 
   const handleAddReaction = useCallback(async (messageId: string, emoji: string) => {
     if (!activeConvId || !user) return;
+    const { addReaction } = await import('../firebase/support');
     await addReaction(messageId, activeConvId, user.uid, emoji);
   }, [activeConvId, user]);
 
@@ -335,14 +336,16 @@ export function useSupportChat(): UseSupportChatReturn {
     if (!activeConvId || !oldestCursor || loadingMore || !hasMore) return;
     setLoadingMore(true);
     try {
-      const { messages: oldMsgs, hasMore: more, oldestCursor: newCursor } = await getSupportMessagePage(activeConvId, oldestCursor, 40);
-      if (oldMsgs.length > 0) {
+      const { getSupportMessagePage } = await import('../firebase/support');
+      const result = await getSupportMessagePage(activeConvId, oldestCursor, 40);
+      if (result.messages.length > 0) {
         setMessages(prev => {
           const existingIds = new Set(prev.map(m => m.id));
-          const newOnes = oldMsgs.filter(m => !existingIds.has(m.id));
+          const newOnes = result.messages.filter((m: any) => !existingIds.has(m.id));
           return [...newOnes, ...prev];
         });
-        setOldestCursor(newCursor);
+        setHasMore(result.hasMore);
+        setOldestCursor(result.oldestCursor);
       }
       setHasMore(more);
     } catch (err) {
