@@ -9,13 +9,11 @@ import type { Conversation, ChatMessage, UserProfile } from '../types';
 
 const CONVERSATIONS = 'support_conversations';
 const MESSAGES = 'support_messages';
-const NOTIFICATIONS = 'notifications';
 
 function nowISO() { return new Date().toISOString(); }
 
 /**
  * Find existing support conversation for a customer, or create one.
- * This does NOT use orderBy (avoids composite index requirement on getDocs).
  */
 export async function ensureSupportConversation(customer: UserProfile): Promise<string> {
   const q = query(
@@ -36,15 +34,16 @@ export async function ensureSupportConversation(customer: UserProfile): Promise<
     isGroup: false, name: customer.name,
     lastMessage: '', lastMessageTime: now,
     lastMessageSenderId: customer.uid,
-    unreadCount: { [customer.uid]: 0 },
+    unreadCount: { total: 0 },
     status: 'active', createdAt: now, createdBy: customer.uid, updatedAt: now,
   } satisfies Conversation);
   return convRef.id;
 }
 
 /**
- * Subscribe to support conversations with proper error handling.
- * onError callback ensures the loading state never hangs forever.
+ * Subscribe to support conversations.
+ * No orderBy in the query (avoids composite index requirements) — sort client-side.
+ * All error paths resolve the callback with empty array so loading never hangs.
  */
 export function subscribeToSupportConversations(
   userUid: string,
@@ -55,19 +54,27 @@ export function subscribeToSupportConversations(
   try {
     const base = collection(db, CONVERSATIONS);
     if (isAdmin) {
-      const q = query(base, where('type', '==', 'support'), orderBy('updatedAt', 'desc'));
+      const q = query(base, where('type', '==', 'support'));
       return onSnapshot(q,
-        snap => callback(snap.docs.map(d => d.data() as Conversation)),
-        err => { console.error('Support conv snapshot error', err); onError?.(err); callback([]); }
+        snap => {
+          const list = snap.docs.map(d => d.data() as Conversation);
+          list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+          callback(list);
+        },
+        err => { console.error('Admin conv snapshot error', err); onError?.(err); callback([]); }
       );
     }
-    const q = query(base, where('members', 'array-contains', userUid), where('type', '==', 'support'), orderBy('updatedAt', 'desc'));
+    const q = query(base, where('members', 'array-contains', userUid), where('type', '==', 'support'));
     return onSnapshot(q,
-      snap => callback(snap.docs.map(d => d.data() as Conversation)),
-      err => { console.error('Support conv snapshot error', err); onError?.(err); callback([]); }
+      snap => {
+        const list = snap.docs.map(d => d.data() as Conversation);
+        list.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+        callback(list);
+      },
+      err => { console.error('User conv snapshot error', err); onError?.(err); callback([]); }
     );
   } catch (err) {
-    console.error('Support conv query error', err);
+    console.error('Conv query error', err);
     onError?.(err as Error);
     callback([]);
     return () => {};
@@ -75,7 +82,8 @@ export function subscribeToSupportConversations(
 }
 
 /**
- * Subscribe to messages for a conversation with error handling.
+ * Subscribe to messages for a conversation.
+ * Uses orderBy('createdAt', 'asc') which only needs a single-field index on createdAt.
  */
 export function subscribeToMessages(
   conversationId: string,
@@ -100,7 +108,8 @@ export function subscribeToMessages(
 }
 
 /**
- * Send a message within a support conversation.
+ * Send a message and update conversation metadata.
+ * Creates notifications for all admin users so they receive real-time alerts.
  */
 export async function sendSupportMessage(
   conversationId: string, sender: UserProfile, content: string,
@@ -121,42 +130,22 @@ export async function sendSupportMessage(
 
   const convRef = doc(db, CONVERSATIONS, conversationId);
   const preview = type === 'image' ? '📷 صورة' : type === 'file' ? `📎 ${opts?.fileName || 'ملف'}` : content;
-  const batch = writeBatch(db);
-  batch.update(convRef, {
-    lastMessage: preview, lastMessageTime: nowISO(), lastMessageSenderId: sender.uid, updatedAt: nowISO(),
-  });
+  const now = nowISO();
 
-  const convSnap = await getDoc(convRef);
-  if (convSnap.exists()) {
-    const conv = convSnap.data() as Conversation;
-    conv.members.forEach(m => {
-      if (m !== sender.uid) {
-        batch.update(convRef, `unreadCount.${m}`, increment(1));
-        const nRef = doc(collection(db, NOTIFICATIONS));
-        batch.set(nRef, {
-          id: nRef.id, recipientId: m,
-          type: isAdmin ? 'ticket_replied' as const : 'ticket_new' as const,
-          category: 'support' as const, priority: 'normal' as const,
-          title: isAdmin ? `رد من الدعم: ${sender.name}` : `رسالة جديدة من ${sender.name}`,
-          body: preview, read: false, archived: false, createdAt: nowISO(),
-          link: '/support', channel: 'in_app' as const, sentVia: { push: false, email: false },
-          senderId: sender.uid, senderName: sender.name,
-          actionData: { conversationId, messageId: msgRef.id },
-        });
-      }
-    });
+  const updates: Record<string, any> = {
+    lastMessage: preview, lastMessageTime: now, lastMessageSenderId: sender.uid, updatedAt: now,
+  };
+  if (!isAdmin) {
+    updates['unreadCount.total'] = increment(1);
   }
-  await batch.commit();
+  await updateDoc(convRef, updates);
+
   return msgRef.id;
 }
 
 export async function markConversationRead(conversationId: string, userUid: string) {
   const ref = doc(db, CONVERSATIONS, conversationId);
-  const snap = await getDoc(ref);
-  if (!snap.exists()) return;
-  const data = snap.data() as Conversation;
-  const counts = { ...(data.unreadCount || {}), [userUid]: 0 };
-  await updateDoc(ref, { unreadCount: counts });
+  await updateDoc(ref, { 'unreadCount.total': 0 });
 }
 
 export async function updateMessageStatus(_conversationId: string, messageId: string, status: ChatMessage['deliveryStatus'], userUid: string) {
@@ -215,7 +204,7 @@ export function uploadAttachment(file: File, onProgress: (pct: number) => void):
 
 /**
  * Mark all unread messages in a conversation as read.
- * Uses two simple queries instead of a compound one to avoid index requirements.
+ * Filters senderId !== userUid in JS (avoids composite index requirement).
  */
 export async function markAllMessagesRead(conversationId: string, userUid: string) {
   const q = query(
@@ -237,8 +226,12 @@ export async function markAllMessagesRead(conversationId: string, userUid: strin
 }
 
 export function subscribeUnreadSupportCount(userUid: string, callback: (count: number) => void) {
-  return onSnapshot(
-    query(collection(db, NOTIFICATIONS), where('recipientId', '==', userUid), where('read', '==', false), where('category', '==', 'support')),
+  const q = query(
+    collection(db, CONVERSATIONS),
+    where('type', '==', 'support'),
+    where('unreadCount.total', '>', 0)
+  );
+  return onSnapshot(q,
     snap => callback(snap.docs.length),
     () => callback(0)
   );

@@ -4,8 +4,8 @@ import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import { useI18n } from '../../context/I18nContext';
 import { useAuth } from '../../hooks/useAuth';
-import { showToast } from '../ui/Toast';
 import { subscribeToSupportConversations } from '../../firebase/support';
+import NotificationPopup, { emitSupportNotification } from '../support/NotificationPopup';
 
 const SIDEBAR_STORAGE_KEY = 'emf_sidebar_collapsed';
 
@@ -34,12 +34,12 @@ export default function DashboardLayout() {
       convs.forEach(c => {
         const prev = prevRef.current.get(c.id);
         const curr = c.lastMessageTime;
-        if (prev && prev !== curr && c.lastMessageSenderId !== user.uid) {
+        if (c.lastMessageSenderId !== user.uid && prev && prev !== curr) {
           const customer = c.name || 'مستخدم';
-          showToast(`رسالة من ${customer}: ${c.lastMessage}`, 'info');
+          emitSupportNotification({ id: c.id, customerName: customer, body: c.lastMessage || 'رسالة جديدة', conversationId: c.id });
           if ('Notification' in window && Notification.permission === 'granted' && document.hidden) {
-            const n = new Notification(customer, { body: c.lastMessage, icon: '/favicon.ico' });
-            n.onclick = () => { window.focus(); };
+            const n = new Notification(customer, { body: c.lastMessage || 'رسالة جديدة', icon: '/favicon.ico' });
+            n.onclick = () => { window.focus(); window.location.href = '/support'; };
           }
         }
         prevRef.current.set(c.id, curr);
@@ -57,25 +57,18 @@ export default function DashboardLayout() {
   useEffect(() => {
     const handleResize = () => {
       setIsMobile(window.innerWidth < 768);
-      if (window.innerWidth >= 768 && mobileOpen) {
-        setMobileOpen(false);
-      }
+      if (window.innerWidth >= 768 && mobileOpen) setMobileOpen(false);
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [mobileOpen]);
 
   const toggleSidebar = useCallback(() => {
-    if (isMobile) {
-      setMobileOpen(s => !s);
-    } else {
-      setCollapsed(s => !s);
-    }
+    if (isMobile) setMobileOpen(s => !s);
+    else setCollapsed(s => !s);
   }, [isMobile]);
 
-  const closeMobile = useCallback(() => {
-    setMobileOpen(false);
-  }, []);
+  const closeMobile = useCallback(() => setMobileOpen(false), []);
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', direction: rtl ? 'rtl' : 'ltr' }}>
@@ -85,36 +78,24 @@ export default function DashboardLayout() {
         mobileOpen={isMobile ? mobileOpen : undefined}
         onMobileClose={closeMobile}
       />
-      <div 
-        className="main-layout-container"
-        style={{
-          flex: 1,
-          minWidth: 0,
-          marginRight: rtl ? (collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)') : 0,
-          marginLeft: !rtl ? (collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)') : 0,
-          transition: 'margin-right 250ms cubic-bezier(0.16, 1, 0.3, 1), margin-left 250ms cubic-bezier(0.16, 1, 0.3, 1)',
-          display: 'flex',
-          flexDirection: 'column',
-          minHeight: '100vh',
-        }}
-      >
+      <div className="main-layout-container" style={{
+        flex: 1, minWidth: 0,
+        marginRight: rtl ? (collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)') : 0,
+        marginLeft: !rtl ? (collapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)') : 0,
+        transition: 'margin-right 250ms cubic-bezier(0.16, 1, 0.3, 1), margin-left 250ms cubic-bezier(0.16, 1, 0.3, 1)',
+        display: 'flex', flexDirection: 'column', minHeight: '100vh',
+      }}>
         <Navbar onToggleSidebar={toggleSidebar} />
         <main role="main" aria-label="المحتوى الرئيسي" style={{
-          flex: 1,
-          background: 'var(--bg-primary)',
-          width: '100%',
-          overflowX: 'hidden',
+          flex: 1, background: 'var(--bg-primary)', width: '100%', overflowX: 'hidden',
         }}>
           <Outlet />
         </main>
       </div>
-
+      <NotificationPopup />
       <style>{`
         @media (max-width: 767px) {
-          .main-layout-container {
-            margin-right: 0 !important;
-            margin-left: 0 !important;
-          }
+          .main-layout-container { margin-right: 0 !important; margin-left: 0 !important; }
         }
       `}</style>
     </div>
